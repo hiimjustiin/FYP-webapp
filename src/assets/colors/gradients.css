@@ -1,0 +1,59 @@
+:root {
+    /* Gradients (for reference, use in linear-gradient as needed) */
+    --gradient-bg-start: #FFFFFF;
+    --gradient-bg-end: #ECECEC;
+
+    /* Gradient Red */
+    --gradient-red-1: #7C223F;
+    --gradient-red-2: #A72244;
+    --gradient-red-3: #D71440;
+    --gradient-red-4: #ED1556;
+
+    /* Gradient Blue */
+    --gradient-blue-1: #181C62;
+    --gradient-blue-2: #0054A6;
+    --gradient-blue-3: #1B75BC;
+    --gradient-blue-4: #5DA9DD;
+
+    /* Gradient Green */
+    --gradient-green-1: #007C48;
+    --gradient-green-2: #07B152;
+    --gradient-green-3: #D5ED4C;
+}
+
+.gradient-background {
+    background: linear-gradient(
+        90deg, 
+        var(--gradient-bg-start), 
+        var(--gradient-bg-end)
+    );
+}
+
+.gradient-red {
+    background: linear-gradient(
+        90deg, 
+        var(--gradient-red-1), 
+        var(--gradient-red-2), 
+        var(--gradient-red-3), 
+        var(--gradient-red-4)
+    );
+}
+
+.gradient-blue {
+    background: linear-gradient(
+        90deg, 
+        var(--gradient-blue-1), 
+        var(--gradient-blue-2), 
+        var(--gradient-blue-3), 
+        var(--gradient-blue-4)
+    );
+}
+
+.gradient-green {
+    background: linear-gradient(
+        90deg, 
+        var(--gradient-green-1), 
+        var(--gradient-green-2), 
+        var(--gradient-green-3)
+    );
+}
