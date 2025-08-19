@@ -1,13 +1,13 @@
-import "../../../assets/fonts/typography.css";
-import "../../../assets/fonts/fonts.css";
-import "../../../assets/colors/colors.css";
-import "../../../../src/index.css";
+import "../../../../assets/fonts/typography.css";
+import "../../../../assets/fonts/fonts.css";
+import "../../../../assets/colors/colors.css";
+import "../../../../../src/index.css";
 
-import Button from "./button";
+import Button from "../button";
 
 export default {
-    title: "Components/Button",
-    component: Button,
+  title: "Components/Button",
+  component: Button,
 };
 export const Red = () => <Button variant="red">Submit</Button>;
 export const Grey = () => <Button variant="grey">Cancel</Button>;
