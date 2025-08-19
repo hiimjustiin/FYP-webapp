@@ -5,7 +5,59 @@ export default {
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        // Primary Colours
+        primaryBlue: "var(--color-blue-ntu)",
+        primaryRed: "var(--color-red-ntu)",
+
+        // Greyscale
+        white: "var(--color-white)",
+        grey05: "var(--color-grey-05)",
+        grey10: "var(--color-grey-10)",
+        grey25: "var(--color-grey-25)",
+        grey55: "var(--color-grey-55)",
+        grey80: "var(--color-grey-80)",
+        black: "var(--color-black)",
+
+        // Red Range
+        redM1: "var(--color-red-m1)",
+        red: "var(--color-red-ntu)",
+        redP1: "var(--color-red-p1)",
+        redP2: "var(--color-red-p2)",
+
+        // Purple Range
+        purple: "var(--color-purple)",
+        purpleP1: "var(--color-purple-p1)",
+
+        // Blue Range
+        blueM3: "var(--color-blue-m3)",
+        blueM2: "var(--color-blue-m2)",
+        blueM1: "var(--color-blue-m1)",
+        blue: "var(--color-blue-ntu)",
+
+        // Teal & Yellow
+        teal: "var(--color-teal)",
+        yellow: "var(--color-yellow)",
+      
+        // Green Range
+        greenM1: "var(--color-green-m1)",
+        green: "var(--color-green)",
+        greenP1: "var(--color-green-p1)"
+      },
+      backgroundImage: {
+        "gradient-background": "linear-gradient(90deg, var(--gradient-bg-start), var(--gradient-bg-end))"
+      },
+
+      borderRadius: {
+        card: '16px',
+        button: '8px',
+        label: '16px',
+        tabHighlight: '8px',
+      },
+      boxShadow: {
+        card: '0px 0px 24px rgba(0,0,0,0.25)'
+      },
+
+      /*
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
@@ -44,6 +96,7 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      */
     },
   },
 } satisfies Config;

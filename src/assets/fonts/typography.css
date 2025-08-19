@@ -1,3 +1,7 @@
+:root {
+    --font-button: 'PF Din Text Universal', Arial, sans-serif;
+}
+
 .heading-1 {
     font-family: 'PF Din Text Universal', Arial, sans-serif;
     font-size: 96px;
