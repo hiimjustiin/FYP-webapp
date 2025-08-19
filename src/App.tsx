@@ -16,7 +16,6 @@ function App() {
             Comprehensive dashboard for cross-disciplinary educational insights
           </p>
         </header>
-        {/* Cards and Buttons removed as requested */}
 
         {/* Typography Preview */}
         <TypographyPreview />
