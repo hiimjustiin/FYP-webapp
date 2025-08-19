@@ -1,0 +1,39 @@
+:root {
+    /* Greyscale */
+    --color-white: #FFFFFF;
+    --color-grey-05: #F2F2F2;
+    --color-grey-10: #E6E6E6;
+    --color-grey-25: #C8C8C8;
+    --color-grey-55: #8C8C8C;
+    --color-grey-80: #333333;
+    --color-black: #000000;
+
+    /* Primary Colours */
+    --color-red-ntu: #D71440;
+    --color-blue-ntu: #181C62;
+
+    /* Red Range */
+    --color-red-m1: #ED1556;
+    --color-red-ntu: #D71440;
+    --color-red-p1: #A72244;
+    --color-red-p2: #7C223F;
+
+    /* Purple Range */
+    --color-purple: #A5247F;
+    --color-purple-p1: #5C004D;
+
+    /* Blue Range */
+    --color-blue-m3: #5DA9DD;
+    --color-blue-m2: #1B75BC;
+    --color-blue-m1: #0054A6;
+    --color-blue-ntu: #181C62;
+
+    /* Teal & Yellow */
+    --color-teal: #32BCAD;
+    --color-yellow: #FFDD00;
+
+    /* Green Range */
+    --color-green-m1: #D5ED4C;
+    --color-green: #07B152;
+    --color-green-p1: #007C48;
+}

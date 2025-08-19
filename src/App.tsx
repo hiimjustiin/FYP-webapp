@@ -1,3 +1,9 @@
+import "./assets/fonts/typography.css";
+import "./assets/colors/colors.css";
+import "./assets/colors/gradients.css";
+import ColorsPreview from "./assets/colors/colors-preview";
+import TypographyPreview from "./assets/fonts/typography-preview";
+import ButtonsPreview from "./components/ui/button/button-preview";
 function App() {
   return (
     <div className="min-h-screen bg-background p-8">
@@ -11,6 +17,15 @@ function App() {
           </p>
         </header>
         {/* Cards and Buttons removed as requested */}
+
+        {/* Typography Preview */}
+        <TypographyPreview />
+
+        {/* Colors Preview */}
+        <ColorsPreview />
+
+        {/*Buttons Preview*/}
+        <ButtonsPreview />
       </div>
     </div>
   );

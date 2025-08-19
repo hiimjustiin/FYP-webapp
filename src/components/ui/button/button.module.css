@@ -1,0 +1,87 @@
+.btnBase {
+    font-family: var(--font-button);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: normal;
+    min-height: 48px;
+    min-width: 84px;
+    border-radius: 8px;
+    padding: 12px 32px;
+    border: 1px solid var(--color-grey-55, #8c8c8c);
+    transition: all 0.2s;
+    cursor: pointer;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btnBase:hover {
+    scale: 1.05;
+}
+.btnBase:active {
+    filter: brightness(0.9);
+    scale: 0.95;
+}
+
+.btnRed {
+    background: var(--color-red-ntu, #D71440); 
+    color: white;
+}
+
+.btnGrey {
+    background: var(--color-grey-10, #e6e6e6);
+    color: black;
+}
+
+.btnGreen {
+    background: var(--color-green-p1, #007c48);
+    color: white;
+}
+
+.btnBlue {
+    background: var(--color-blue-m1, #0054a6);
+    color: white;
+}
+
+.btnDarkBlue {
+    background: var(--color-blue-ntu, #181c62);
+    color: white;
+}
+
+.btnPurple {
+    background: var(--color-purple, #a5247f);
+    color: white;
+}
+
+.btnWhite {
+    background: var(--color-white, #ffffff);
+    color: black;
+}
+
+.btnWhiteCard {
+    font-family: var(--font-button);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: normal;
+    min-height: 32px;
+    background: white;
+    color: black;
+    border-radius: 8px;
+    box-shadow: 0px 0px 24px rgba(0,0,0,0.25);
+    transition: all 0.2s;
+    cursor: pointer;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0px;
+}
+
+.btnWhiteCard:hover {
+    scale: 1.05;
+}
+.btnWhiteCard:active {
+    filter: brightness(0.9);
+    scale: 0.95;
+}
