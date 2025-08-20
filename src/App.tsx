@@ -1,8 +1,6 @@
 import "./assets/fonts/typography.css";
 import "./assets/colors/colors.css";
 import "./assets/colors/gradients.css";
-import ColorsPreview from "./assets/colors/colors-preview";
-import TypographyPreview from "./assets/fonts/typography-preview";
 
 function App() {
   return (
@@ -17,11 +15,6 @@ function App() {
           </p>
         </header>
 
-        {/* Typography Preview */}
-        <TypographyPreview />
-
-        {/* Colors Preview */}
-        <ColorsPreview />
       </div>
     </div>
   );
