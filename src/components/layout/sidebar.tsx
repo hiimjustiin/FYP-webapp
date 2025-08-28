@@ -22,15 +22,15 @@ const Sidebar: React.FC = () => {
 
     return (
         <aside className="card-drop-shadow 
-            w-16 sm:w-64 md:w-72 lg:w-80 xl:w-80
-            px-2 sm:px-4 
+            w-14 sm:w-62 md:w-70 lg:w-78 xl:w-78
+            px-1 sm:px-2 
             py-6 sm:py-10 
             flex flex-col justify-between bg-white min-h-screen
             transition-all duration-300 ease-in-out">
 
-        <div className="flex flex-col gap-8 sm:gap-14">
+        <div className="flex flex-col" style={{ gap: 'clamp(2rem, 4vh, 2.5rem)' }}>
             {/* Logo Section */}
-            <div className="p-1 sm:p-2">
+            <div>
                 <div className="flex flex-col sm:flex-row items-center">
                     <div className="p-1 sm:p-2 w-12 sm:w-20 h-12 sm:h-20 flex flex-col items-center justify-center">
                         <img 
@@ -47,39 +47,43 @@ const Sidebar: React.FC = () => {
             </div>
 
             {/* Navigation */}
-            <nav className="py-2 sm:py-4">
-                <ul className="space-y-1 sm:space-y-2">
-                {navigationItems.map((item) => (
-                    <li key={item.name}>
-                        <a
-                            href="#"
-                            className={`flex items-center justify-center sm:justify-start 
-                                px-2 sm:px-6 
-                                py-3 sm:py-4 
-                                rounded-lg 
-                                ${item.active
-                                    ? "subtitle-2 text-highlight-blue bg-tab-selected"
-                                    : "subtitle-2 hover:bg-gray-100"
-                                }`}
-                        >
-                            <img 
-                                src={item.icon} 
-                                alt={item.name}
-                                className={`w-6 sm:w-10 h-6 sm:h-10 ${
-                                    item.active ? "icon-blue-tint" : ""
-                                }`}
-                            />
-                            <span className="hidden sm:inline sm:ml-4">{item.name}</span>
-                        </a>
-                    </li>
-                ))}
-                </ul>
-            </nav>
+            <div className="flex w-full flex-col h-fit">
+                <nav>
+                    <ul>
+                    {navigationItems.map((item) => (
+                        <li key={item.name}>
+                            <a
+                                href="#"
+                                className={`flex items-center justify-center sm:justify-start 
+                                    px-2 sm:px-6 
+                                    py-3 sm:py-4 
+                                    rounded-lg 
+                                    ${item.active
+                                        ? "subtitle-2 text-highlight-blue bg-tab-selected"
+                                        : "subtitle-2 hover:bg-gray-100"
+                                    }`}
+                            >
+                                <img 
+                                    src={item.icon} 
+                                    alt={item.name}
+                                    className={`w-6 sm:w-10 h-6 sm:h-10 ${
+                                        item.active ? "icon-blue-tint" : ""
+                                    }`}
+                                />
+                                <span className="hidden sm:inline sm:ml-4">{item.name}</span>
+                            </a>
+                        </li>
+                    ))}
+                    </ul>
+                </nav>
+            </div>
         </div>
 
+        <div className="flex-grow min-h-[clamp(1rem,10vh,2rem)]" />
+
         {/* Bottom Section */}
-        <div className="flex w-full flex-col h-fit py-2 sm:py-4">
-            <ul className="space-y-1 sm:space-y-2">
+        <div className="flex w-full flex-col h-fit">
+            <ul>
                 <li>
                     <a
                     href="#"
