@@ -1,0 +1,126 @@
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Dropdown Trigger */
+.dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 4px 8px 4px 16px;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: black;
+    min-height: 48px;
+}
+
+.dropdown-trigger:hover {
+    border-color: #cbd5e0;
+    background-color: #f7fafc;
+}
+
+.dropdown-trigger--open {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.dropdown-trigger__text {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-trigger__icon {
+    margin-left: 8px;
+    transition: transform 0.2s ease-in-out;
+    color: #718096;
+    flex-shrink: 0;
+}
+
+.dropdown-trigger__icon--rotated {
+    transform: rotate(180deg);
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin-top: 4px;
+    background: white;
+    border: 2px solid #3182ce;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-menu__content {
+    max-height: 240px;
+    overflow-y: auto;
+    background: #f8fafc;
+    border-radius: 10px;
+    margin: 4px;
+}
+
+/* Dropdown Options */
+.dropdown-option {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    color: black;
+    border-radius: 8px;
+    margin: 2px 0;
+}
+
+.dropdown-option:hover {
+    background-color: var(--color-grey-10);
+}
+
+.dropdown-option--selected {
+    background-color: var(--color-grey-05);
+    color: #2b6cb0;
+    font-weight: 450;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dropdown-trigger {
+        padding: 10px 14px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+
+    .dropdown-option {
+        padding: 10px 14px;
+        font-size: 14px;
+    }
+}
