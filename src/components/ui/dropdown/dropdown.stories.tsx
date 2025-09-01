@@ -5,8 +5,8 @@ import "../../../assets/fonts/fonts.css";
 import "../../../assets/colors/colors.css";
 import "../../../../src/index.css";
 
-import Dropdown from "./dropdown";
-import type { DropdownOption } from "./dropdown";
+import Dropdown from "./Dropdown";
+import type { DropdownOption } from "./Dropdown";
 
 
 export default {
