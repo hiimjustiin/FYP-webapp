@@ -23,7 +23,6 @@
 
 .gradient-background {
     background: linear-gradient(
-        90deg, 
         var(--gradient-bg-start), 
         var(--gradient-bg-end)
     );
@@ -55,5 +54,12 @@
         var(--gradient-green-1), 
         var(--gradient-green-2), 
         var(--gradient-green-3)
+    );
+}
+
+.bg-gradient-background {
+    background: linear-gradient(
+        var(--gradient-bg-start), 
+        var(--gradient-bg-end)
     );
 }

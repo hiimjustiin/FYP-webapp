@@ -37,3 +37,39 @@
     --color-green: #07B152;
     --color-green-p1: #007C48;
 }
+
+.dashboard-card {
+    background-color: var(--color-white);
+    box-shadow: 0px 0px 24px rgba(0,0,0,0.25);
+    border-radius: 16px;
+}
+
+.card-drop-shadow {
+    box-shadow: 0px 0px 24px rgba(0,0,0,0.25);
+}
+
+.text-highlight-blue {
+    color: var(--color-blue-m1)
+}
+
+.text-highlight-red {
+    color: var(--color-red-ntu)
+}
+
+.text-grey-80 {
+    color: var(--color-grey-80);
+}
+
+.bg-tab-selected {
+    background-color: rgba(140, 140, 140, 0.2);
+}
+
+.icon-blue-tint {
+    filter: brightness(0) saturate(100%) invert(21%) sepia(100%) saturate(2000%) hue-rotate(211deg) brightness(92%) contrast(97%);
+    /* --color-blue-m1 (#0054A6) */
+}
+
+.icon-red-tint {
+    filter: brightness(0) saturate(100%) invert(15%) sepia(88%) saturate(3942%) hue-rotate(340deg) brightness(95%) contrast(92%);
+    /* --color-red-ntu (#D71440) */
+}
