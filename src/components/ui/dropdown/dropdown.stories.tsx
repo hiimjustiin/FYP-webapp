@@ -7,6 +7,7 @@ import "../../../../src/index.css";
 
 import Dropdown from "./Dropdown";
 import type { DropdownOption } from "./Dropdown";
+import Calendar from "../Calendar/Calendar";
 
 
 export default {
@@ -49,7 +50,6 @@ export const Default = () => {
     );
 };
 
-// Short options
 export const ShortOptions = () => {
     const [selectedOption, setSelectedOption] = React.useState<DropdownOption | null>(null);
 
@@ -61,6 +61,80 @@ export const ShortOptions = () => {
                 onSelect={setSelectedOption}
                 placeholder="Choose an option"
             />
+        </div>
+    );
+};
+
+export const CalendarDropdown = () => {
+    const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
+
+    const formatDate = (date: Date) => {
+        return date.toLocaleDateString('en-UK', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    };
+
+    return (
+        <div style={{ width: '320px' }}>
+            <Dropdown
+                placeholder="Start Date"
+                customTriggerText={selectedDate ? formatDate(selectedDate) : undefined}
+            >
+                <Calendar
+                    selectedDate={selectedDate}
+                    onDateSelect={setSelectedDate}
+                />
+            </Dropdown>
+            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--color-grey-05)', borderRadius: '8px' }}>
+                <strong>Selected Date:</strong> {selectedDate ? formatDate(selectedDate) : 'No date selected'}
+            </div>
+        </div>
+    );
+};
+
+export const DateRangePicker = () => {
+    const [startDate, setStartDate] = React.useState<Date | null>(null);
+    const [endDate, setEndDate] = React.useState<Date | null>(null);
+
+    const formatDate = (date: Date) => {
+        return date.toLocaleDateString('en-UK', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    };
+
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '700px' }}>
+            <Dropdown
+                placeholder="Start Date"
+                customTriggerText={startDate ? formatDate(startDate) : undefined}
+            >
+                <Calendar
+                    selectedDate={startDate}
+                    onDateSelect={setStartDate}
+                />
+            </Dropdown>
+            
+            <span className='body-2'>to</span>
+            
+            <Dropdown
+                placeholder="End Date"
+                customTriggerText={endDate ? formatDate(endDate) : undefined}
+            >
+                <Calendar
+                    selectedDate={endDate}
+                    onDateSelect={setEndDate}
+                />
+            </Dropdown>
+            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--color-grey-05)', borderRadius: '8px', width: '100%' }}>
+                <strong>Range:</strong> 
+                {startDate && endDate 
+                    ? `${formatDate(startDate)} - ${formatDate(endDate)}` 
+                    : 'No range selected'}
+            </div>
         </div>
     );
 };

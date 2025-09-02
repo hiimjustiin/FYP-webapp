@@ -134,6 +134,15 @@
     font-weight: 450;
 }
 
+.dropdown-custom-content {
+    padding: 0;
+}
+
+.dropdown-custom-content .calendar-container {
+    box-shadow: none;
+    border-radius: 0; 
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .dropdown-trigger {
