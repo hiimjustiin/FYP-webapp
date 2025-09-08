@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import OwlIconWhite from "../assets/icons/owl_white.svg";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -38,10 +39,17 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <main className="flex min-h-screen">
+    <main
+      className="flex min-h-screen"
+      style={{
+        background:
+          "var(--Gradient-Blue, linear-gradient(0deg, #181C62 0%, #0054A6 33.3%, #1B75BC 66.6%, #5DA9DD 100%))",
+      }}
+    >
       {/* Left Panel: Branding & Information */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-800 text-white relative">
         <div className="flex flex-col items-start space-y-6">
+          <img src={OwlIconWhite} alt="ILA Logo" className="w-16 h-16" />
           <h1 className="text-4xl font-bold tracking-tight">
             Welcome to Interdisciplinary Learning Analytics (ILA)!
           </h1>
@@ -56,7 +64,7 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Right Panel: Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white/90 backdrop-blur-sm">
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
