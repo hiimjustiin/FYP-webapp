@@ -1,5 +1,5 @@
-import React from 'react';
-import Sidebar from './sidebar';
+import React from "react";
+import Sidebar from "./sidebar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -10,9 +10,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-gradient-background">
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 min-h-screen">
-          {children}
-        </main>
+        <main className="flex-1 min-h-screen">{children}</main>
       </div>
     </div>
   );

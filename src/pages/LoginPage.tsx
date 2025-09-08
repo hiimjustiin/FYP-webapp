@@ -7,7 +7,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -15,7 +15,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
       const success = await login(email, password);
       if (success) {
@@ -24,7 +24,7 @@ const LoginPage: React.FC = () => {
         setError("Invalid email or password");
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       setError("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
                 <div className="text-sm text-red-800">{error}</div>
               </div>
             )}
-            
+
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="email-address" className="sr-only">

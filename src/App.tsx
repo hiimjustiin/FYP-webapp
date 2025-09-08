@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import "./assets/fonts/typography.css";
 import "./assets/colors/colors.css";
 import "./assets/colors/gradients.css";
@@ -20,71 +25,73 @@ const AppContent = () => {
   return (
     <Routes>
       {/* Public routes */}
-      <Route 
-        path="/login" 
-        element={
-          isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
-        } 
+      <Route
+        path="/login"
+        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
       />
-      
+
       {/* Protected dashboard routes */}
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
           <ProtectedRoute>
             <DashboardLayout>
               <Home />
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/project" 
+      <Route
+        path="/project"
         element={
           <ProtectedRoute>
             <DashboardLayout>
               <Project />
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/team" 
+      <Route
+        path="/team"
         element={
           <ProtectedRoute>
             <DashboardLayout>
               <Team />
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/report" 
+      <Route
+        path="/report"
         element={
           <ProtectedRoute>
             <DashboardLayout>
               <Report />
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/settings" 
+      <Route
+        path="/settings"
         element={
           <ProtectedRoute>
             <DashboardLayout>
               <Settings />
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
       {/* Catch all route - redirect to login if not authenticated, otherwise to home */}
-      <Route 
-        path="*" 
+      <Route
+        path="*"
         element={
-          isAuthenticated ? <Navigate to="/" replace /> : <Navigate to="/login" replace />
-        } 
+          isAuthenticated ? (
+            <Navigate to="/" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
       />
     </Routes>
   );
