@@ -5,8 +5,8 @@ import "../../../assets/fonts/fonts.css";
 import "../../../assets/colors/colors.css";
 import "../../../../src/index.css";
 
-import Dropdown from "./Dropdown_temp";
-import type { DropdownOption } from "./Dropdown_temp";
+import Dropdown from "./Dropdown";
+import type { DropdownOption } from "./Dropdown";
 import Calendar from "../Calendar/Calendar";
 
 

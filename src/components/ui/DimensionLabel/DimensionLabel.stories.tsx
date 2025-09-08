@@ -7,7 +7,7 @@ import "../../../../src/index.css";
 
 import DimensionLabel from "./DimensionLabel";
 import DimensionLabelsContainer, { type Dimension } from "./DimensionLabelsContainer";
-import Button from '../Button_temp/Button_temp';
+import Button from "../Button/Button"
 
 export default {
     title: "Components/DimensionLabel",

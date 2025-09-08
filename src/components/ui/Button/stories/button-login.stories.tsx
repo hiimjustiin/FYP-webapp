@@ -3,7 +3,7 @@ import "../../../../assets/fonts/fonts.css";
 import "../../../../assets/colors/colors.css";
 import "../../../../../src/index.css";
 
-import Button from "../Button_temp";
+import Button from "../Button";
 import GoogleIcon from "../../../../assets/icons/google_icon.svg";
 
 export default {

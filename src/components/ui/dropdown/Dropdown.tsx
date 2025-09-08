@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, type ReactNode } from "react";
-import "./Dropdown_temp.css";
+import "./Dropdown.css";
 import ChevronIcon from "../../../assets/icons/chevron_down.svg"
 
 export interface DropdownOption {
