@@ -1,33 +1,102 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./assets/fonts/typography.css";
 import "./assets/colors/colors.css";
 import "./assets/colors/gradients.css";
 
-import Sidebar from "./components/layout/sidebar";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import DashboardLayout from "./components/layout/DashboardLayout";
 import Home from "./pages/Home.js";
 import Project from "./pages/Project.js";
 import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
+import LoginPage from "./pages/LoginPage.js";
+
+// Main app content with authentication logic
+const AppContent = () => {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route 
+        path="/login" 
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+        } 
+      />
+      
+      {/* Protected dashboard routes */}
+      <Route 
+        path="/" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Home />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/project" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Project />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/team" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Team />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/report" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Report />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Settings />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Catch all route - redirect to login if not authenticated, otherwise to home */}
+      <Route 
+        path="*" 
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <Navigate to="/login" replace />
+        } 
+      />
+    </Routes>
+  );
+};
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gradient-background">
-        <div className="flex">
-          <Sidebar />
-          <main className="flex-1 min-h-screen">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/project" element={<Project />} />
-              <Route path="/team" element={<Team />} />
-              <Route path="/report" element={<Report />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }
 

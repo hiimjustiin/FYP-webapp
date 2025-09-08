@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import "../../assets/fonts/typography.css";
 import "../../assets/fonts/fonts.css";
 import "../../assets/colors/colors.css";
@@ -20,6 +21,13 @@ import LogoutIcon from "../../assets/icons/logout.svg";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
+    const { logout } = useAuth();
+    
+    const handleLogout = () => {
+        if (window.confirm('Are you sure you want to logout?')) {
+            logout();
+        }
+    };
     
     const navigationItems = [
         { name: "Home", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/" },
@@ -118,9 +126,7 @@ const Sidebar: React.FC = () => {
                 </li>
                 <li>
                     <button
-                    onClick={() => {
-                        console.log("Logging out...");
-                    }}
+                    onClick={handleLogout}
                     className="w-full flex items-center justify-center sm:justify-start 
                         px-2 sm:px-6 
                         py-3 sm:py-4 
