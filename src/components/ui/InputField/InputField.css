@@ -1,0 +1,149 @@
+.inputfield-password-toggle img {
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    pointer-events: auto; 
+}
+
+.inputfield-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.inputfield-label {
+    margin-bottom: 8px;
+    color: var(--color-grey-80);
+    font-weight: 500;
+}
+
+.inputfield-required {
+    color: var(--color-red-ntu);
+    margin-left: 4px;
+}
+
+.inputfield-wrapper {
+    position: relative;
+    border: 2px solid var(--color-grey-25);
+    border-radius: 16px;
+    background: var(--color-white);
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+}
+
+.inputfield-wrapper--focused {
+    border-color: var(--color-blue-m1);
+    box-shadow: 0 0 0 3px rgba(0, 84, 166, 0.1);
+}
+
+.inputfield-wrapper--error {
+    border-color: var(--color-red-ntu);
+    background: rgba(215, 20, 64, 0.05);
+}
+
+.inputfield-wrapper--error.inputfield-wrapper--focused {
+    box-shadow: 0 0 0 3px rgba(215, 20, 64, 0.1);
+}
+
+.inputfield-wrapper--disabled {
+    background: var(--color-grey-05);
+    border-color: var(--color-grey-10);
+    cursor: not-allowed;
+}
+
+.inputfield {
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 16px;
+    background: transparent;
+    line-height: normal;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.inputfield::placeholder {
+    color: var(--color-grey-55);
+}
+
+.inputfield:disabled {
+    cursor: not-allowed;
+    color: var(--color-grey-55);
+}
+
+.inputfield-icon {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-grey-55);
+    pointer-events: none;
+}
+
+.inputfield-icon--right {
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.inputfield-password-toggle {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-grey-55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.inputfield-password-toggle:hover {
+    color: var(--color-grey-80);
+}
+
+.inputfield-password-toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.inputfield-error {
+    color: var(--color-red-ntu);
+    margin-top: 8px;
+    display: block;
+}
+
+/* Date input specific styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 16px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .inputfield {
+        padding: 12px;
+        font-size: 16px;
+    }
+
+    .inputfield--with-icon {
+        padding-left: 44px;
+    }
+
+    .inputfield-icon--right,
+    .inputfield-password-toggle {
+        right: 12px;
+    }
+}

@@ -1,0 +1,194 @@
+.dimension-label {
+    display: inline-block;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    padding: 16px 4px;
+    margin: 4px 16px;
+    transition: all 0.2s ease-in-out;
+    cursor: default;
+    user-select: none;
+    color: var(--color-black);
+    border: 2px solid transparent;
+}
+
+.dimension-label__text {
+    line-height: 1;
+    text-align: center;
+    color: inherit;
+}
+
+/* Size variants */
+.dimension-label--small {
+    padding: 0px 12px;
+}
+
+.dimension-label--medium {
+    padding: 2px 16px;
+}
+
+.dimension-label--large {
+    padding: 2px 16px;
+}
+
+.dimension-label--small .dimension-label__text {
+    font-size: 14px;
+}
+
+.dimension-label--medium .dimension-label__text {
+    font-size: 16px;
+}
+
+.dimension-label--large .dimension-label__text {
+    font-size: 18px;
+}
+
+/* Color variants */
+.dimension-label--lime {
+    background-color: rgba(213, 224, 77, 0.5);
+    border: 2px solid rgba(213, 224, 77, 1);
+}
+
+.dimension-label--yellow {
+    background-color: rgba(255, 221, 0, 0.5);
+    border: 2px solid rgba(255, 221, 0, 1);
+}
+
+.dimension-label--purple {
+    background-color: rgba(165, 36, 127, 0.5);
+    border: 2px solid rgba(165, 36, 127, 1);
+}
+
+.dimension-label--teal {
+    background-color: rgba(50, 188, 173, 0.5);
+    border: 2px solid rgba(50, 188, 173, 1);
+}
+
+.dimension-label--blue {
+    background-color: rgba(93, 169, 221, 0.5);
+    border: 2px solid rgba(93, 169, 221, 1);
+}
+
+.dimension-label--grey {
+    background-color: rgba(51, 51, 51, 0.5);
+    border: 2px solid rgba(51, 51, 51, 1);
+}
+
+.dimension-label--green {
+    background-color: rgba(0, 124, 72, 0.5);
+    border: 2px solid rgba(0, 124, 72, 1);
+}
+
+.dimension-label--navy {
+    background-color: rgba(24, 28, 98, 0.5);
+    border: 2px solid rgba(24, 28, 98, 1);
+}
+
+.dimension-label--pink {
+    background-color: rgba(124, 34, 63, 0.5);
+    border: 2px solid rgba(124, 34, 63, 1);
+}
+
+/* Clickable states */
+.dimension-label--clickable {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.dimension-label--clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dimension-label--clickable:focus {
+    outline: 2px solid var(--color-blue-m1);
+    outline-offset: 2px;
+}
+
+/* Selected state with darker backgrounds */
+.dimension-label--selected {
+    box-shadow: 0 0 0 3px rgba(0, 84, 166, 0.3);
+    transform: scale(1.02);
+}
+
+.dimension-label--selected.dimension-label--lime {
+    background-color: rgba(175, 196, 76, 0.8);
+    border-color: rgba(120, 144, 56, 1);
+}
+
+.dimension-label--selected.dimension-label--yellow {
+    background-color: rgba(255, 213, 79, 0.8);
+    border-color: rgba(255, 160, 0, 1);
+}
+
+.dimension-label--selected.dimension-label--purple {
+    background-color: rgba(171, 71, 188, 0.8);
+    border-color: rgba(123, 31, 162, 1);
+}
+
+.dimension-label--selected.dimension-label--teal {
+    background-color: rgba(38, 166, 154, 0.8);
+    border-color: rgba(0, 105, 92, 1);
+}
+
+.dimension-label--selected.dimension-label--blue {
+    background-color: rgba(66, 165, 245, 0.8);
+    border-color: rgba(21, 101, 192, 1);
+}
+
+.dimension-label--selected.dimension-label--grey {
+    background-color: rgba(107, 107, 107, 0.8);
+    border-color: rgba(66, 66, 66, 1);
+}
+
+.dimension-label--selected.dimension-label--green {
+    background-color: rgba(76, 175, 80, 0.8);
+    border-color: rgba(27, 94, 32, 1);
+}
+
+.dimension-label--selected.dimension-label--navy {
+    background-color: rgba(92, 107, 192, 0.8);
+    border-color: rgba(48, 63, 159, 1);
+}
+
+.dimension-label--selected.dimension-label--pink {
+    background-color: rgba(233, 30, 99, 0.8);
+    border-color: rgba(173, 20, 87, 1);
+}
+
+.dimension-label--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.dimension-label--clickable:active {
+    transform: translateY(0) scale(0.98);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dimension-label--small {
+        padding: 0px 8px;
+    }
+
+    .dimension-label--medium {
+        padding: 2px 12px;
+    }
+
+    .dimension-label--large {
+        padding: 2px 12px;
+    }
+
+    .dimension-label--small .dimension-label__text {
+        font-size: 12px;
+    }
+
+    .dimension-label--medium .dimension-label__text {
+        font-size: 14px;
+    }
+
+    .dimension-label--large .dimension-label__text {
+        font-size: 16px;
+    }
+}

@@ -1,0 +1,13 @@
+.dimension-labels-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.dimension-labels-counter {
+    color: var(--color-blue-m1);
+    padding: 4px 12px;
+    background: rgba(0, 84, 166, 0.1);
+    border-radius: 16px;
+}

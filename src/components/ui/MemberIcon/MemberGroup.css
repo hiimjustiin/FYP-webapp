@@ -1,0 +1,79 @@
+.member-group {
+    display: flex;
+    align-items: center;
+    overflow: visible;
+}
+
+.member-group--horizontal {
+    gap: 8px;
+}
+
+.member-group--stacked {
+    position: relative;
+    width: fit-content;
+}
+
+.member-group--stacked .member-icon {
+    position: absolute;
+}
+
+.member-group--stacked .member-group__item--stacked-0 {
+    z-index: 8;
+    left: 0;
+}
+
+.member-group--stacked .member-group__item--stacked-1 {
+    z-index: 7;
+    left: 30px;
+}
+
+.member-group--stacked .member-group__item--stacked-2 {
+    z-index: 6;
+    left: 60px;
+}
+
+.member-group--stacked .member-group__item--stacked-3 {
+    z-index: 5;
+    left: 90px;
+}
+
+.member-group--stacked .member-group__item--stacked-4 {
+    z-index: 4;
+    left: 120px;
+}
+
+.member-group--stacked .member-group__item--stacked-5 {
+    z-index: 3;
+    left: 150px;
+}
+
+.member-group--stacked .member-group__item--stacked-6 {
+    z-index: 2;
+    left: 180px;
+}
+
+.member-group--stacked .member-group__item--stacked-7 {
+    z-index: 1;
+    left: 210px;
+}
+
+.member-group--stacked .member-group__item--stacked-8 {
+    z-index: 0;
+    left: 240px;
+}
+
+.member-icon--more {
+    background: var(--color-grey-55);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.member-icon--more:hover {
+    background: var(--color-grey-80);
+    transform: scale(1.05);
+}
+
+.member-icon--more .member-icon__initials {
+    color: var(--color-white);
+    font-weight: 600;
+}

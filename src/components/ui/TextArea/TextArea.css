@@ -1,0 +1,125 @@
+.textarea-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.textarea-label {
+    margin-bottom: 8px;
+    color: var(--color-black);
+    font-weight: 500;
+}
+
+.textarea-required {
+    color: var(--color-red-ntu);
+    margin-left: 4px;
+}
+
+.textarea-wrapper {
+    position: relative;
+    border: 2px solid var(--color-grey-25);
+    border-radius: 16px;
+    background: var(--color-white);
+    transition: all 0.2s ease-in-out;
+}
+
+.textarea-wrapper--focused {
+    border-color: var(--color-blue-m1);
+    box-shadow: 0 0 0 3px rgba(0, 84, 166, 0.1);
+}
+
+.textarea-wrapper--error {
+    border-color: var(--color-red-ntu);
+}
+
+.textarea-wrapper--error.textarea-wrapper--focused {
+    box-shadow: 0 0 0 3px rgba(215, 20, 64, 0.1);
+}
+
+.textarea-wrapper--disabled {
+    background: var(--color-grey-05);
+    border-color: var(--color-grey-10);
+    cursor: not-allowed;
+}
+
+.textarea {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--color-grey-80);
+    line-height: 1.4;
+    resize: vertical;
+    outline: none;
+    min-height: 120px;
+    box-sizing: border-box;
+}
+
+.textarea::placeholder {
+    color: var(--color-grey-55);
+}
+
+.textarea:disabled {
+    cursor: not-allowed;
+    color: var(--color-grey-55);
+}
+
+.textarea--resize-none {
+    resize: none;
+}
+
+.textarea--resize-vertical {
+    resize: vertical;
+}
+
+.textarea--resize-horizontal {
+    resize: horizontal;
+}
+
+.textarea--resize-both {
+    resize: both;
+}
+
+.textarea-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    min-height: 16px;
+}
+
+.textarea-error {
+    color: var(--color-red-ntu);
+}
+
+.textarea-char-count {
+    color: var(--color-grey-55);
+    margin-left: auto;
+}
+
+.textarea-char-count--error {
+    color: var(--color-red-ntu);
+}
+
+.textarea-children {
+    margin-top: 12px;
+    padding: 16px;
+    border-top: 1px dashed var(--color-grey-25);
+}
+
+.textarea-children .file-drop-helper {
+    color: var(--color-grey-55);
+    font-size: 14px;
+    text-align: center;
+    font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .textarea {
+        padding: 12px;
+        font-size: 16px;
+        min-height: 100px;
+    }
+}
