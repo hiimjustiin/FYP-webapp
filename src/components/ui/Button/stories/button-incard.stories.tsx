@@ -3,7 +3,7 @@ import "../../../../assets/fonts/fonts.css";
 import "../../../../assets/colors/colors.css";
 import "../../../../../src/index.css";
 
-import Button from "../button";
+import Button from "../Button";
 import ChevronRight from "../../../../assets/icons/chevron_right.svg";
 import ChevronLeft from "../../../../assets/icons/chevron_left.svg";
 import ChevronDown from "../../../../assets/icons/chevron_down.svg";
