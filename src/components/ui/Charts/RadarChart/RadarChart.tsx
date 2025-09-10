@@ -66,7 +66,9 @@ const RadarChart: React.FC<RadarChartProps> = ({
     }
 
     return (
-        <div className={`radar-chart-container ${className}`}>
+        <div className={`radar-chart-container ${className}`}
+            style={{ width: '100%', height: '100%', minHeight: '400px' }}
+        >
             <ResponsiveContainer width="100%" height="100%" >
                 <RechartsRadarChart
                     cx="50%"

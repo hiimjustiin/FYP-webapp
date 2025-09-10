@@ -67,6 +67,7 @@ const sampleData: RadarDataPoint[] = [
 export const Full = () => (
     <div style={{ width: '800px', height: '600px' }}>
         <RadarChart
+            key={`full-${ALL_DIMENSIONS.length}`}
             data={sampleData}
             selectedDimensions={ALL_DIMENSIONS}
             height={500}
@@ -75,21 +76,30 @@ export const Full = () => (
 );
 
 // Filtered radar chart (5 dimensions)
-export const Filtered = () => (
-    <div style={{ width: '800px', height: '600px' }}>
-        <RadarChart
-            data={sampleData}
-            selectedDimensions={[
-                'Frame the problem with an integrative approach',
-                'Range of disciplinary perspectives',
-                'Depth of disciplinary integration',
-                'Social (society) impact',
-                'Limitations'
-            ]}
-            height={500}
-        />
-    </div>
-);
+export const Filtered = () => {
+    const selectedDims = [
+        'Frame the problem with an integrative approach',
+        'Range of disciplinary perspectives',
+        'Depth of disciplinary integration',
+        'Social (society) impact',
+        'Limitations'
+    ];
+    
+    return (
+        <div style={{ 
+            width: '800px', 
+            height: '600px',
+            padding: '16px',
+            border: '1px solid #ddd'
+        }}>
+            <RadarChart
+                key={`filtered-${selectedDims.length}`}
+                data={sampleData}
+                selectedDimensions={selectedDims}
+            />
+        </div>
+    );
+};
 
 // Interactive chart with filter controls
 export const WithFilter = () => (
