@@ -1,0 +1,128 @@
+.radar-chart-container {
+    background: var(--color-white);
+    border-radius: 16px;
+    padding: 16px;
+    font-family: 'PF Din Text Universal', Arial, sans-serif;
+}
+
+.radar-chart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: var(--color-grey-55);
+    text-align: center;
+}
+
+.radar-chart-empty p {
+    margin: 4px 0;
+}
+
+.radar-chart-with-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+.filter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.dimension-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px;
+    background: var(--color-grey-05);
+    border: 2px solid var(--color-grey-25);
+    border-radius: 16px;
+    min-height: 120px;
+    align-items: flex-start;
+    align-content: flex-start;
+}
+
+.filter-info {
+    text-align: center;
+    color: var(--color-grey-55);
+}
+
+.chart-section {
+    width: 100%;
+    height: 500px;
+    min-height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chart-section .radar-chart-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Legend styling */
+.recharts-legend-wrapper {
+    margin-top: 20px !important;
+}
+
+.recharts-legend-item {
+    margin-right: 16px !important;
+}
+
+/* Axis label styling */
+.radar-axis-label {
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .radar-chart-container {
+        padding: 12px;
+    }
+
+    .recharts-legend-wrapper {
+        font-size: 12px !important;
+    }
+
+    .filter-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-actions {
+        justify-content: center;
+    }
+    
+    .dimension-tags-container {
+        padding: 16px;
+        gap: 8px;
+    }
+    
+    .chart-section {
+        height: 400px;
+        min-height: 400px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .radar-chart-with-filter {
+        gap: 20px;
+    }
+}
