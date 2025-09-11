@@ -1,0 +1,111 @@
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    margin: 8px 0;
+}
+
+.checkbox--disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.checkbox__input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkbox__custom {
+    height: 20px;
+    width: 20px;
+    background-color: var(--color-white);
+    border: 2px solid var(--color-grey-25);
+    border-radius: 5px;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checkbox__input:checked+.checkbox__custom {
+    background-color: var(--color-blue-m2);
+    border-color: var(--color-blue-m2);
+}
+
+.checkbox__input:checked+.checkbox__custom .checkbox__checkmark {
+    display: block;
+    color: white;
+}
+
+.checkbox__custom--indeterminate {
+    background-color: var(--color-blue-m2);
+    border-color: var(--color-blue-m2);
+}
+
+.checkbox__custom--indeterminate .checkbox__indeterminate {
+    display: block;
+    color: var(--color-white);
+}
+
+.checkbox__checkmark,
+.checkbox__indeterminate {
+    display: none;
+    width: 12px;
+    height: 12px;
+}
+
+.checkbox__input:focus+.checkbox__custom {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.checkbox__input:hover:not(:disabled)+.checkbox__custom {
+    border-color: var(--color-blue-m2);
+}
+
+.checkbox__label {
+    margin-left: 8px;
+    user-select: none;
+}
+
+.checkbox--disabled .checkbox__label {
+    color: var(--color-grey-55);
+}
+
+/* Size variations */
+.checkbox-small .checkbox__custom {
+    height: 16px;
+    width: 16px;
+    border-radius: 4px;
+}
+
+.checkbox-small .checkbox__checkmark,
+.checkbox-small .checkbox__indeterminate {
+    width: 10px;
+    height: 10px;
+}
+
+.checkbox-small .checkbox__label {
+    font-size: 12px;
+}
+
+.checkbox-large .checkbox__custom {
+    height: 24px;
+    width: 24px;
+    border-radius: 6px;
+}
+
+.checkbox-large .checkbox__checkmark,
+.checkbox-large .checkbox__indeterminate {
+    width: 14px;
+    height: 14px;
+}
+
+.checkbox-large .checkbox__label {
+    font-size: 16px;
+}
