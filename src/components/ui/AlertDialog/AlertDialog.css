@@ -1,6 +1,6 @@
-.icon { 
+.icon {
     flex-shrink: 0;
-    
+
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -80,13 +80,53 @@
 }
 
 .alert-dialog__icon {
-    width: 80px;
-    height: 80px;
+    width: 88px;
+    height: 88px;
     margin: auto;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.alert-dialog__icon img {
+    display: none
+}
+
+.alert-dialog__icon--warning {
+    -webkit-mask: url("../../../assets/icons/error.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/error.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #7c223f, #a72244, #d71440, #ed1556);
+}
+
+.alert-dialog__icon--success {
+    -webkit-mask: url("../../../assets/icons/check.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/check.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #007c48, #07b152, #d5e04d);
+}
+
+.alert-dialog__icon--error {
+    -webkit-mask: url("../../../assets/icons/error.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/error.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #7c223f, #a72244, #d71440, #ed1556);
+}
+
+.alert-dialog__icon--info {
+    -webkit-mask: url("../../../assets/icons/info.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/info.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #181c62, #0054a6, #1b75bc, #5da9dd);
 }
 
 .alert-dialog__spinner {

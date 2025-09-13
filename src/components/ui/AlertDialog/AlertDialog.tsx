@@ -61,14 +61,14 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
         switch (type) {
             case 'warning':
                 return (
-                    <div className="alert-dialog__icon">
-                        <img src={WarningIcon} alt="Warning" className='icon' color='var(--color-red-ntu)' width='100%' height='100%' />
+                    <div className="alert-dialog__icon alert-dialog__icon--warning">
+                        <img src={WarningIcon} alt="Warning" className='icon' width='100%' height='100%' />
                     </div>
                 );
             case 'success':
                 return (
-                    <div className="alert-dialog__icon">
-                        <img src={SuccessIcon} alt="Success" className='icon' color='var(--color-green)' width='100%' height='100%' />
+                    <div className="alert-dialog__icon alert-dialog__icon--success">
+                        <img src={SuccessIcon} alt="Success" className='icon' width='100%' height='100%' />
                     </div>
                 );
             case 'loading':
@@ -79,14 +79,14 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
                 );
             case 'error':
                 return (
-                    <div className="alert-dialog__icon">
-                        <img src={WarningIcon} alt="Error" className='icon' color='var(--color-red-ntu)' width='100%' height='100%' />
+                    <div className="alert-dialog__icon alert-dialog__icon--error">
+                        <img src={WarningIcon} alt="Error" className='icon' width='100%' height='100%' />
                     </div>
                 );
             case 'info':
             default:
                 return (
-                    <div className="alert-dialog__icon">
+                    <div className="alert-dialog__icon alert-dialog__icon--info">
                         <img src={InfoIcon} alt="Info" className='icon' width='100%' height='100%' />
                     </div>
                 );
