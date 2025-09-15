@@ -1,0 +1,195 @@
+.icon {
+    flex-shrink: 0;
+
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+}
+
+.alert-dialog__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.alert-dialog {
+    padding: 40px 56px;
+    background: var(--color-grey-05);
+    border-radius: 8px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 600px;
+    width: 100%;
+    position: relative;
+    animation: alert-dialog-enter 0.2s ease-out;
+}
+
+@keyframes alert-dialog-enter {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.alert-dialog__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--color-black);
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.alert-dialog__close:hover {
+    scale: 1.1;
+}
+
+.alert-dialog__close:active {
+    scale: 0.9;
+}
+
+.alert-dialog__content {
+    gap: 24px;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.alert-dialog__icon {
+    width: 88px;
+    height: 88px;
+    margin: auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-dialog__icon img {
+    display: none
+}
+
+.alert-dialog__icon--warning {
+    -webkit-mask: url("../../../assets/icons/error.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/error.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #7c223f, #a72244, #d71440, #ed1556);
+}
+
+.alert-dialog__icon--success {
+    -webkit-mask: url("../../../assets/icons/check.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/check.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #007c48, #07b152, #d5e04d);
+}
+
+.alert-dialog__icon--error {
+    -webkit-mask: url("../../../assets/icons/error.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/error.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #7c223f, #a72244, #d71440, #ed1556);
+}
+
+.alert-dialog__icon--info {
+    -webkit-mask: url("../../../assets/icons/info.svg") no-repeat center;
+    -webkit-mask-size: contain;
+    mask: url("../../../assets/icons/info.svg") no-repeat center;
+    mask-size: contain;
+
+    background: linear-gradient(90deg, #181c62, #0054a6, #1b75bc, #5da9dd);
+}
+
+.alert-dialog__spinner {
+    width: 72px;
+    height: 72px;
+    border: 6px solid var(--color-grey-10);
+    border-top: 4px solid var(--color-grey-55);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.alert-dialog__title {
+    line-height: 1.2;
+}
+
+.alert-dialog__message {
+    color: var(--color-grey-55);
+    margin: 0;
+}
+
+.alert-dialog__actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.alert-dialog__button {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    min-width: 80px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .alert-dialog {
+        margin: 16px;
+    }
+
+    .alert-dialog__content {
+        padding: 32px 24px 20px;
+    }
+
+    .alert-dialog__actions {
+        padding: 0 24px 24px;
+        flex-direction: column;
+    }
+
+    .alert-dialog__button {
+        width: 100%;
+    }
+}
