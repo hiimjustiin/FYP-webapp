@@ -40,31 +40,32 @@ const LoginPage: React.FC = () => {
 
   return (
     <main
-      className="flex min-h-screen"
-      style={{
-        background:
-          "var(--Gradient-Blue, linear-gradient(0deg, #181C62 0%, #0054A6 33.3%, #1B75BC 66.6%, #5DA9DD 100%))",
-      }}
+      className="flex min-h-screen bg-gradient-blue"
     >
       {/* Left Panel: Branding & Information */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-blue-600 to-indigo-800 text-white relative">
+      <div className="hidden lg:flex lg:w-5/8 flex-col justify-between px-20 pt-24 pb-14 relative">
         <div className="flex flex-col items-start space-y-6">
-          <img src={OwlIconWhite} alt="ILA Logo" className="w-16 h-16" />
-          <h1 className="text-4xl font-bold tracking-tight">
+          <img src={OwlIconWhite} alt="ILA Logo" className="w-32 h-32" />
+          <h1 className="heading-3 text-white"
+            style={{
+              fontWeight: 'bold',
+              lineHeight: 1
+            }}
+          >
             Welcome to Interdisciplinary Learning Analytics (ILA)!
           </h1>
-          <p className="text-lg text-blue-100 max-w-md">
-            Engage in interdisciplinary learning seamlessly. We provide feedback
-            for your interdisciplinary natured essays within seconds.
+          <p className="body-1 text-white">
+            <p> Engage in interdisciplinary learning seamlessly. </p>
+            <p> We provide feedback for your interdisciplinary natured essays within seconds. </p>
           </p>
         </div>
-        <footer className="text-sm text-blue-200">
+        <footer className="body-2 text-white">
           &lt; &copy; 2025 Copyright Info &gt;
         </footer>
       </div>
 
       {/* Right Panel: Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white/90 backdrop-blur-sm">
+      <div className="w-full lg:w-3/8 flex items-center justify-center p-8 bg-white/90 backdrop-blur-sm">
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
