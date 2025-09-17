@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import OwlIconWhite from "../assets/icons/owl_white.svg";
+import InputField from "../components/ui/InputField/InputField";
+import Button from "../components/ui/Button/Button";
+import GoogleIcon from "../assets/icons/google_icon.svg";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState<string>("");
@@ -9,11 +12,59 @@ const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
+  // Individual field errors
+  const [emailError, setEmailError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const validateEmail = (email: string): string => {
+    if (!email) {
+      return "Email is required";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    return "";
+  };
+
+  const validatePassword = (password: string): string => {
+    if (!password) {
+      return "Password is required";
+    }
+    if (password.length < 6) {
+      return "Password must be at least 6 characters long";
+    }
+    return "";
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setEmailError(validateEmail(value));
+    if (error) setError("");
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    setPasswordError(validatePassword(value));
+    if (error) setError("");
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const emailValidationError = validateEmail(email);
+    const passwordValidationError = validatePassword(password);
+
+    setEmailError(emailValidationError);
+    setPasswordError(passwordValidationError);
+
+    if (emailValidationError || passwordValidationError) {
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
@@ -39,24 +90,26 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <main
-      className="flex min-h-screen bg-gradient-blue"
-    >
+    <main className="flex min-h-screen bg-gradient-blue">
       {/* Left Panel: Branding & Information */}
       <div className="hidden lg:flex lg:w-5/8 flex-col justify-between px-20 pt-24 pb-14 relative">
-        <div className="flex flex-col items-start space-y-6">
+        <div className="flex flex-col max-w-3xl items-start space-y-6">
           <img src={OwlIconWhite} alt="ILA Logo" className="w-32 h-32" />
-          <h1 className="heading-3 text-white"
+          <h1
+            className="heading-3 text-white"
             style={{
-              fontWeight: 'bold',
-              lineHeight: 1
+              fontWeight: "bold",
+              lineHeight: 1,
             }}
           >
             Welcome to Interdisciplinary Learning Analytics (ILA)!
           </h1>
           <p className="body-1 text-white">
             <p> Engage in interdisciplinary learning seamlessly. </p>
-            <p> We provide feedback for your interdisciplinary natured essays within seconds. </p>
+            <p>
+              We provide feedback for your interdisciplinary natured essays
+              within seconds.
+            </p>
           </p>
         </div>
         <footer className="body-2 text-white">
@@ -65,110 +118,107 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Right Panel: Login Form */}
-      <div className="w-full lg:w-3/8 flex items-center justify-center p-8 bg-white/90 backdrop-blur-sm">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
+      <div className="w-full lg:w-3/8 flex items-center justify-center p-8 bg-white backdrop-blur-sm">
+        <div className="max-w-xs w-full">
+          <div className="space-y-10">
+            <h2
+              className="heading-4"
+              style={{
+                fontWeight: "bold",
+                lineHeight: 1,
+              }}
+            >
               Interdisciplinary Learning Analytics
             </h2>
-            <h3 className="mt-4 text-3xl font-extrabold text-gray-900">
-              Welcome Back!
-            </h3>
-            <p className="mt-2 text-sm text-gray-600">
-              Don't have an account?{" "}
-              <a
-                href="#"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Create a new account now
-              </a>
-            </p>
-          </div>
 
-          <form className="mt-8 space-y-6" onSubmit={handleLoginSubmit}>
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-800">{error}</div>
-              </div>
-            )}
-
-            <div className="rounded-md shadow-sm -space-y-px">
+            <div className="space-y-8">
               <div>
-                <label htmlFor="email-address" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="username@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                />
+                <h3 className="heading-6">Welcome Back!</h3>
+                <p className="subtitle-3" style={{ fontSize: "14px" }}>
+                  Don't have an account?{" "}
+                  <a
+                    href="#"
+                    className="button hover:text-blue-500"
+                    style={{
+                      fontSize: "14px",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Create a new account now
+                  </a>
+                  <a>.</a>
+                </p>
               </div>
-              <div className="pt-4">
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none rounded-md relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-700 hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              <form className="mt-8" onSubmit={handleLoginSubmit}>
+                {error && (
+                  <div className="rounded-md bg-red-50 p-4 mb-4">
+                    <div className="text-sm text-red-800">{error}</div>
+                  </div>
+                )}
+
+                <div>
+                  <div className="h-20">
+                    <InputField
+                      type="email"
+                      value={email}
+                      onChange={handleEmailChange}
+                      placeholder="username@email.com"
+                      disabled={isLoading}
+                      autoComplete="email"
+                      error={emailError}
+                      required
+                    />
+                  </div>
+
+                  <div className="h-20">
+                    <InputField
+                      type="password"
+                      value={password}
+                      onChange={handlePasswordChange}
+                      placeholder="Password"
+                      disabled={isLoading}
+                      showPasswordToggle={true}
+                      autoComplete="current-password"
+                      error={passwordError}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <Button
+                    type="submit"
+                    variant="darkBlue"
+                    className="w-full flex justify-center"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Logging in..." : "Login Now"}
+                  </Button>
+                </div>
+              </form>
+
+              <Button
+                variant="white"
+                className="w-full gap-3 -mt-5 flex justify-center"
+                onClick={handleGoogleLogin}
               >
-                {isLoading ? "Logging in..." : "Login Now"}
-              </button>
-            </div>
-          </form>
+                <img src={GoogleIcon} alt="Google Icon" className="w-6 h-6" />
+                Login with Google
+              </Button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="text-center">
+                <p className="subtitle-3" style={{ color: 'var(--color-grey-55)' }}>
+                  Forget password
+                  <a
+                    className="button hover:text-blue-500 text-black underline ml-2"
+                    href="#"
+                  >
+                    Click here
+                  </a>
+                </p>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              className="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300"
-            >
-              Login with Google
-            </button>
-          </div>
-
-          <div className="text-sm text-center">
-            <a
-              href="#"
-              className="font-medium text-gray-600 hover:text-gray-500"
-            >
-              Forgot password?{" "}
-              <span className="font-bold text-indigo-600 hover:text-indigo-500">
-                Click here
-              </span>
-            </a>
           </div>
         </div>
       </div>
