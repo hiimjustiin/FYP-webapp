@@ -63,3 +63,12 @@
         var(--gradient-bg-end)
     );
 }
+
+.bg-gradient-blue {
+    background: linear-gradient(
+        var(--gradient-blue-4), 
+        var(--gradient-blue-4), 
+        var(--gradient-blue-2), 
+        var(--gradient-blue-1)
+    )
+}
