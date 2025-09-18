@@ -4,10 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "docker-compose up -d backend postgres pgadmin && pnpm dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:backend": "docker-compose up -d backend postgres pgadmin",
+    "dev:stop": "docker-compose stop",
+    "dev:logs": "docker-compose logs -f backend",
+    "dev:restart-backend": "docker-compose restart backend"
   },
   "dependencies": {
     "@ladle/react": "^5.0.3",
