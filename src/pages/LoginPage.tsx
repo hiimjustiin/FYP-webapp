@@ -136,16 +136,20 @@ const LoginPage: React.FC = () => {
                 <h3 className="heading-6">Welcome Back!</h3>
                 <p className="subtitle-3" style={{ fontSize: "14px" }}>
                   Don't have an account?{" "}
-                  <a
-                    href="#"
-                    className="button hover:text-blue-500"
+                  <button
+                    onClick={() => navigate("/register")}
+                    className="button hover:text-blue-500 underline"
                     style={{
                       fontSize: "14px",
+                      background: "none",
+                      border: "none",
+                      padding: 0,
+                      cursor: "pointer",
                       textDecoration: "underline",
                     }}
                   >
                     Create a new account now
-                  </a>
+                  </button>
                   <a>.</a>
                 </p>
               </div>
@@ -208,7 +212,10 @@ const LoginPage: React.FC = () => {
               </Button>
 
               <div className="text-center">
-                <p className="subtitle-3" style={{ color: 'var(--color-grey-55)' }}>
+                <p
+                  className="subtitle-3"
+                  style={{ color: "var(--color-grey-55)" }}
+                >
                   Forget password
                   <a
                     className="button hover:text-blue-500 text-black underline ml-2"
