@@ -2,7 +2,7 @@
 INSERT INTO users (email, password_hash, display_name, role, is_active) 
 VALUES (
   'admin@ila.com', 
-  '$2b$10$K5JzJzJzJzJzJzJzJzJzJusKpxKpxKpxKpxKpxKpxKpxKpxKpxKpx', -- password: admin123
+  '$2a$12$c6BZps2r6NfHn5O.fBFNWOtXbEQWvN19Em1eTbK9Gm9xTvClqSjTK',
   'ILA Administrator', 
   'admin', 
   true
@@ -12,7 +12,7 @@ VALUES (
 INSERT INTO users (email, password_hash, display_name, role, is_active) 
 VALUES (
   'instructor@ila.com', 
-  '$2b$10$K5JzJzJzJzJzJzJzJzJzJusKpxKpxKpxKpxKpxKpxKpxKpxKpxKpx', -- password: instructor123
+  '$2a$12$6lbdBnWkIJyzktwDnbhxgukhIU/Uf8ZxMAjblDOIehJy2ZkfSYO8W', -- password: instructor123
   'Dr. Jane Smith', 
   'instructor', 
   true
@@ -23,21 +23,21 @@ INSERT INTO users (email, password_hash, display_name, role, is_active)
 VALUES 
   (
     'student1@ila.com', 
-    '$2b$10$K5JzJzJzJzJzJzJzJzJzJusKpxKpxKpxKpxKpxKpxKpxKpxKpxKpx', -- password: student123
+    '$2a$12$z/dyPqj7UT.BGs5h39nhVe0qeUEL2EjTMBi.pZje.b8TyzihY8sVS', -- password: student123
     'Alice Johnson', 
     'student', 
     true
   ),
   (
     'student2@ila.com', 
-    '$2b$10$K5JzJzJzJzJzJzJzJzJzJusKpxKpxKpxKpxKpxKpxKpxKpxKpxKpx', -- password: student123
+    '$2a$12$z/dyPqj7UT.BGs5h39nhVe0qeUEL2EjTMBi.pZje.b8TyzihY8sVS', -- password: student123
     'Bob Wilson', 
     'student', 
     true
   ),
   (
     'student3@ila.com', 
-    '$2b$10$K5JzJzJzJzJzJzJzJzJzJusKpxKpxKpxKpxKpxKpxKpxKpxKpxKpx', -- password: student123
+    '$2a$12$z/dyPqj7UT.BGs5h39nhVe0qeUEL2EjTMBi.pZje.b8TyzihY8sVS', -- password: student123
     'Carol Davis', 
     'student', 
     true
