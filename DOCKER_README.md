@@ -164,15 +164,18 @@ The application includes comprehensive database schema with:
 ## 🚀 API Endpoints
 
 ### Authentication
+
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
 - `GET /api/auth/me` - Get current user profile
 
 ### Users
+
 - `GET /api/users` - Get all users (admin only)
 - `GET /api/users/:id` - Get user by ID
 
 ### Projects
+
 - `GET /api/projects` - Get user's projects
 - `POST /api/projects` - Create new project
 - `GET /api/projects/:id` - Get project details
@@ -180,6 +183,7 @@ The application includes comprehensive database schema with:
 - `DELETE /api/projects/:id` - Delete project
 
 ### Essays
+
 - `GET /api/essays` - Get user's essays
 - `POST /api/essays` - Create new essay
 - `GET /api/essays/:id` - Get essay details
@@ -191,6 +195,7 @@ The application includes comprehensive database schema with:
 ### Common Issues
 
 1. **Port already in use**:
+
    ```bash
    # Change ports in .env file or stop conflicting services
    docker-compose down
@@ -199,6 +204,7 @@ The application includes comprehensive database schema with:
    ```
 
 2. **Database connection issues**:
+
    ```bash
    # Reset database
    docker-compose down -v
@@ -206,6 +212,7 @@ The application includes comprehensive database schema with:
    ```
 
 3. **Permission issues**:
+
    ```bash
    # Fix file permissions
    sudo chown -R $USER:$USER .
