@@ -31,7 +31,6 @@ const Project = () => {
             initials: 'MJ',
             backgroundColor: 'purple',
         },
-        // Add more members as needed
     ]);
 
     // Convert arrays to DropdownOption format
@@ -77,7 +76,6 @@ const Project = () => {
 
     const handleSelectMember = (member: Member) => {
         console.log('Selected member:', member);
-        // You can use this to populate form fields or handle member selection
     };
 
     const handleShowAll = () => {
