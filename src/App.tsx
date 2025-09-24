@@ -17,6 +17,7 @@ import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
 import LoginPage from "./pages/LoginPage.js";
+import RegisterPage from "./pages/RegisterPage";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -28,6 +29,12 @@ const AppContent = () => {
       <Route
         path="/login"
         element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+      />
+      <Route
+        path="/register"
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />
+        }
       />
 
       {/* Protected dashboard routes */}
