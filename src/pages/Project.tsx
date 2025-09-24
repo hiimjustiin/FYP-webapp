@@ -165,7 +165,7 @@ const Project = () => {
 
     return (
         <div className="p-3 sm:p-4 lg:p-6 h-screen flex flex-col">
-            <div className="max-w-7xl flex-1 flex flex-col">
+            <div className="max-w-7xl flex-1 min-h-0 flex flex-col">
                 <div className="flex flex-col h-full gap-4">
                     {/* row: header card and searchbar within section card */}
                     <div className="flex flex-row justify-between items-center gap-4 flex-shrink-0">
@@ -186,13 +186,13 @@ const Project = () => {
                     </div>
                     
                     <div className="flex-1 min-h-0">
-                        <div className="dashboard-card px-4 py-4 w-full h-full flex flex-col">
-                            <form onSubmit={handleSubmit} className="h-full flex flex-col">
-                                <div className="flex flex-row w-full flex-1 gap-2">
+                        <div className="dashboard-card px-4 py-4 w-full h-full min-h-0 flex flex-col">
+                            <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
+                                <div className="flex flex-row w-full flex-1 min-h-0 gap-2">
                                     {/* dropdowns and submit button */}
-                                    <div className="flex flex-col flex-2/3 p-4 justify-between min-w-96">
+                                    <div className="flex min-h-0 flex-col basis-2/3 p-4">
                                         {/* Scrollable content area */}
-                                        <div className="h-full overflow-y-scroll border-2 pr-2 min-h-0">
+                                        <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                                             <div className="flex flex-col w-sm space-y-4">
                                                 {/* Course Dropdown */}
                                                 <div>
@@ -276,7 +276,7 @@ const Project = () => {
                                                         <TextArea
                                                             value={formData.description}
                                                             onChange={handleDescriptionChange}
-                                                            placeholder="Describe your project..."
+                                                            placeholder="Text"
                                                             rows={4}
                                                             maxLength={500}
                                                             showCharCount={true}
@@ -346,7 +346,7 @@ const Project = () => {
                                         </div>
                                         
                                         {/* submit button */}
-                                        <div className="flex self-end">
+                                        <div className="self-end">
                                             <Button
                                                 type="submit"
                                                 variant="red"
@@ -357,7 +357,7 @@ const Project = () => {
                                     </div>
                                     
                                     {/* Right side description */}
-                                    <div className="flex items-center justify-center flex-1/3">
+                                    <div className="flex items-center justify-center overflow-hidden basis-1/3">
                                         <div className="text-center px-4">
                                             <p className="body-2">
                                                 Some Text Description here on how to create project
