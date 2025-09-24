@@ -7,7 +7,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:backend": "docker-compose up -d backend postgres pgadmin",
+    "dev:full": "docker-compose up -d backend postgres pgadmin && pnpm dev",
+    "dev:stop": "docker-compose stop",
+    "dev:logs": "docker-compose logs -f backend",
+    "dev:restart-backend": "docker-compose restart backend"
   },
   "dependencies": {
     "@ladle/react": "^5.0.3",
@@ -24,6 +29,7 @@
   "devDependencies": {
     "@eslint/js": "^9.30.1",
     "@tailwindcss/postcss": "^4.1.11",
+    "@types/node": "^24.5.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.7.0",

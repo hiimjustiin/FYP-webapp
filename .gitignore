@@ -22,3 +22,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Docker
+docker-compose.override.yml
+
+# Database
+*.sql.backup
+backup.sql
+
+# Backend build
+backend/dist
+backend/node_modules
+
+db-schema.md
