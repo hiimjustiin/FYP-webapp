@@ -5,13 +5,14 @@ import Dropdown, { type DropdownOption } from "../components/ui/Dropdown/Dropdow
 import InputField from "../components/ui/InputField/InputField";
 import TextArea from "../components/ui/TextArea/TextArea";
 import FileDrop from "../components/ui/FileDrop/FileDrop";
+import { AlertDialog, type AlertDialogType } from "../components/ui/AlertDialog/AlertDialog";
 
 const Project = () => {
     const [formData, setFormData] = useState({
         course: '',
         projectName: '',
         projectType: '',
-        description: ''
+        text: ''
     });
 
     // Team members state for group projects
@@ -80,6 +81,33 @@ const Project = () => {
         }));
     };
 
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [alertType, setAlertType] = useState<AlertDialogType>('info');
+    const [alertTitle, setAlertTitle] = useState('Review your submission');
+    const [primaryButtonText, setPrimaryButtonText] = useState('Confirm');
+    const [secondaryButtonText, setSecondaryButtonText] = useState('Cancel');
+    const [alertMsg, setAlertMsg] = useState('');
+
+    const buildSubmissionSummary = () => {
+        const course = selectedCourse?.label || '—';
+        const ptype = selectedProjectType?.label || '—';
+        const team = selectedTeamMembers.length
+            ? selectedTeamMembers.map(m => m.name).join(', ')
+            : '—';
+        const files = selectedFiles.length
+            ? selectedFiles.map(f => `${f.name} (${(f.size / 1024).toFixed(1)} KB)`).join('\n  • ')
+            : '—';
+
+        return [
+            `Course: ${course}`,
+            `Project name: ${formData.projectName || '—'}`,
+            `Project type: ${ptype}`,
+            `Team members: ${team}`,
+            `Text: ${formData.text || '—'}`,
+            `Files:\n  • ${files === '—' ? '—' : files}`
+        ].join('\n');
+    };
+
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         console.log('Form submitted:', {
@@ -90,6 +118,7 @@ const Project = () => {
             files: selectedFiles
         });
         // Handle form submission logic here
+        openReviewDialog();
     };
 
     // SearchBar event handlers
@@ -142,11 +171,10 @@ const Project = () => {
     const handleProjectTypeSelect = (option: DropdownOption) => {
         setSelectedProjectType(option);
         handleInputChange('projectType', option.label);
-        
-        // Clear team members and files if switching to individual project
+
+        // Clear team members if switching to individual project
         if (option.id === 'individual') {
             setSelectedTeamMembers([]);
-            setSelectedFiles([]);
         }
     };
 
@@ -156,16 +184,34 @@ const Project = () => {
     };
 
     // TextArea event handler
-    const handleDescriptionChange = (value: string) => {
-        handleInputChange('description', value);
+    const handleTextChange = (value: string) => {
+        handleInputChange('text', value);
     };
 
-    // Check if group project is selected
+    const openReviewDialog = () => {
+        setAlertType('info');
+        setAlertTitle('Review your submission');
+        setPrimaryButtonText('Confirm');
+        setSecondaryButtonText('Cancel');
+        setAlertMsg(buildSubmissionSummary());
+        setIsAlertOpen(true);
+    };
+
+    const showSuccessDialog = () => {
+        setAlertType('success');
+        setAlertTitle('Submitted!');
+        setPrimaryButtonText('Close');
+        setSecondaryButtonText(''); // hide secondary button
+        setAlertMsg('Your project has been submitted successfully.');
+        setIsAlertOpen(true);
+    };
+
     const isGroupProject = selectedProjectType?.id === 'group';
+    const isIndividualProject = selectedProjectType?.id === 'individual';
 
     return (
         <div className="p-3 sm:p-4 lg:p-6 h-screen flex flex-col">
-            <div className="max-w-7xl flex-1 min-h-0 flex flex-col">
+            <div className="w-full flex-1 min-h-0 flex flex-col">
                 <div className="flex flex-col h-full gap-4">
                     {/* row: header card and searchbar within section card */}
                     <div className="flex flex-row justify-between items-center gap-4 flex-shrink-0">
@@ -173,7 +219,7 @@ const Project = () => {
                             <h5 className="heading-5">New Project</h5>
                             <p className="subtitle-2 text-grey-80">New Project Submission</p>
                         </div>
-                        <div className="dashboard-card flex flex-5/12 items-center px-4 py-2 h-20">
+                        <div className="dashboard-card basis-5/12 min-w-0 px-4 py-2 h-20 flex items-center">
                             <SearchBar
                                 placeholder="Person / Project Name"
                                 members={members}
@@ -181,10 +227,11 @@ const Project = () => {
                                 onSelect={handleSelectMember}
                                 onShowAll={handleShowAll}
                                 maxResults={5}
+                                className="w-full min-w-0"
                             />
                         </div>
                     </div>
-                    
+
                     <div className="flex-1 min-h-0">
                         <div className="dashboard-card px-4 py-4 w-full h-full min-h-0 flex flex-col">
                             <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col">
@@ -233,7 +280,7 @@ const Project = () => {
                                                     <div>
                                                         <SearchBar
                                                             placeholder="Team Member"
-                                                            members={members.filter(member => 
+                                                            members={members.filter(member =>
                                                                 !selectedTeamMembers.find(selected => selected.id === member.id)
                                                             )}
                                                             onSearch={handleTeamMemberSearch}
@@ -241,7 +288,7 @@ const Project = () => {
                                                             onShowAll={handleShowAllTeamMembers}
                                                             maxResults={5}
                                                         />
-                                                        
+
                                                         {/* Selected Team Members Display */}
                                                         {selectedTeamMembers.length > 0 && (
                                                             <div className="mt-3">
@@ -270,12 +317,12 @@ const Project = () => {
                                                     </div>
                                                 )}
 
-                                                {/* TextArea with FileDrop - Only for Group Projects */}
-                                                {isGroupProject && (
+                                                {/* TextArea with FileDrop */}
+                                                {(isGroupProject || isIndividualProject) && (
                                                     <div>
                                                         <TextArea
-                                                            value={formData.description}
-                                                            onChange={handleDescriptionChange}
+                                                            value={formData.text}
+                                                            onChange={handleTextChange}
                                                             placeholder="Text"
                                                             rows={4}
                                                             maxLength={500}
@@ -283,7 +330,7 @@ const Project = () => {
                                                             className="w-full"
                                                         >
                                                             {/* FileDrop integrated within TextArea */}
-                                                            {formData.description.trim() === '' && (
+                                                            {formData.text.trim() === '' && (
                                                                 <div className="mt-2">
                                                                     <FileDrop
                                                                         onFilesSelected={handleFilesSelected}
@@ -295,8 +342,8 @@ const Project = () => {
                                                             )}
                                                         </TextArea>
 
-                                                        {/* Separate FileDrop when description has content */}
-                                                        {formData.description.trim() !== '' && (
+                                                        {/* Separate FileDrop when text has content */}
+                                                        {formData.text.trim() !== '' && (
                                                             <div className="mt-4">
                                                                 <label className="block caption mb-2">
                                                                     Attach Files
@@ -344,7 +391,7 @@ const Project = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        
+
                                         {/* submit button */}
                                         <div className="self-end">
                                             <Button
@@ -355,7 +402,7 @@ const Project = () => {
                                             </Button>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Right side description */}
                                     <div className="flex items-center justify-center overflow-hidden basis-1/3">
                                         <div className="text-center px-4">
@@ -370,6 +417,30 @@ const Project = () => {
                     </div>
                 </div>
             </div>
+            <AlertDialog
+                isOpen={isAlertOpen}
+                type={alertType}
+                title={alertTitle}
+                message={alertMsg}
+                primaryButtonText={primaryButtonText}
+                secondaryButtonText={secondaryButtonText}
+                onPrimaryAction={() => {
+                    if (alertType === 'info') {
+                        showSuccessDialog();
+                    } else {
+                        setIsAlertOpen(false);
+                        setAlertType('info');
+                        setAlertTitle('Review your submission');
+                        setPrimaryButtonText('Confirm');
+                        setSecondaryButtonText('Cancel');
+                    }
+                }}
+                onSecondaryAction={() => setIsAlertOpen(false)}
+                onClose={() => setIsAlertOpen(false)}
+                showCloseButton
+                closeOnOverlayClick
+            />
+
         </div>
     );
 };
