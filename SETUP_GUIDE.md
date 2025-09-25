@@ -273,6 +273,20 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
    docker-compose logs -f [service-name]
    ```
 
+5. **No seed users available (bypass login temporarily)**
+   ```bash
+   # Enable the frontend auth bypass in your local environment
+   echo "VITE_BYPASS_AUTH=true" >> .env.local
+
+   # Optionally customise the mocked user (all optional)
+   echo "VITE_BYPASS_USER_EMAIL=developer@ila.dev" >> .env.local
+   echo "VITE_BYPASS_USER_NAME=Developer User" >> .env.local
+   echo "VITE_BYPASS_USER_ROLE=admin" >> .env.local
+   ```
+   With the bypass flag enabled, the React app automatically treats you as logged in
+   without contacting the backend. Disable `VITE_BYPASS_AUTH` once your database is
+   seeded so that real authentication is used again.
+
 ## 🎯 Next Steps
 
 ### Ready to Implement
