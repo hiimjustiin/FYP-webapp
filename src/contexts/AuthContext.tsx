@@ -29,15 +29,33 @@ export const useAuth = () => {
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
+const BYPASS_AUTH =
+  (import.meta.env.VITE_BYPASS_AUTH ?? "").toLowerCase() === "true";
+
+const createBypassUser = (overrides: Partial<User> = {}): User => ({
+  id: "dev-bypass",
+  email: import.meta.env.VITE_BYPASS_USER_EMAIL || "developer@ila.dev",
+  display_name:
+    import.meta.env.VITE_BYPASS_USER_NAME || "Developer User",
+  role: import.meta.env.VITE_BYPASS_USER_ROLE || "admin",
+  ...overrides,
+});
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(BYPASS_AUTH);
+  const [user, setUser] = useState<User | null>(
+    BYPASS_AUTH ? createBypassUser() : null
+  );
+  const [loading, setLoading] = useState<boolean>(!BYPASS_AUTH);
 
   // Check if user is already logged in on app start
   useEffect(() => {
+    if (BYPASS_AUTH) {
+      return;
+    }
+
     const checkAuthStatus = async () => {
       const token = localStorage.getItem("ila-token");
       if (token) {
@@ -73,11 +91,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       setLoading(false);
     };
-
     checkAuthStatus();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    if (BYPASS_AUTH) {
+      setIsAuthenticated(true);
+      setUser(
+        createBypassUser({
+          email,
+          display_name:
+            import.meta.env.VITE_BYPASS_USER_NAME ||
+            (email ? email.split("@")[0] : undefined),
+        })
+      );
+      setLoading(false);
+      return true;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
