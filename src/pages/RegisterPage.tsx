@@ -37,7 +37,7 @@ const RegisterPage: React.FC = () => {
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return "Please enter a valid email address";
+      return "Invalid email address";
     }
     return "";
   };
@@ -251,7 +251,7 @@ const RegisterPage: React.FC = () => {
                 )}
 
                 {/* Two Column Layout for Name Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="h-20">
                     <InputField
                       type="text"
@@ -284,7 +284,7 @@ const RegisterPage: React.FC = () => {
                 </div>
 
                 {/* Two Column Layout for Email and School */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="h-20">
                     <InputField
                       type="email"
@@ -315,7 +315,7 @@ const RegisterPage: React.FC = () => {
                 </div>
 
                 {/* Two Column Layout for Password Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
                   <div className="h-24">
                     <InputField
                       type="password"
