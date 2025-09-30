@@ -7,10 +7,10 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-gradient-background">
+    <div className="h-screen overflow-hidden bg-gradient-background">
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 min-h-screen">{children}</main>
+        <main className="flex-1 overflow-y-auto h-screen">{children}</main>
       </div>
     </div>
   );
