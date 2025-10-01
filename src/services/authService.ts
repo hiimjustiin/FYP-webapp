@@ -25,6 +25,11 @@ export interface RegisterResponse {
 export const authService = {
   async register(data: RegisterData): Promise<RegisterResponse> {
     try {
+      console.log(
+        "Attempting to register at:",
+        `${API_BASE_URL}/auth/register`
+      );
+
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: {
@@ -54,7 +59,13 @@ export const authService = {
 
       return result;
     } catch (error) {
+      console.error("Registration error details:", error);
       if (error instanceof Error) {
+        if (error.message === "Failed to fetch") {
+          throw new Error(
+            "Unable to connect to server. Please ensure the backend is running."
+          );
+        }
         throw error;
       }
       throw new Error("Network error. Please check your connection.");
