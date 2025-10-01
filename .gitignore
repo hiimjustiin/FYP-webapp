@@ -41,3 +41,4 @@ backend/dist
 backend/node_modules
 
 db-schema.md
+ila-pk.pem
