@@ -5,6 +5,7 @@ import OwlIconWhite from "../assets/icons/owl_white.svg";
 import InputField from "../components/ui/InputField/InputField";
 import Button from "../components/ui/Button/Button";
 import GoogleIcon from "../assets/icons/google_icon.svg";
+import { authService } from "../services/authService";
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -142,30 +143,37 @@ const RegisterPage: React.FC = () => {
     setError("");
 
     try {
-      // TODO: Replace with actual registration API call
-      console.log("Registration data:", {
+      // Call the registration API
+      const result = await authService.register({
         email: formData.email,
         password: formData.password,
-        display_name: `${formData.firstName} ${formData.lastName}`,
-        role: "student",
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         school: formData.school,
       });
 
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Auto-login after successful registration
-      const success = await login(formData.email, formData.password);
-      if (success) {
-        navigate("/");
+      if (result.success) {
+        // Auto-login after successful registration
+        const success = await login(formData.email, formData.password);
+        if (success) {
+          navigate("/");
+        } else {
+          setError(
+            "Registration successful but auto-login failed. Please login manually."
+          );
+          // Redirect to login page after 2 seconds
+          setTimeout(() => navigate("/login"), 2000);
+        }
       } else {
-        setError(
-          "Registration successful but auto-login failed. Please login manually."
-        );
+        setError(result.message || "Registration failed. Please try again.");
       }
     } catch (error) {
       console.error("Registration error:", error);
-      setError("Registration failed. Please try again.");
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Registration failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
