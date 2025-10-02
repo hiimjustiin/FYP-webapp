@@ -6,6 +6,7 @@ import RadarChart, { type RadarDataPoint } from "../components/ui/Charts/RadarCh
 import DimensionLabel from "../components/ui/DimensionLabel/DimensionLabel";
 import Button from "../components/ui/Button/Button";
 
+import { DimensionLineChart } from "../components/ui/Charts/LineChart/LineChart";
 import ChevronUp from "../assets/icons/chevron_up.svg";
 import ChevronDown from "../assets/icons/chevron_down.svg";
 
@@ -24,6 +25,18 @@ const DIMENSIONS: Dimension[] = [
     { id: "8", label: "Social (society) impact", variant: "navy" },
     { id: "9", label: "Limitations", variant: "pink" },
 ];
+
+const VARIANT_COLORS: Record<Variant, string> = {
+    lime: "var(--color-green-m1)",
+    yellow: "var(--color-yellow)",
+    purple: "var(--color-purple)",
+    teal: "var(--color-teal)",
+    blue: "var(--color-blue-m3)",
+    grey: "var(--color-grey-80)",
+    green: "var(--color-green-p1)",
+    navy: "var(--color-blue-ntu)",
+    pink: "var(--color-red-p2)",
+};
 
 type DimensionScore = {
     personal: number;   // 0..10
@@ -250,7 +263,23 @@ const Home = () => {
         });
     }, [selectedSubmission]);
 
-    /** Filtering state for the chips (default first 5 like Storybook) */
+    /** Build line chart data from the currently selected project */
+    const lineChartData = useMemo(() => {
+        if (!selectedProject) return [];
+        const subs = selectedProject.submissions
+            .slice()
+            .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+        return subs.map(s => {
+            const row: { submission: string;[key: string]: number | string } = { submission: s.name };
+            DIMENSIONS.forEach(d => {
+                row[d.id] = s.scores[d.id]?.personal ?? 0; // personal; swap to classAvg if you prefer
+            });
+            return row;
+        });
+    }, [selectedProject]);
+
+    /** Filtering state for the chips (default first 5) */
     const [selectedDimIds, setSelectedDimIds] = useState<string[]>(
         DIMENSIONS.slice(0, 5).map(d => d.id)
     );
@@ -269,6 +298,18 @@ const Home = () => {
             selectedDimIds
                 .map(id => DIMENSIONS.find(d => d.id === id)?.label)
                 .filter(Boolean) as string[],
+        [selectedDimIds]
+    );
+
+    /** Dimension config for line chart (id, text, color) */
+    const chartDimsForLine = useMemo(
+        () =>
+            selectedDimIds
+                .map(id => {
+                    const d = DIMENSIONS.find(x => x.id === id);
+                    return d ? { id: d.id, text: d.label, color: VARIANT_COLORS[d.variant] } : null;
+                })
+                .filter(Boolean) as { id: string; text: string; color: string }[],
         [selectedDimIds]
     );
 
@@ -510,60 +551,130 @@ const Home = () => {
                         {/* Report details */}
                         {hasSubmission && (
                             <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                {/* LEFT: Filter + Radar */}
-                                <div className="dashboard-card px-6 py-4 flex flex-col">
-                                    {/* Filter header + actions */}
-                                    <div className="rounded-2xl border border-[var(--color-grey-25)] bg-[var(--color-grey-05)]/40 p-3">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="subtitle-2">Select Dimensions</div>
-                                            <div className="flex items-center gap-3">
-                                                <Button
-                                                    variant="green"
-                                                    onClick={selectAllDims}
-                                                >
-                                                    Select All
-                                                </Button>
-                                                <Button
-                                                    variant="grey"
-                                                    onClick={clearAllDims}
-                                                >
-                                                    Clear All
-                                                </Button>
+                                <div className="flex flex-col gap-4">
+                                    {/* LEFT: Filter + Radar */}
+                                    <div className="dashboard-card px-6 py-4 flex flex-col">
+                                        {/* Filter header + actions */}
+                                        <div className="rounded-2xl border border-[var(--color-grey-25)] bg-[var(--color-grey-05)]/40 p-3">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="subtitle-2">Select Dimensions</div>
+                                                <div className="flex items-center gap-3">
+                                                    <Button
+                                                        variant="green"
+                                                        onClick={selectAllDims}
+                                                    >
+                                                        Select All
+                                                    </Button>
+                                                    <Button
+                                                        variant="grey"
+                                                        onClick={clearAllDims}
+                                                    >
+                                                        Clear All
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Chips */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {DIMENSIONS.map(d => {
+                                                    const isSelected = selectedDimIds.includes(d.id);
+                                                    return (
+                                                        <DimensionLabel
+                                                            key={d.id}
+                                                            text={d.label}
+                                                            variant={d.variant}
+                                                            size="small"
+                                                            isSelected={isSelected}
+                                                            onClick={() => toggleDim(d.id)}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Small counter */}
+                                            <div className="mt-2">
+                                                <p className="caption">{selectedDimIds.length} of {DIMENSIONS.length} dimensions selected</p>
                                             </div>
                                         </div>
 
-                                        {/* Chips */}
-                                        <div className="flex flex-wrap gap-2">
-                                            {DIMENSIONS.map(d => {
-                                                const isSelected = selectedDimIds.includes(d.id);
-                                                return (
-                                                    <DimensionLabel
-                                                        key={d.id}
-                                                        text={d.label}
-                                                        variant={d.variant}
-                                                        size="small"
-                                                        isSelected={isSelected}
-                                                        onClick={() => toggleDim(d.id)}
-                                                    />
-                                                );
-                                            })}
-                                        </div>
-
-                                        {/* Small counter like the Storybook */}
-                                        <div className="mt-2">
-                                            <p className="caption">{selectedDimIds.length} of {DIMENSIONS.length} dimensions selected</p>
+                                        {/* Radar */}
+                                        <div>
+                                            <RadarChart
+                                                key={selectedTexts.join("|")}
+                                                data={radarData}
+                                                selectedDimensions={selectedTexts}
+                                                maxScore={10}
+                                                height={420}
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* Radar */}
-                                    <div>
-                                        <RadarChart
-                                            key={selectedTexts.join("|")}
-                                            data={radarData}
-                                            selectedDimensions={selectedTexts}
-                                            maxScore={10}
-                                            height={420}
-                                        />
+                                    <div className="dashboard-card px-6 py-4 flex flex-col">
+                                        {/* Filter header + actions */}
+                                        <div className="rounded-2xl border border-[var(--color-grey-25)] bg-[var(--color-grey-05)]/40 p-3">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="subtitle-2">Select Dimensions</div>
+                                                <div className="flex items-center gap-3">
+                                                    <Button
+                                                        variant="green"
+                                                        onClick={selectAllDims}
+                                                    >
+                                                        Select All
+                                                    </Button>
+                                                    <Button
+                                                        variant="grey"
+                                                        onClick={clearAllDims}
+                                                    >
+                                                        Clear All
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            {/* Chips */}
+                                            <div className="flex flex-wrap gap-2">
+                                                {DIMENSIONS.map(d => {
+                                                    const isSelected = selectedDimIds.includes(d.id);
+                                                    return (
+                                                        <DimensionLabel
+                                                            key={d.id}
+                                                            text={d.label}
+                                                            variant={d.variant}
+                                                            size="small"
+                                                            isSelected={isSelected}
+                                                            onClick={() => toggleDim(d.id)}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Small counter */}
+                                            <div className="mt-2">
+                                                <p className="caption">{selectedDimIds.length} of {DIMENSIONS.length} dimensions selected</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Line Chart */}
+                                        <div>
+                                            {chartDimsForLine.length === 0 ? (
+                                                <div className="h-[420px] flex flex-col items-center justify-center text-[var(--color-grey-55)] gap-3">
+                                                    <p className="text-[var(--color-grey-55)] subtitle-2">No dimensions selected.</p>
+                                                    <p className="text-[var(--color-grey-55)] caption">Select at least one dimension to display the line chart.</p>
+                                                </div>
+                                            ) : lineChartData.length === 0 ? (
+                                                <div className="h-[420px] flex items-center justify-center text-[var(--color-grey-55)] subtitle-2">
+                                                    No submissions found for this project.
+                                                </div>
+                                            ) : (
+                                                <DimensionLineChart
+                                                    key={chartDimsForLine.map(d => d.id).join("|")}
+                                                    data={lineChartData}
+                                                    dimensions={chartDimsForLine}
+                                                    title={`Performance Across Submissions — ${chartDimsForLine.length} dims`}
+                                                    showArea={true}
+                                                    height={420}
+                                                />
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
