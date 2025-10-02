@@ -248,7 +248,6 @@ const Home = () => {
         ? (selectedProject?.submissions ?? []).find(s => s.id === selectedSubmissionId) ?? null
         : null;
 
-    const hasProject = !!selectedProject;
     const hasSubmission = !!selectedSubmission;
 
     /** Build radar data from the currently selected submission */
