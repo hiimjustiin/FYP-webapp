@@ -114,6 +114,8 @@ jobs:
             # Pull latest changes or clone repository
             if [ -d ".git" ]; then
               echo "Repository exists, pulling latest changes..."
+              # Update remote URL to use token for authentication
+              git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
               git fetch origin
               git reset --hard origin/main
               git pull origin main
