@@ -90,17 +90,18 @@ fi
 
 echo ""
 echo "============================================"
-echo "Step 3: Verify Docker Compose"
+echo "Step 3: Install Docker Compose v2"
 echo "============================================"
 if sudo docker compose version &> /dev/null; then
     echo "Docker Compose already available: $(sudo docker compose version)"
 else
-    echo "Docker Compose not found, trying to install plugin..."
-    sudo dnf install -y docker-compose-plugin || {
-        echo "Plugin not available in repos, Docker Compose v2 should be bundled with Docker"
-        echo "Checking if docker compose works..."
-        sudo docker compose version || echo "Docker Compose installation may need manual intervention"
-    }
+    echo "Docker Compose v2 not found, installing manually..."
+    # Download and install Docker Compose v2 as a Docker CLI plugin
+    DOCKER_CONFIG=${DOCKER_CONFIG:-/usr/local/lib/docker}
+    sudo mkdir -p $DOCKER_CONFIG/cli-plugins
+    sudo curl -SL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+    sudo chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+    echo "Docker Compose installed: $(sudo docker compose version)"
 fi
 
 echo ""
