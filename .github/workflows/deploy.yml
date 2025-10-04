@@ -76,14 +76,17 @@ jobs:
             
             echo ""
             echo "============================================"
-            echo "Step 4: Install Docker Compose Plugin"
+            echo "Step 4: Verify Docker Compose"
             echo "============================================"
-            if ! docker compose version &> /dev/null; then
-              echo "Installing Docker Compose plugin..."
-              sudo dnf install -y docker-compose-plugin
-              echo "Docker Compose installed: $(docker compose version)"
+            if sudo docker compose version &> /dev/null; then
+              echo "Docker Compose already available: $(sudo docker compose version)"
             else
-              echo "Docker Compose already installed: $(docker compose version)"
+              echo "Docker Compose not found, trying to install plugin..."
+              sudo dnf install -y docker-compose-plugin || {
+                echo "Plugin not available in repos, Docker Compose v2 should be bundled with Docker"
+                echo "Checking if docker compose works..."
+                sudo docker compose version || echo "Docker Compose installation may need manual intervention"
+              }
             fi
             
             echo ""
