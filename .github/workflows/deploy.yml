@@ -118,7 +118,7 @@ jobs:
               git pull origin main
             else
               echo "Cloning repository..."
-              git clone https://github.com/${{ github.repository }}.git .
+              git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git .
             fi
             
             echo ""
