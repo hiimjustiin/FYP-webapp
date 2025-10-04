@@ -3,20 +3,27 @@
 Choose your deployment method:
 
 ## 🚀 Automated CI/CD (Production)
+
 **GitHub Actions** - Auto-deploy on push to main
+
 ```bash
 git push origin main
 ```
+
 📖 Setup guide: [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 
 ## 🔧 Semi-Automated (Development)
+
 **Docker Script** - One command deployment
+
 ```bash
 ./deploy-docker.sh
 ```
 
 ## 🛠️ Manual (Quick Updates)
+
 **Direct Docker** - On EC2 instance
+
 ```bash
 ssh -i ila-pk.pem ec2-user@13.212.19.144
 cd ~/ila-webapp

@@ -3,24 +3,29 @@
 ## ✅ What Was Created
 
 ### GitHub Actions CI/CD
+
 - **`.github/workflows/deploy.yml`** - Automated deployment pipeline
 - Triggers on push to `main` branch
 - Can be manually triggered from GitHub UI
 - Handles: SSH connection, code pull, Docker build, container restart
 
 ### Deployment Scripts
+
 - **`deploy-docker.sh`** - Automated Docker deployment script (executable)
 - Replaces the old PM2-based scripts
 - Installs Docker, builds images, starts containers
 
 ### Documentation
+
 - **`GITHUB_ACTIONS_SETUP.md`** - Complete CI/CD setup guide
+
   - How to configure GitHub Secrets
   - Troubleshooting
   - Security best practices
   - Advanced features (notifications, rollback, staging)
 
 - **`DOCKER_DEPLOYMENT.md`** - Comprehensive Docker deployment reference
+
   - All deployment methods
   - Container management
   - Database backup/restore
@@ -33,6 +38,7 @@
   - Access URLs
 
 ### Configuration
+
 - **`ecosystem.config.js`** - PM2 config (kept for reference but not used with Docker)
 - Your existing Docker files work perfectly:
   - `docker-compose.yml` - Development/base configuration
@@ -47,6 +53,7 @@
 ### For Production: GitHub Actions (CI/CD)
 
 **Why?**
+
 - ✅ Fully automated - deploy by pushing to main
 - ✅ Consistent deployments
 - ✅ Audit trail (who deployed what, when)
@@ -57,10 +64,11 @@
 **Setup Steps:**
 
 1. **Add GitHub Secrets** (one-time setup)
-   
+
    Go to: https://github.com/ntu-dsair/ila-webapp/settings/secrets/actions
-   
+
    Add:
+
    ```
    EC2_SSH_KEY = (contents of ila-pk.pem)
    POSTGRES_PASSWORD = (strong password)
@@ -68,18 +76,20 @@
    ```
 
 2. **Ensure EC2 is ready**
+
    ```bash
    # Run once to prepare EC2
    ./deploy-docker.sh
    ```
 
 3. **Deploy automatically**
+
    ```bash
    git add .
    git commit -m "Enable GitHub Actions deployment"
    git push origin main
    ```
-   
+
    Watch deployment: https://github.com/ntu-dsair/ila-webapp/actions
 
 ---
@@ -162,6 +172,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 Before using GitHub Actions, add these secrets:
 
 ### 1. EC2_SSH_KEY
+
 ```bash
 # Copy your PEM key content
 cat ila-pk.pem
@@ -169,6 +180,7 @@ cat ila-pk.pem
 ```
 
 ### 2. POSTGRES_PASSWORD
+
 ```bash
 # Generate strong password
 openssl rand -base64 20
@@ -176,6 +188,7 @@ openssl rand -base64 20
 ```
 
 ### 3. JWT_SECRET
+
 ```bash
 # Generate JWT secret
 openssl rand -base64 32
@@ -239,6 +252,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ### GitHub Actions fails to connect to EC2
 
 **Solution:**
+
 - Verify `EC2_SSH_KEY` secret contains full PEM key content
 - Check EC2 Security Group allows SSH (port 22) from anywhere
 - Ensure EC2 instance is running
@@ -282,19 +296,20 @@ docker compose restart postgres
 
 ## 📚 Documentation Index
 
-| Document | Purpose |
-|----------|---------|
-| **GITHUB_ACTIONS_SETUP.md** | Complete CI/CD setup guide |
-| **DOCKER_DEPLOYMENT.md** | Docker deployment reference |
-| **DEPLOYMENT_QUICKSTART.md** | Quick reference card |
-| **DOCKER_README.md** | Docker basics |
-| **SETUP_GUIDE.md** | Local development setup |
+| Document                     | Purpose                     |
+| ---------------------------- | --------------------------- |
+| **GITHUB_ACTIONS_SETUP.md**  | Complete CI/CD setup guide  |
+| **DOCKER_DEPLOYMENT.md**     | Docker deployment reference |
+| **DEPLOYMENT_QUICKSTART.md** | Quick reference card        |
+| **DOCKER_README.md**         | Docker basics               |
+| **SETUP_GUIDE.md**           | Local development setup     |
 
 ---
 
 ## 🎉 You're All Set!
 
 Your deployment pipeline is now configured with:
+
 - ✅ Automated CI/CD via GitHub Actions
 - ✅ Docker containerization
 - ✅ Semi-automated deployment script
@@ -303,6 +318,7 @@ Your deployment pipeline is now configured with:
 - ✅ Production-ready configuration
 
 **Next Steps:**
+
 1. Add GitHub Secrets
 2. Push to main branch
 3. Watch your app auto-deploy! 🚀
@@ -312,11 +328,13 @@ Your deployment pipeline is now configured with:
 ## 📞 Need Help?
 
 Check the documentation:
+
 - Setup issues → [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)
 - Docker issues → [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md)
 - Quick reference → [DEPLOYMENT_QUICKSTART.md](DEPLOYMENT_QUICKSTART.md)
 
 Check logs:
+
 ```bash
 # Application logs
 docker compose logs -f

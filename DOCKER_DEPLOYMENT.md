@@ -4,11 +4,11 @@ Complete guide for deploying the ILA WebApp using Docker on AWS EC2.
 
 ## 🎯 Deployment Options
 
-| Method | Use Case | Complexity | Automation |
-|--------|----------|------------|------------|
-| **GitHub Actions** | Production | Medium | ✅ Full |
-| **Docker Script** | Development/Testing | Low | ⚡ Semi |
-| **Manual Docker** | Quick Updates | Low | ❌ Manual |
+| Method             | Use Case            | Complexity | Automation |
+| ------------------ | ------------------- | ---------- | ---------- |
+| **GitHub Actions** | Production          | Medium     | ✅ Full    |
+| **Docker Script**  | Development/Testing | Low        | ⚡ Semi    |
+| **Manual Docker**  | Quick Updates       | Low        | ❌ Manual  |
 
 ---
 
@@ -20,13 +20,15 @@ Automated CI/CD with GitHub Actions - deploys automatically on push to `main`.
 
 1. **Add GitHub Secrets:**
    Go to: `Settings` → `Secrets and variables` → `Actions`
-   
+
    Add these secrets:
+
    - `EC2_SSH_KEY`: Content of your `ila-pk.pem` file
    - `POSTGRES_PASSWORD`: Strong database password
    - `JWT_SECRET`: Generated with `openssl rand -base64 32`
 
 2. **Push to main branch:**
+
    ```bash
    git push origin main
    ```
@@ -147,12 +149,12 @@ VITE_API_BASE_URL=http://13.212.19.144:3001/api
 
 Configure inbound rules in AWS Console:
 
-| Type | Protocol | Port | Source | Description |
-|------|----------|------|--------|-------------|
-| SSH | TCP | 22 | Your IP | SSH access |
-| HTTP | TCP | 3000 | 0.0.0.0/0 | Frontend |
-| HTTP | TCP | 3001 | 0.0.0.0/0 | Backend API |
-| HTTPS | TCP | 443 | 0.0.0.0/0 | SSL (optional) |
+| Type  | Protocol | Port | Source    | Description    |
+| ----- | -------- | ---- | --------- | -------------- |
+| SSH   | TCP      | 22   | Your IP   | SSH access     |
+| HTTP  | TCP      | 3000 | 0.0.0.0/0 | Frontend       |
+| HTTP  | TCP      | 3001 | 0.0.0.0/0 | Backend API    |
+| HTTPS | TCP      | 443  | 0.0.0.0/0 | SSL (optional) |
 
 **Note:** PostgreSQL (5432) should NOT be exposed externally - it runs within the Docker network.
 
@@ -565,6 +567,7 @@ If you encounter issues:
 5. Review GitHub Actions logs (if using CI/CD)
 
 For urgent issues, SSH to EC2 and check:
+
 ```bash
 docker compose ps        # Container status
 docker compose logs      # Application logs

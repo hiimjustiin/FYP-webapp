@@ -62,14 +62,17 @@ Add the following secrets:
 #### Required Secrets:
 
 1. **`EC2_SSH_KEY`**
+
    - Your PEM key content (contents of `ila-pk.pem`)
    - Copy entire content including `-----BEGIN RSA PRIVATE KEY-----` and `-----END RSA PRIVATE KEY-----`
+
    ```bash
    cat ila-pk.pem
    # Copy the output and paste as secret value
    ```
 
 2. **`POSTGRES_PASSWORD`**
+
    - Secure password for PostgreSQL database
    - Example: `MySecureP@ssw0rd2025!`
 
@@ -88,6 +91,7 @@ Add the following secrets:
 The workflow file is already created at `.github/workflows/deploy.yml`.
 
 **What it does:**
+
 - ✅ Triggers on push to `main` branch
 - ✅ Can be manually triggered from GitHub Actions tab
 - ✅ Connects to EC2 via SSH
@@ -101,6 +105,7 @@ The workflow file is already created at `.github/workflows/deploy.yml`.
 For the first deployment, you can either:
 
 **Option A: Manual deployment first** (Recommended)
+
 ```bash
 # From your local machine
 ./deploy-docker.sh
@@ -109,6 +114,7 @@ For the first deployment, you can either:
 This ensures everything is set up correctly before enabling automated deployments.
 
 **Option B: Push to GitHub and let Actions deploy**
+
 ```bash
 git add .
 git commit -m "Set up GitHub Actions deployment"
@@ -129,6 +135,7 @@ nano .env
 ```
 
 Update these values:
+
 ```env
 # Use strong passwords in production
 POSTGRES_PASSWORD=<your-secure-password>
@@ -140,6 +147,7 @@ VITE_API_BASE_URL=http://13.212.19.144:3001/api
 ```
 
 Restart containers after updating:
+
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml restart
 ```
@@ -147,6 +155,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml restart
 ## Workflow Triggers
 
 ### Automatic Deployment (on push to main)
+
 ```bash
 git add .
 git commit -m "Your changes"
@@ -155,6 +164,7 @@ git push origin main
 ```
 
 ### Manual Deployment (from GitHub UI)
+
 1. Go to GitHub repository
 2. Click **Actions** tab
 3. Select **Deploy to AWS EC2** workflow
@@ -165,11 +175,13 @@ git push origin main
 ## Monitoring Deployments
 
 ### View GitHub Actions Logs
+
 1. Go to GitHub repository → **Actions** tab
 2. Click on the workflow run
 3. Click on the job to see detailed logs
 
 ### View Application Logs on EC2
+
 ```bash
 ssh -i ila-pk.pem ec2-user@13.212.19.144
 cd ~/ila-webapp
@@ -187,6 +199,7 @@ docker compose logs --tail=100
 ```
 
 ### Check Container Status
+
 ```bash
 ssh -i ila-pk.pem ec2-user@13.212.19.144
 
@@ -205,16 +218,19 @@ docker stats
 ### Deployment Fails with SSH Error
 
 **Problem:** Cannot connect to EC2
+
 ```
 Error: Permission denied (publickey)
 ```
 
 **Solution:**
+
 1. Verify `EC2_SSH_KEY` secret is correctly set with full PEM key content
 2. Ensure EC2 Security Group allows SSH (port 22) from GitHub Actions IPs
 3. GitHub Actions uses dynamic IPs - consider using a bastion host or GitHub's IP ranges
 
 **Better solution:** Use AWS Systems Manager Session Manager instead of SSH:
+
 - No open SSH port needed
 - More secure
 - Requires IAM role setup
@@ -222,6 +238,7 @@ Error: Permission denied (publickey)
 ### Deployment Succeeds but App Doesn't Work
 
 **Check containers:**
+
 ```bash
 ssh -i ila-pk.pem ec2-user@13.212.19.144
 cd ~/ila-webapp
@@ -229,12 +246,14 @@ docker compose ps
 ```
 
 **Check logs:**
+
 ```bash
 docker compose logs backend
 docker compose logs frontend
 ```
 
 **Common issues:**
+
 - Database not initialized: `docker compose logs postgres`
 - Environment variables incorrect: Check `.env` file
 - Ports blocked: Verify EC2 Security Groups
@@ -271,13 +290,16 @@ docker stats
 ## Security Best Practices
 
 ### 1. Secrets Management
+
 - ✅ Never commit secrets to Git
 - ✅ Use GitHub Secrets for sensitive data
 - ✅ Rotate secrets regularly
 - ✅ Use different secrets for dev/staging/prod
 
 ### 2. EC2 Security Group
+
 Configure inbound rules:
+
 ```
 SSH (22)       - Your IP only
 HTTP (3000)    - 0.0.0.0/0 (or your domain)
@@ -287,6 +309,7 @@ PostgreSQL (5432) - No external access (Docker network only)
 ```
 
 ### 3. Docker Security
+
 ```bash
 # Run containers as non-root user
 # Update Dockerfile with:
@@ -300,6 +323,7 @@ docker compose pull
 ```
 
 ### 4. Environment Variables
+
 - Use strong passwords (20+ characters, mixed case, numbers, symbols)
 - Generate JWT secret: `openssl rand -base64 32`
 - Use different values for each environment
@@ -316,7 +340,7 @@ Add to `.github/workflows/deploy.yml`:
     # Wait for services to be ready
     timeout 60 bash -c 'until curl -f http://${{ env.EC2_HOST }}:3001/api/health; do sleep 2; done'
     echo "✅ Backend is healthy"
-    
+
     curl -f http://${{ env.EC2_HOST }}:3000 || exit 1
     echo "✅ Frontend is healthy"
 ```
@@ -358,7 +382,7 @@ on:
   workflow_dispatch:
     inputs:
       commit:
-        description: 'Commit SHA to rollback to'
+        description: "Commit SHA to rollback to"
         required: true
 
 jobs:
@@ -408,6 +432,7 @@ To add a staging environment:
 ## Support
 
 If you encounter issues:
+
 1. Check GitHub Actions logs
 2. Check EC2 application logs: `docker compose logs -f`
 3. Verify EC2 Security Groups
