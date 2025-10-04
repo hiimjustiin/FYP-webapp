@@ -1,0 +1,144 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to main branch
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  EC2_HOST: 13.212.19.144
+  EC2_USER: ec2-user
+  DEPLOY_PATH: /home/ec2-user/ila-webapp
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ env.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} "echo 'SSH connection successful'"
+
+      - name: Deploy Application
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << 'ENDSSH'
+            set -e
+            
+            echo "============================================"
+            echo "Starting Deployment Process"
+            echo "============================================"
+            
+            # Navigate to deployment directory
+            cd ${{ env.DEPLOY_PATH }} || {
+              echo "Deployment directory not found. Creating..."
+              mkdir -p ${{ env.DEPLOY_PATH }}
+              cd ${{ env.DEPLOY_PATH }}
+            }
+            
+            # Pull latest changes or clone repository
+            if [ -d ".git" ]; then
+              echo "Pulling latest changes..."
+              git fetch origin
+              git reset --hard origin/main
+              git pull origin main
+            else
+              echo "Cloning repository..."
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+            
+            # Create .env file if it doesn't exist
+            if [ ! -f ".env" ]; then
+              echo "Creating .env file..."
+              cat > .env << 'EOF'
+          # Database Configuration
+          POSTGRES_DB=ila_db
+          POSTGRES_USER=ila_user
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_PORT=5432
+
+          # Application Configuration
+          NODE_ENV=production
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          CORS_ORIGIN=http://${{ env.EC2_HOST }}:3000
+
+          # Port Configuration
+          FRONTEND_PORT=3000
+          BACKEND_PORT=3001
+
+          # Production Database URL
+          DATABASE_URL=postgresql://ila_user:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ila_db
+
+          # API Base URL
+          VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
+          EOF
+            fi
+            
+            echo "============================================"
+            echo "Stopping existing containers..."
+            echo "============================================"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml down || true
+            
+            echo "============================================"
+            echo "Building Docker images..."
+            echo "============================================"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+            
+            echo "============================================"
+            echo "Starting containers..."
+            echo "============================================"
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            
+            echo "============================================"
+            echo "Cleaning up old images..."
+            echo "============================================"
+            docker image prune -f
+            
+            echo "============================================"
+            echo "Deployment completed successfully!"
+            echo "============================================"
+            echo "Container status:"
+            docker compose ps
+            
+            echo ""
+            echo "Application URLs:"
+            echo "Frontend: http://${{ env.EC2_HOST }}:3000"
+            echo "Backend API: http://${{ env.EC2_HOST }}:3001"
+            echo "============================================"
+          ENDSSH
+
+      - name: Verify Deployment
+        run: |
+          echo "Waiting for services to start..."
+          sleep 15
+          
+          # Check if backend is responding
+          echo "Checking backend health..."
+          curl -f http://${{ env.EC2_HOST }}:3001/health || echo "⚠️ Backend health check failed"
+          
+          # Check if frontend is responding
+          echo "Checking frontend..."
+          curl -f -I http://${{ env.EC2_HOST }}:3000 || echo "⚠️ Frontend health check failed"
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "✅ Deployment successful!"
+          echo "🌐 Frontend: http://${{ env.EC2_HOST }}:3000"
+          echo "🔌 Backend: http://${{ env.EC2_HOST }}:3001/api"
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check the logs above for details."
