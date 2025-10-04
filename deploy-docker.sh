@@ -117,6 +117,7 @@ echo "============================================"
 echo "Step 5: Create deployment directory"
 echo "============================================"
 mkdir -p /home/ec2-user/ila-webapp
+sudo chown -R ec2-user:ec2-user /home/ec2-user/ila-webapp
 cd /home/ec2-user/ila-webapp
 echo "Deployment directory ready"
 
@@ -175,25 +176,25 @@ echo ""
 echo "============================================"
 echo "Step 8: Stop existing containers"
 echo "============================================"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml down || true
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml down || true
 
 echo ""
 echo "============================================"
 echo "Step 9: Build Docker images"
 echo "============================================"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
 
 echo ""
 echo "============================================"
 echo "Step 10: Start containers"
 echo "============================================"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 echo ""
 echo "============================================"
 echo "Step 11: Clean up old images"
 echo "============================================"
-docker image prune -f
+sudo docker image prune -f
 
 echo ""
 echo "============================================"
@@ -208,7 +209,7 @@ sleep 5
 
 echo ""
 echo "Container logs (last 10 lines):"
-docker compose logs --tail=10
+sudo docker compose logs --tail=10
 
 echo ""
 echo "============================================"

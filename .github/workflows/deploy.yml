@@ -40,16 +40,76 @@ jobs:
             echo "Starting Deployment Process"
             echo "============================================"
             
-            # Navigate to deployment directory
-            cd ${{ env.DEPLOY_PATH }} || {
-              echo "Deployment directory not found. Creating..."
-              mkdir -p ${{ env.DEPLOY_PATH }}
-              cd ${{ env.DEPLOY_PATH }}
-            }
+            echo ""
+            echo "============================================"
+            echo "Step 1: System Updates"
+            echo "============================================"
+            sudo dnf update -y
+            
+            echo ""
+            echo "============================================"
+            echo "Step 2: Install Git"
+            echo "============================================"
+            if ! command -v git &> /dev/null; then
+              echo "Installing Git..."
+              sudo dnf install -y git
+              echo "Git installed: $(git --version)"
+            else
+              echo "Git already installed: $(git --version)"
+            fi
+            
+            echo ""
+            echo "============================================"
+            echo "Step 3: Install Docker"
+            echo "============================================"
+            if ! command -v docker &> /dev/null; then
+              echo "Installing Docker..."
+              sudo dnf install -y docker
+              sudo systemctl enable docker
+              sudo systemctl start docker
+              echo "Docker installed: $(docker --version)"
+            else
+              echo "Docker already installed: $(docker --version)"
+              # Ensure Docker is running
+              sudo systemctl start docker || true
+            fi
+            
+            echo ""
+            echo "============================================"
+            echo "Step 4: Install Docker Compose Plugin"
+            echo "============================================"
+            if ! docker compose version &> /dev/null; then
+              echo "Installing Docker Compose plugin..."
+              sudo dnf install -y docker-compose-plugin
+              echo "Docker Compose installed: $(docker compose version)"
+            else
+              echo "Docker Compose already installed: $(docker compose version)"
+            fi
+            
+            echo ""
+            echo "============================================"
+            echo "Step 5: Configure Docker permissions"
+            echo "============================================"
+            sudo usermod -aG docker ec2-user || true
+            echo "ec2-user added to docker group"
+            
+            echo ""
+            echo "============================================"
+            echo "Step 6: Create deployment directory"
+            echo "============================================"
+            sudo mkdir -p ${{ env.DEPLOY_PATH }}
+            sudo chown -R ec2-user:ec2-user ${{ env.DEPLOY_PATH }}
+            echo "Deployment directory ready: ${{ env.DEPLOY_PATH }}"
+            
+            echo ""
+            echo "============================================"
+            echo "Step 7: Clone or update repository"
+            echo "============================================"
+            cd ${{ env.DEPLOY_PATH }}
             
             # Pull latest changes or clone repository
             if [ -d ".git" ]; then
-              echo "Pulling latest changes..."
+              echo "Repository exists, pulling latest changes..."
               git fetch origin
               git reset --hard origin/main
               git pull origin main
@@ -58,7 +118,10 @@ jobs:
               git clone https://github.com/${{ github.repository }}.git .
             fi
             
-            # Create .env file if it doesn't exist
+            echo ""
+            echo "============================================"
+            echo "Step 8: Set up environment variables"
+            echo "============================================"
             if [ ! -f ".env" ]; then
               echo "Creating .env file..."
               cat > .env << 'EOF'
@@ -85,31 +148,36 @@ jobs:
           EOF
             fi
             
+            echo ""
             echo "============================================"
-            echo "Stopping existing containers..."
+            echo "Step 9: Stop existing containers"
             echo "============================================"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml down || true
+            sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml down || true
             
+            echo ""
             echo "============================================"
-            echo "Building Docker images..."
+            echo "Step 10: Build Docker images"
             echo "============================================"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+            sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
             
+            echo ""
             echo "============================================"
-            echo "Starting containers..."
+            echo "Step 11: Start containers"
             echo "============================================"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             
+            echo ""
             echo "============================================"
-            echo "Cleaning up old images..."
+            echo "Step 12: Clean up old images"
             echo "============================================"
-            docker image prune -f
+            sudo docker image prune -f
             
+            echo ""
             echo "============================================"
             echo "Deployment completed successfully!"
             echo "============================================"
             echo "Container status:"
-            docker compose ps
+            sudo docker compose ps
             
             echo ""
             echo "Application URLs:"
