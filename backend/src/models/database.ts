@@ -9,10 +9,10 @@ export const pool = new Pool({
   // Only use SSL for external cloud databases (not Docker)
   // Check if DATABASE_URL contains a cloud provider or explicitly enable SSL
   ssl:
-    process.env.DATABASE_URL?.includes('amazonaws.com') ||
-    process.env.DATABASE_URL?.includes('azure.com') ||
-    process.env.DATABASE_URL?.includes('neon.tech') ||
-    process.env.POSTGRES_SSL === 'true'
+    process.env.DATABASE_URL?.includes("amazonaws.com") ||
+    process.env.DATABASE_URL?.includes("azure.com") ||
+    process.env.DATABASE_URL?.includes("neon.tech") ||
+    process.env.POSTGRES_SSL === "true"
       ? { rejectUnauthorized: false }
       : false,
   max: 20,

@@ -35,8 +35,7 @@ const BYPASS_AUTH =
 const createBypassUser = (overrides: Partial<User> = {}): User => ({
   id: "dev-bypass",
   email: import.meta.env.VITE_BYPASS_USER_EMAIL || "developer@ila.dev",
-  display_name:
-    import.meta.env.VITE_BYPASS_USER_NAME || "Developer User",
+  display_name: import.meta.env.VITE_BYPASS_USER_NAME || "Developer User",
   role: import.meta.env.VITE_BYPASS_USER_ROLE || "admin",
   ...overrides,
 });
