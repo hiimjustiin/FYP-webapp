@@ -128,8 +128,9 @@ jobs:
             echo "============================================"
             echo "Step 8: Set up environment variables"
             echo "============================================"
-            echo "Creating .env.production file..."
-            cat > .env.production << 'EOF'
+            if [ ! -f ".env" ]; then
+              echo "Creating .env file..."
+              cat > .env << 'EOF'
           # Database Configuration
           POSTGRES_DB=ila_db
           POSTGRES_USER=ila_user
@@ -150,11 +151,8 @@ jobs:
 
           # API Base URL
           VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
-          
-          # Frontend Production Settings
-          VITE_BYPASS_AUTH=false
           EOF
-          echo "✓ Production environment file created"
+            fi
             
             echo ""
             echo "============================================"
