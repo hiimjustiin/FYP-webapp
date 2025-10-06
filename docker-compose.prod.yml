@@ -1,23 +1,32 @@
 version: "3.8"
 
 # Production overrides for docker-compose.yml
+# Uses .env.production file for environment variables
 services:
   postgres:
+    env_file:
+      - .env.production
     environment:
-      # Use the same POSTGRES_PASSWORD variable from .env file
+      # Use the same POSTGRES_PASSWORD variable from .env.production file
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ila_password}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     restart: always
 
   backend:
+    env_file:
+      - .env.production
     environment:
       NODE_ENV: production
-      # Use the same JWT_SECRET variable from .env file
+      # Use the same JWT_SECRET variable from .env.production file
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      DATABASE_URL: ${DATABASE_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN}
     restart: always
 
   frontend:
+    env_file:
+      - .env.production
     restart: always
 
   # Remove pgAdmin from production
