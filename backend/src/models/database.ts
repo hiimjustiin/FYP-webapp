@@ -6,8 +6,13 @@ dotenv.config();
 // Database connection pool
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Only use SSL for external cloud databases (not Docker)
+  // Check if DATABASE_URL contains a cloud provider or explicitly enable SSL
   ssl:
-    process.env.NODE_ENV === "production"
+    process.env.DATABASE_URL?.includes('amazonaws.com') ||
+    process.env.DATABASE_URL?.includes('azure.com') ||
+    process.env.DATABASE_URL?.includes('neon.tech') ||
+    process.env.POSTGRES_SSL === 'true'
       ? { rejectUnauthorized: false }
       : false,
   max: 20,
