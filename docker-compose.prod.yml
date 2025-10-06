@@ -4,7 +4,8 @@ version: "3.8"
 services:
   postgres:
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PRODUCTION_PASSWORD:-change-this-in-production}
+      # Use the same POSTGRES_PASSWORD variable from .env file
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ila_password}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     restart: always
@@ -12,7 +13,8 @@ services:
   backend:
     environment:
       NODE_ENV: production
-      JWT_SECRET: ${JWT_PRODUCTION_SECRET:-change-this-secret-in-production}
+      # Use the same JWT_SECRET variable from .env file
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
     restart: always
 
   frontend:
