@@ -8,8 +8,8 @@
         "start": "node dist/server.js",
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
-        "db:migrate": "node-pg-migrate up --migrations-dir ./migrations",
-        "db:migrate:down": "node-pg-migrate down --migrations-dir ./migrations",
+        "db:migrate": "tsx src/utils/migrate.ts",
+        "db:migrate:down": "tsx src/utils/migrate.ts down",
         "db:migrate:create": "node-pg-migrate create --migrations-dir ./migrations",
         "db:seed": "tsx src/utils/seed.ts"
     },

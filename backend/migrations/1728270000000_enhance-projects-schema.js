@@ -10,7 +10,7 @@
  * Date: 2025-10-07
  */
 
-exports.up = (pgm) => {
+export async function up(pgm) {
   // Add new columns to projects table
   pgm.addColumns('projects', {
     course_id: {
@@ -92,9 +92,9 @@ exports.up = (pgm) => {
   pgm.sql(`
     COMMENT ON TABLE project_members IS 'Team members for group projects. For individual projects, owner_id in projects table is sufficient.';
   `);
-};
+}
 
-exports.down = (pgm) => {
+export async function down(pgm) {
   // Drop indexes
   pgm.dropIndex('project_files', 'uploaded_by');
   pgm.dropIndex('project_files', 'project_id');
@@ -106,4 +106,4 @@ exports.down = (pgm) => {
 
   // Drop columns from projects table
   pgm.dropColumns('projects', ['essay_text', 'project_type', 'course_id']);
-};
+}
