@@ -43,12 +43,24 @@ pnpm start
 ### Setup
 
 ```bash
-# Run migrations
+# Run migrations (applies schema changes)
 pnpm db:migrate
+
+# Rollback last migration (if needed)
+pnpm db:migrate:down
+
+# Create a new migration
+pnpm db:migrate:create my-migration-name
 
 # Seed database
 pnpm db:seed
 ```
+
+**📖 For detailed migration documentation, see:**
+- [MIGRATIONS.md](./MIGRATIONS.md) - Complete migration guide
+- [MIGRATIONS_QUICKREF.md](./MIGRATIONS_QUICKREF.md) - Quick reference
+
+**⚠️ Important:** Never edit `database/init/01-init.sql` for existing databases. Use migrations instead.
 
 ### Schema
 
