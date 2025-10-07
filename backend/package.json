@@ -8,7 +8,9 @@
         "start": "node dist/server.js",
         "dev": "tsx watch src/server.ts",
         "build": "tsc",
-        "db:migrate": "tsx src/utils/migrate.ts",
+        "db:migrate": "node-pg-migrate up --migrations-dir ./migrations",
+        "db:migrate:down": "node-pg-migrate down --migrations-dir ./migrations",
+        "db:migrate:create": "node-pg-migrate create --migrations-dir ./migrations",
         "db:seed": "tsx src/utils/seed.ts"
     },
     "dependencies": {
@@ -31,6 +33,7 @@
         "@types/pg": "^8.10.9",
         "@types/morgan": "^1.9.9",
         "@types/node": "^20.10.0",
+        "node-pg-migrate": "^7.0.0",
         "tsx": "^4.6.2",
         "typescript": "^5.3.3"
     },
