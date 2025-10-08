@@ -18,7 +18,11 @@ services:
     networks:
       - ila-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ila_user}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-ila_user} -d ${POSTGRES_DB:-ila_db}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -55,21 +59,6 @@ services:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
       - backend
-    networks:
-      - ila-network
-
-  # pgAdmin (Optional - for database management)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: ila-pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ila.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-    ports:
-      - "${PGADMIN_PORT:-5050}:80"
-    depends_on:
-      - postgres
     networks:
       - ila-network
 
