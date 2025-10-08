@@ -18,6 +18,7 @@ import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
 import LoginPage from "./pages/LoginPage.js";
 import RegisterPage from "./pages/RegisterPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -34,6 +35,12 @@ const AppContent = () => {
         path="/register"
         element={
           isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />
+        }
+      />
+      <Route
+        path="/verify-email"
+        element={
+          isAuthenticated ? <Navigate to="/" replace /> : <VerifyEmailPage />
         }
       />
 
