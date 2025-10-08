@@ -628,13 +628,13 @@ const Home = () => {
             {/* Add New Project card (clickable) */}
             <div
               className="dashboard-card basis-5/12 min-w-0 px-6 py-5 flex items-center justify-center cursor-pointer hover:scale-102 active:scale-98 transition-all"
-              onClick={() => navigate("/project")}
+              onClick={() => navigate("/project/new")}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  navigate("/project");
+                  navigate("/project/new");
                 }
               }}
             >

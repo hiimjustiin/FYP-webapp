@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import Button from "../components/ui/Button/Button";
-import SearchBar, { type Member } from "../components/ui/SearchBar/SearchBar";
-import Dropdown, { type DropdownOption } from "../components/ui/Dropdown/Dropdown";
-import InputField from "../components/ui/InputField/InputField";
-import TextArea from "../components/ui/TextArea/TextArea";
-import FileDrop from "../components/ui/FileDrop/FileDrop";
-import { AlertDialog, type AlertDialogType } from "../components/ui/AlertDialog/AlertDialog";
+import Button from "../../components/ui/Button/Button";
+import SearchBar, { type Member } from "../../components/ui/SearchBar/SearchBar";
+import Dropdown, { type DropdownOption } from "../../components/ui/Dropdown/Dropdown";
+import InputField from "../../components/ui/InputField/InputField";
+import TextArea from "../../components/ui/TextArea/TextArea";
+import FileDrop from "../../components/ui/FileDrop/FileDrop";
+import { AlertDialog, type AlertDialogType } from "../../components/ui/AlertDialog/AlertDialog";
 
-const Project = () => {
+const ProjectNew = () => {
     const [formData, setFormData] = useState({
         course: '',
         projectName: '',
@@ -445,4 +445,4 @@ const Project = () => {
     );
 };
 
-export default Project;
+export default ProjectNew;

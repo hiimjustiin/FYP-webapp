@@ -12,7 +12,8 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import Home from "./pages/Home.js";
-import Project from "./pages/Project.js";
+import ProjectLanding from "./pages/Project/ProjectLanding.js";
+import ProjectNew from "./pages/Project/ProjectNew.js";
 import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
@@ -53,7 +54,17 @@ const AppContent = () => {
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              <Project />
+              <ProjectLanding />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/project/new"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ProjectNew />
             </DashboardLayout>
           </ProtectedRoute>
         }
