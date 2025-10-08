@@ -9,7 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
+# Install all dependencies (including devDependencies for migrations)
+# This ensures node-pg-migrate is available for running migrations
 RUN pnpm install --frozen-lockfile
 
 # Copy source code

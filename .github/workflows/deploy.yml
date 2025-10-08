@@ -174,7 +174,16 @@ jobs:
             
             echo ""
             echo "============================================"
-            echo "Step 12: Clean up old images"
+            echo "Step 12: Run database migrations"
+            echo "============================================"
+            echo "Waiting for database to be ready..."
+            sleep 10
+            echo "Running migrations..."
+            sudo docker compose exec -T backend pnpm db:migrate || echo "⚠️ Migration failed or no pending migrations"
+            
+            echo ""
+            echo "============================================"
+            echo "Step 13: Clean up old images"
             echo "============================================"
             sudo docker image prune -f
             
