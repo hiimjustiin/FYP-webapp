@@ -29,11 +29,6 @@ services:
       - .env.production
     restart: always
 
-  # Remove pgAdmin from production
-  pgadmin:
-    profiles:
-      - dev-tools
-
 volumes:
   postgres_prod_data:
     driver: local
