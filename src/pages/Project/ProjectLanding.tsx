@@ -78,7 +78,7 @@ const formatDate = (iso: string) =>
 const ProjectLanding = () => {
     const navigate = useNavigate();
 
-    // SearchBar state (you can wire this to a backend later)
+    // SearchBar state (wire this to a backend later)
     const [query, setQuery] = useState("");
 
     // Simple filter: match against course, name, member names
@@ -126,7 +126,7 @@ const ProjectLanding = () => {
         ]);
 
         return [header, ...rows];
-    }, [filteredProjects, navigate]);
+    }, [filteredProjects]);
 
     // SearchBar handlers
     const handleSearch = (q: string) => setQuery(q);
