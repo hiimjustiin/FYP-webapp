@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "dev:backend": "docker-compose up -d backend postgres pgadmin",
-    "dev:full": "docker-compose up -d backend postgres pgadmin && pnpm dev",
+    "dev:backend": "docker-compose up -d backend postgres",
+    "dev:full": "docker-compose up -d backend postgres && pnpm dev",
     "dev:stop": "docker-compose stop",
     "dev:logs": "docker-compose logs -f backend",
     "dev:restart-backend": "docker-compose restart backend"
