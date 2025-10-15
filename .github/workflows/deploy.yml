@@ -161,9 +161,25 @@ jobs:
             
             echo ""
             echo "============================================"
-            echo "Step 9: Stop existing containers"
+            echo "Step 9: Clean up Docker resources"
             echo "============================================"
+            echo "Stopping existing containers..."
             sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml down || true
+            
+            echo "Removing dangling images..."
+            sudo docker image prune -f || true
+            
+            echo "Removing unused containers..."
+            sudo docker container prune -f || true
+            
+            echo "Removing unused volumes..."
+            sudo docker volume prune -f || true
+            
+            echo "Removing build cache..."
+            sudo docker builder prune -f || true
+            
+            echo "Current disk usage:"
+            df -h
             
             echo ""
             echo "============================================"
@@ -188,9 +204,13 @@ jobs:
             
             echo ""
             echo "============================================"
-            echo "Step 13: Clean up old images"
+            echo "Step 13: Clean up old Docker resources"
             echo "============================================"
-            sudo docker image prune -f
+            echo "Removing dangling images..."
+            sudo docker image prune -af --filter "until=24h"
+            
+            echo "Final disk usage:"
+            df -h
             
             echo ""
             echo "============================================"
