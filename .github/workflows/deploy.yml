@@ -128,9 +128,8 @@ jobs:
             echo "============================================"
             echo "Step 8: Set up environment variables"
             echo "============================================"
-            if [ ! -f ".env" ]; then
-              echo "Creating .env file..."
-              cat > .env << 'EOF'
+            echo "Creating .env file..."
+            cat > .env << 'EOF'
           # Database Configuration
           POSTGRES_DB=ila_db
           POSTGRES_USER=ila_user
@@ -142,6 +141,13 @@ jobs:
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           CORS_ORIGIN=http://${{ env.EC2_HOST }}:3000
 
+          # Email Configuration (SMTP)
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_SECURE=${{ secrets.SMTP_SECURE }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+
           # Port Configuration
           FRONTEND_PORT=3000
           BACKEND_PORT=3001
@@ -152,7 +158,6 @@ jobs:
           # API Base URL
           VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
           EOF
-            fi
             
             echo ""
             echo "============================================"
