@@ -5,6 +5,7 @@ import { hashPassword, comparePassword } from "../utils/password.js";
 import { generateToken, generateRefreshToken } from "../utils/jwt.js";
 import { User, CreateUserInput } from "../models/User.js";
 import { AuthRequest } from "../middleware/auth.js";
+import { generateOTP, sendOTPEmail, sendWelcomeEmail } from "../utils/email.js";
 
 // Validation rules
 export const registerValidation = [
@@ -34,7 +35,7 @@ export const loginValidation = [
   body("password").notEmpty().withMessage("Password is required"),
 ];
 
-// Register new user
+// Register new user (Step 1: Create account and send OTP)
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const errors = validationResult(req);
@@ -68,29 +69,41 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     // Hash password
     const hashedPassword = password ? await hashPassword(password) : null;
 
-    // Create user
+    // Create user (not verified yet)
     const result = await query(
-      `INSERT INTO users (email, password_hash, display_name, role) 
-       VALUES ($1, $2, $3, $4) 
+      `INSERT INTO users (email, password_hash, display_name, role, is_active) 
+       VALUES ($1, $2, $3, $4, false) 
        RETURNING id, email, display_name, role, created_at`,
       [email, hashedPassword, display_name, role]
     );
 
     const newUser = result.rows[0] as User;
-    const token = generateToken(newUser);
-    const refreshToken = generateRefreshToken(newUser);
+
+    // Generate and store OTP
+    const otpCode = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await query(
+      `INSERT INTO email_verification_otps (email, otp_code, expires_at) 
+       VALUES ($1, $2, $3)`,
+      [email, otpCode, expiresAt]
+    );
+
+    // Send OTP email
+    const emailSent = await sendOTPEmail(email, otpCode);
+
+    if (!emailSent) {
+      console.warn("Failed to send OTP email, but registration proceeding");
+    }
 
     res.status(201).json({
       success: true,
       data: {
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          display_name: newUser.display_name,
-          role: newUser.role,
-        },
-        token,
-        refreshToken,
+        message:
+          "Registration successful. Please check your email for the verification code.",
+        userId: newUser.id,
+        email: newUser.email,
+        requiresVerification: true,
       },
     });
   } catch (error) {
@@ -204,6 +217,224 @@ export const me = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error("Profile error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+// Verify OTP and activate account
+export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Email and OTP are required" },
+      });
+      return;
+    }
+
+    // Find the OTP record
+    const otpResult = await query(
+      `SELECT id, email, otp_code, expires_at, verified_at, attempts 
+       FROM email_verification_otps 
+       WHERE email = $1 AND otp_code = $2 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [email, otp]
+    );
+
+    if (otpResult.rows.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid OTP code" },
+      });
+      return;
+    }
+
+    const otpRecord = otpResult.rows[0];
+
+    // Check if already verified
+    if (otpRecord.verified_at) {
+      res.status(400).json({
+        success: false,
+        error: { message: "OTP has already been used" },
+      });
+      return;
+    }
+
+    // Check if expired
+    if (new Date(otpRecord.expires_at) < new Date()) {
+      res.status(400).json({
+        success: false,
+        error: { message: "OTP has expired. Please request a new one." },
+      });
+      return;
+    }
+
+    // Check attempts (max 5)
+    if (otpRecord.attempts >= 5) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Too many attempts. Please request a new OTP." },
+      });
+      return;
+    }
+
+    // Mark OTP as verified
+    await query(
+      `UPDATE email_verification_otps 
+       SET verified_at = now(), attempts = attempts + 1 
+       WHERE id = $1`,
+      [otpRecord.id]
+    );
+
+    // Activate user account and set email_verified
+    const userResult = await query(
+      `UPDATE users 
+       SET is_active = true, email_verified = now() 
+       WHERE email = $1 
+       RETURNING id, email, display_name, role`,
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "User not found" },
+      });
+      return;
+    }
+
+    const user = userResult.rows[0] as User;
+
+    // Send welcome email
+    await sendWelcomeEmail(email, user.display_name || "User");
+
+    // Generate tokens
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    res.json({
+      success: true,
+      data: {
+        message: "Email verified successfully!",
+        user: {
+          id: user.id,
+          email: user.email,
+          display_name: user.display_name,
+          role: user.role,
+        },
+        token,
+        refreshToken,
+      },
+    });
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+// Resend OTP
+export const resendOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Email is required" },
+      });
+      return;
+    }
+
+    // Check if user exists
+    const userResult = await query(
+      "SELECT id, email, is_active FROM users WHERE email = $1",
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "User not found" },
+      });
+      return;
+    }
+
+    const user = userResult.rows[0];
+
+    // Check if already verified
+    if (user.is_active) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Email is already verified" },
+      });
+      return;
+    }
+
+    // Check rate limit (allow resend only after 1 minute)
+    const recentOTP = await query(
+      `SELECT id, created_at 
+       FROM email_verification_otps 
+       WHERE email = $1 
+       ORDER BY created_at DESC 
+       LIMIT 1`,
+      [email]
+    );
+
+    if (recentOTP.rows.length > 0) {
+      const lastOTPTime = new Date(recentOTP.rows[0].created_at);
+      const now = new Date();
+      const diffMinutes = (now.getTime() - lastOTPTime.getTime()) / 1000 / 60;
+
+      if (diffMinutes < 1) {
+        res.status(429).json({
+          success: false,
+          error: {
+            message: "Please wait before requesting a new OTP",
+            retryAfter: Math.ceil(60 - diffMinutes * 60), // seconds
+          },
+        });
+        return;
+      }
+    }
+
+    // Generate and store new OTP
+    const otpCode = generateOTP();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await query(
+      `INSERT INTO email_verification_otps (email, otp_code, expires_at) 
+       VALUES ($1, $2, $3)`,
+      [email, otpCode, expiresAt]
+    );
+
+    // Send OTP email
+    const emailSent = await sendOTPEmail(email, otpCode);
+
+    if (!emailSent) {
+      res.status(500).json({
+        success: false,
+        error: { message: "Failed to send email. Please try again later." },
+      });
+      return;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: "OTP has been resent to your email",
+      },
+    });
+  } catch (error) {
+    console.error("Resend OTP error:", error);
     res.status(500).json({
       success: false,
       error: { message: "Internal server error" },

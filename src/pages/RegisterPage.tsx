@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
 import OwlIconWhite from "../assets/icons/owl_white.svg";
 import InputField from "../components/ui/InputField/InputField";
 import Button from "../components/ui/Button/Button";
@@ -29,7 +28,6 @@ const RegisterPage: React.FC = () => {
     confirmPassword: "",
   });
 
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const validateEmail = (email: string): string => {
@@ -153,17 +151,8 @@ const RegisterPage: React.FC = () => {
       });
 
       if (result.success) {
-        // Auto-login after successful registration
-        const success = await login(formData.email, formData.password);
-        if (success) {
-          navigate("/");
-        } else {
-          setError(
-            "Registration successful but auto-login failed. Please login manually."
-          );
-          // Redirect to login page after 2 seconds
-          setTimeout(() => navigate("/login"), 2000);
-        }
+        // Redirect to email verification page
+        navigate("/verify-email", { state: { email: formData.email } });
       } else {
         setError(result.message || "Registration failed. Please try again.");
       }

@@ -40,6 +40,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      # SMTP Configuration for Email
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
