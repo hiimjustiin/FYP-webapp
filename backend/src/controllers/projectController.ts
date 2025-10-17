@@ -21,8 +21,25 @@ export const createProjectValidation = [
     .withMessage("Description cannot exceed 1000 characters"),
   body("status")
     .optional()
-    .isIn(["active", "completed", "archived"])
+    .isIn([
+      "Draft",
+      "Submitted",
+      "Completed",
+      "active",
+      "completed",
+      "archived",
+    ])
     .withMessage("Invalid status"),
+  body("course_code")
+    .optional()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage("Course code cannot exceed 50 characters"),
+  body("submission_date")
+    .optional()
+    .isISO8601()
+    .withMessage("Invalid submission date format"),
+  body("interq_score").optional().isString(),
 ];
 
 export const updateProjectValidation = [
@@ -38,8 +55,25 @@ export const updateProjectValidation = [
     .withMessage("Description cannot exceed 1000 characters"),
   body("status")
     .optional()
-    .isIn(["active", "completed", "archived"])
+    .isIn([
+      "Draft",
+      "Submitted",
+      "Completed",
+      "active",
+      "completed",
+      "archived",
+    ])
     .withMessage("Invalid status"),
+  body("course_code")
+    .optional()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage("Course code cannot exceed 50 characters"),
+  body("submission_date")
+    .optional()
+    .isISO8601()
+    .withMessage("Invalid submission date format"),
+  body("interq_score").optional().isString(),
 ];
 
 // Get all projects for current user
@@ -56,7 +90,8 @@ export const getProjects = async (
       return;
     }
 
-    const result = await query(
+    // Get projects
+    const projectsResult = await query(
       `SELECT p.*, u.display_name as owner_name
        FROM projects p
        LEFT JOIN users u ON p.owner_id = u.id
@@ -67,9 +102,45 @@ export const getProjects = async (
       [req.user.id]
     );
 
+    // Get all members for these projects
+    const projectIds = projectsResult.rows.map((p) => p.id);
+    let membersData: {
+      project_id: string;
+      user_id: string;
+      role: string;
+      email: string;
+      display_name: string;
+    }[] = [];
+
+    if (projectIds.length > 0) {
+      const membersResult = await query(
+        `SELECT pm.project_id, pm.user_id, pm.role, u.email, u.display_name
+         FROM project_members pm
+         LEFT JOIN users u ON pm.user_id = u.id
+         WHERE pm.project_id = ANY($1)`,
+        [projectIds]
+      );
+      membersData = membersResult.rows;
+    }
+
+    // Group members by project
+    const membersByProject = membersData.reduce((acc, member) => {
+      if (!acc[member.project_id]) {
+        acc[member.project_id] = [];
+      }
+      acc[member.project_id]!.push(member);
+      return acc;
+    }, {} as Record<string, typeof membersData>);
+
+    // Attach members to projects
+    const projects = projectsResult.rows.map((project) => ({
+      ...project,
+      members: membersByProject[project.id] || [],
+    }));
+
     res.json({
       success: true,
-      data: { projects: result.rows },
+      data: { projects },
     });
   } catch (error) {
     console.error("Get projects error:", error);
@@ -168,15 +239,27 @@ export const createProject = async (
     const {
       title,
       description,
-      status = "active",
+      status = "Draft",
+      course_code,
+      submission_date,
+      interq_score,
       settings = {},
     }: CreateProjectInput = req.body;
 
     const result = await query(
-      `INSERT INTO projects (title, description, owner_id, status, settings)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO projects (title, description, owner_id, status, course_code, submission_date, interq_score, settings)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [title, description, req.user.id, status, JSON.stringify(settings)]
+      [
+        title,
+        description,
+        req.user.id,
+        status,
+        course_code,
+        submission_date,
+        interq_score,
+        JSON.stringify(settings),
+      ]
     );
 
     const project = result.rows[0] as Project;
@@ -268,6 +351,24 @@ export const updateProject = async (
     if (updates.settings !== undefined) {
       updateFields.push(`settings = $${paramCount}`);
       values.push(JSON.stringify(updates.settings));
+      paramCount++;
+    }
+
+    if (updates.course_code !== undefined) {
+      updateFields.push(`course_code = $${paramCount}`);
+      values.push(updates.course_code);
+      paramCount++;
+    }
+
+    if (updates.submission_date !== undefined) {
+      updateFields.push(`submission_date = $${paramCount}`);
+      values.push(updates.submission_date);
+      paramCount++;
+    }
+
+    if (updates.interq_score !== undefined) {
+      updateFields.push(`interq_score = $${paramCount}`);
+      values.push(updates.interq_score);
       paramCount++;
     }
 

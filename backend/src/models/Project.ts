@@ -3,7 +3,16 @@ export interface Project {
   title: string;
   description?: string;
   owner_id: string;
-  status: "active" | "completed" | "archived";
+  status:
+    | "Draft"
+    | "Submitted"
+    | "Completed"
+    | "active"
+    | "completed"
+    | "archived";
+  course_code?: string;
+  submission_date?: Date;
+  interq_score?: string;
   settings?: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
@@ -13,14 +22,32 @@ export interface CreateProjectInput {
   title: string;
   description?: string;
   owner_id: string;
-  status?: "active" | "completed" | "archived";
+  status?:
+    | "Draft"
+    | "Submitted"
+    | "Completed"
+    | "active"
+    | "completed"
+    | "archived";
+  course_code?: string;
+  submission_date?: Date | string;
+  interq_score?: string;
   settings?: Record<string, unknown>;
 }
 
 export interface UpdateProjectInput {
   title?: string;
   description?: string;
-  status?: "active" | "completed" | "archived";
+  status?:
+    | "Draft"
+    | "Submitted"
+    | "Completed"
+    | "active"
+    | "completed"
+    | "archived";
+  course_code?: string;
+  submission_date?: Date | string;
+  interq_score?: string;
   settings?: Record<string, unknown>;
 }
 

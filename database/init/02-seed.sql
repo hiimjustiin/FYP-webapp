@@ -1,85 +1,116 @@
+-- Seed data for ILA application
+-- This file contains sample data for development and testing
+
 -- Insert default admin user
-INSERT INTO users (email, password_hash, display_name, role, is_active) 
+INSERT INTO users (email, password_hash, display_name, role, is_active, email_verified) 
 VALUES (
   'admin@ila.com', 
-  '$2a$12$c6BZps2r6NfHn5O.fBFNWOtXbEQWvN19Em1eTbK9Gm9xTvClqSjTK',
+  '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G,
   'ILA Administrator', 
   'admin', 
-  true
-);
+  true,
+  now()
+)
+ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample instructor
-INSERT INTO users (email, password_hash, display_name, role, is_active) 
+INSERT INTO users (email, password_hash, display_name, role, is_active, email_verified) 
 VALUES (
   'instructor@ila.com', 
-  '$2a$12$6lbdBnWkIJyzktwDnbhxgukhIU/Uf8ZxMAjblDOIehJy2ZkfSYO8W', -- password: instructor123
+  '$2a$12$6lbdBnWkIJyzktwDnbhxgukhIU/Uf8ZxMAjblDOIehJy2ZkfSYO8W',
   'Dr. Jane Smith', 
   'instructor', 
-  true
-);
+  true,
+  now()
+)
+ON CONFLICT (email) DO NOTHING;
 
--- Insert sample students
-INSERT INTO users (email, password_hash, display_name, role, is_active) 
-VALUES 
+-- Insert sample students (with correct bcrypt hash for 'password123')
+INSERT INTO users (id, email, password_hash, display_name, role, is_active, email_verified) VALUES
+  ('550e8400-e29b-41d4-a716-446655440001', 'calvin.klein@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Calvin Klein', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440002', 'mark.jacobs@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Mark Jacobs', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440003', 'kate.spade@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Kate Spade', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440004', 'giorgio.armani@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Giorgio Armani', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440005', 'tommy.hilfiger@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Tommy Hilfiger', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440006', 'yves.saintlaurent@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Yves Saint Laurent', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440007', 'jane.smith@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'Jane Smith', 'student', true, now()),
+  ('550e8400-e29b-41d4-a716-446655440008', 'david.chen@example.com', '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G', 'David Chen', 'student', true, now())
+ON CONFLICT (email) DO NOTHING;
+
+-- Insert sample projects (matching the mock data from ProjectLanding)
+INSERT INTO projects (id, title, description, owner_id, status, course_code, submission_date, interq_score, created_at, updated_at) VALUES
   (
-    'student1@ila.com', 
-    '$2a$12$z/dyPqj7UT.BGs5h39nhVe0qeUEL2EjTMBi.pZje.b8TyzihY8sVS', -- password: student123
-    'Alice Johnson', 
-    'student', 
-    true
+    '660e8400-e29b-41d4-a716-446655440001',
+    'Urban Heat Islands Study',
+    'A comprehensive study on urban heat islands and their environmental impact.',
+    '550e8400-e29b-41d4-a716-446655440001', -- Calvin Klein
+    'Submitted',
+    'MSL 902',
+    '2025-09-12 10:00:00+00',
+    '—',
+    now() - interval '2 months',
+    now() - interval '1 month'
   ),
   (
-    'student2@ila.com', 
-    '$2a$12$z/dyPqj7UT.BGs5h39nhVe0qeUEL2EjTMBi.pZje.b8TyzihY8sVS', -- password: student123
-    'Bob Wilson', 
-    'student', 
-    true
+    '660e8400-e29b-41d4-a716-446655440002',
+    'Renewable Microgrids Pilot',
+    'Pilot project for implementing renewable energy microgrids in urban areas.',
+    '550e8400-e29b-41d4-a716-446655440005', -- Tommy Hilfiger
+    'Completed',
+    'EEE 311',
+    '2025-03-18 10:00:00+00',
+    '—',
+    now() - interval '6 months',
+    now() - interval '5 months'
   ),
   (
-    'student3@ila.com', 
-    '$2a$12$z/dyPqj7UT.BGs5h39nhVe0qeUEL2EjTMBi.pZje.b8TyzihY8sVS', -- password: student123
-    'Carol Davis', 
-    'student', 
-    true
-  );
+    '660e8400-e29b-41d4-a716-446655440003',
+    'AI Ethics in Clinics',
+    'Exploring ethical considerations of AI implementation in clinical settings.',
+    '550e8400-e29b-41d4-a716-446655440007', -- Jane Smith
+    'Submitted',
+    'HSS 210',
+    '2025-06-01 10:00:00+00',
+    '—',
+    now() - interval '4 months',
+    now() - interval '3 months'
+  ),
+  (
+    '660e8400-e29b-41d4-a716-446655440004',
+    'Coastal Erosion Mitigation',
+    'Research project on innovative methods to mitigate coastal erosion.',
+    '550e8400-e29b-41d4-a716-446655440008', -- David Chen
+    'Draft',
+    'CEE 450',
+    '2025-08-10 10:00:00+00',
+    '—',
+    now() - interval '1 month',
+    now() - interval '1 week'
+  )
+ON CONFLICT (id) DO NOTHING;
 
--- Insert default tags
-INSERT INTO tags (name, description) VALUES
-  ('interdisciplinary', 'Content that bridges multiple academic disciplines'),
-  ('argumentation', 'Essays that focus on building and presenting arguments'),
-  ('evidence', 'Content that emphasizes the use of evidence and data'),
-  ('synthesis', 'Work that combines ideas from multiple sources'),
-  ('critical-thinking', 'Essays that demonstrate critical analysis'),
-  ('research', 'Research-based academic writing'),
-  ('collaboration', 'Work that involves collaborative elements'),
-  ('innovation', 'Content that presents innovative ideas or approaches');
+-- Insert project members (team collaborations)
+INSERT INTO project_members (project_id, user_id, role) VALUES
+  -- Urban Heat Islands Study team
+  ('660e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440001', 'owner'),
+  ('660e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002', 'member'),
+  ('660e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440003', 'member'),
+  ('660e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440004', 'member'),
+  
+  -- Renewable Microgrids Pilot team
+  ('660e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440005', 'owner'),
+  ('660e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440006', 'member'),
+  
+  -- AI Ethics in Clinics (solo project)
+  ('660e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440007', 'owner'),
+  
+  -- Coastal Erosion Mitigation team
+  ('660e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440008', 'owner'),
+  ('660e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440003', 'member')
+ON CONFLICT (project_id, user_id) DO NOTHING;
 
--- Insert sample course
-INSERT INTO courses (code, title, description, instructor_id, term)
-SELECT 
-  'ILA101', 
-  'Introduction to Interdisciplinary Learning Analytics', 
-  'A foundational course exploring the intersection of data analytics and interdisciplinary education.',
-  id,
-  'Fall 2025'
-FROM users WHERE email = 'instructor@ila.com';
-
--- Insert sample assignment
-INSERT INTO assignments (course_id, title, description, due_date, max_score)
-SELECT 
-  id,
-  'Interdisciplinary Essay Analysis',
-  'Write a 1000-word essay analyzing a topic from multiple disciplinary perspectives.',
-  NOW() + INTERVAL '14 days',
-  100.00
-FROM courses WHERE code = 'ILA101';
-
--- Insert sample project
-INSERT INTO projects (title, description, owner_id, status, settings)
-SELECT 
-  'Sample Interdisciplinary Analysis Project',
-  'A project focused on analyzing interdisciplinary content across multiple domains.',
-  id,
-  'active',
-  '{"privacy": "public", "collaboration_enabled": true}'
-FROM users WHERE email = 'instructor@ila.com';
+-- Success message
+SELECT 'Seed data inserted successfully!' AS message,
+       (SELECT COUNT(*) FROM users) AS users_count,
+       (SELECT COUNT(*) FROM projects) AS projects_count,
+       (SELECT COUNT(*) FROM project_members) AS project_members_count;
