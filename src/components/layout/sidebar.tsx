@@ -46,7 +46,13 @@ const Sidebar: React.FC = () => {
     },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    // exact match for home so it doesn't light up everywhere
+    if (path === "/") return location.pathname === "/";
+
+    // active if exact match OR any child route (e.g. /project/new)
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  };
 
   return (
     <aside
@@ -90,18 +96,16 @@ const Sidebar: React.FC = () => {
                                     px-2 sm:px-6 
                                     py-3 sm:py-4 
                                     rounded-lg 
-                                    ${
-                                      isActive(item.path)
-                                        ? "subtitle-2 text-highlight-blue bg-tab-selected"
-                                        : "subtitle-2 hover:bg-gray-100"
-                                    }`}
+                                    ${isActive(item.path)
+                        ? "subtitle-2 text-highlight-blue bg-tab-selected"
+                        : "subtitle-2 hover:bg-gray-100"
+                      }`}
                   >
                     <img
                       src={isActive(item.path) ? item.iconFilled : item.icon}
                       alt={item.name}
-                      className={`w-6 sm:w-10 h-6 sm:h-10 ${
-                        isActive(item.path) ? "icon-blue-tint" : ""
-                      }`}
+                      className={`w-6 sm:w-10 h-6 sm:h-10 ${isActive(item.path) ? "icon-blue-tint" : ""
+                        }`}
                     />
                     <span className="hidden sm:inline sm:ml-4">
                       {item.name}
@@ -126,18 +130,16 @@ const Sidebar: React.FC = () => {
                         px-2 sm:px-6 
                         py-3 sm:py-4 
                         rounded-lg subtitle-2 
-                        ${
-                          isActive("/settings")
-                            ? "text-highlight-blue bg-tab-selected"
-                            : "hover:bg-gray-100"
-                        }`}
+                        ${isActive("/settings")
+                  ? "text-highlight-blue bg-tab-selected"
+                  : "hover:bg-gray-100"
+                }`}
             >
               <img
                 src={isActive("/settings") ? SettingsIconFilled : SettingsIcon}
                 alt="Settings"
-                className={`w-6 sm:w-10 h-6 sm:h-10 ${
-                  isActive("/settings") ? "icon-blue-tint" : ""
-                }`}
+                className={`w-6 sm:w-10 h-6 sm:h-10 ${isActive("/settings") ? "icon-blue-tint" : ""
+                  }`}
               />
               <span className="hidden sm:inline sm:ml-4">Settings</span>
             </Link>
