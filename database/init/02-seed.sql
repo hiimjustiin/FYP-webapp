@@ -5,7 +5,7 @@
 INSERT INTO users (email, password_hash, display_name, role, is_active, email_verified) 
 VALUES (
   'admin@ila.com', 
-  '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G,
+  '$2a$12$94gjX8GQalEpi6iXsdEr0eeIdWFguPNgVufSOM9gthyAL4inaQP.G',
   'ILA Administrator', 
   'admin', 
   true,
@@ -109,8 +109,53 @@ INSERT INTO project_members (project_id, user_id, role) VALUES
   ('660e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440003', 'member')
 ON CONFLICT (project_id, user_id) DO NOTHING;
 
+-- Insert sample courses
+INSERT INTO courses (id, code, title, description, instructor_id, term, created_at, updated_at) VALUES
+  (
+    '770e8400-e29b-41d4-a716-446655440001',
+    'PP 101',
+    'Peak Performance',
+    'Strategies and techniques for achieving optimal performance in academic and professional settings.',
+    (SELECT id FROM users WHERE email = 'instructor@ila.com' LIMIT 1),
+    'Fall 2025',
+    now(),
+    now()
+  ),
+  (
+    '770e8400-e29b-41d4-a716-446655440002',
+    'DB 201',
+    'Digital Business: Technologies and Transformation',
+    'Exploring digital transformation strategies, emerging technologies, and their impact on modern business practices.',
+    (SELECT id FROM users WHERE email = 'instructor@ila.com' LIMIT 1),
+    'Fall 2025',
+    now(),
+    now()
+  ),
+  (
+    '770e8400-e29b-41d4-a716-446655440003',
+    'AIH 301',
+    'AI and Humanity',
+    'Examining the intersection of artificial intelligence and human society, including ethical considerations and future implications.',
+    (SELECT id FROM users WHERE email = 'instructor@ila.com' LIMIT 1),
+    'Fall 2025',
+    now(),
+    now()
+  ),
+  (
+    '770e8400-e29b-41d4-a716-446655440004',
+    'SSE 401',
+    'Sustainability: Society, Economy and Environment',
+    'Comprehensive study of sustainability principles across social, economic, and environmental dimensions.',
+    (SELECT id FROM users WHERE email = 'instructor@ila.com' LIMIT 1),
+    'Fall 2025',
+    now(),
+    now()
+  )
+ON CONFLICT (id) DO NOTHING;
+
 -- Success message
 SELECT 'Seed data inserted successfully!' AS message,
        (SELECT COUNT(*) FROM users) AS users_count,
        (SELECT COUNT(*) FROM projects) AS projects_count,
-       (SELECT COUNT(*) FROM project_members) AS project_members_count;
+       (SELECT COUNT(*) FROM project_members) AS project_members_count,
+       (SELECT COUNT(*) FROM courses) AS courses_count;
