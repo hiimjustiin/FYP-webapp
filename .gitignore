@@ -45,3 +45,4 @@ backend/node_modules
 
 db-schema.md
 ila-pk.pem
+.github/copilot-instructions.md
