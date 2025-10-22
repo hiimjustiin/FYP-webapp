@@ -3,6 +3,31 @@ import type { Router as RouterType } from "express";
 import { query } from "../models/database.js";
 import { authenticate, type AuthRequest } from "../middleware/auth.js";
 
+interface Submission {
+  id: string;
+  name: string;
+  submitted_at: string;
+  course_id: string;
+  project_name: string;
+  project_summary: string;
+}
+
+interface DimensionScore {
+  submission_id: string;
+  dimension_id: number;
+  personal_score: number;
+  dimension_label: string;
+  dimension_variant: string;
+  class_avg_score: number | null;
+}
+
+// interface FormattedSubmission {
+//   id: string;
+//   name: string;
+//   date: string;
+//   scores: Record<string, { personal: number; classAvg: number }>;
+// }
+
 const router: RouterType = Router();
 
 // All routes require authentication
@@ -29,13 +54,15 @@ router.get("/", async (_req: AuthRequest, res: Response) => {
 });
 
 // GET /api/dimensions/projects/:projectId/submissions - Get all submissions with scores for a project
-router.get("/projects/:projectId/submissions", async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
+router.get(
+  "/projects/:projectId/submissions",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { projectId } = req.params;
 
-    // Get all submissions for the project
-    const submissionsResult = await query(
-      `SELECT 
+      // Get all submissions for the project
+      const submissionsResult = await query(
+        `SELECT 
         ps.id,
         ps.name,
         ps.submitted_at,
@@ -46,25 +73,25 @@ router.get("/projects/:projectId/submissions", async (req: AuthRequest, res: Res
       JOIN projects p ON ps.project_id = p.id
       WHERE ps.project_id = $1 AND ps.user_id = $2
       ORDER BY ps.submitted_at ASC`,
-      [projectId, req.user?.id]
-    );
+        [projectId, req.user?.id]
+      );
 
-    if (submissionsResult.rows.length === 0) {
-      return res.json({
-        success: true,
-        data: { 
-          project: null,
-          submissions: [] 
-        },
-      });
-    }
+      if (submissionsResult.rows.length === 0) {
+        return res.json({
+          success: true,
+          data: {
+            project: null,
+            submissions: [],
+          },
+        });
+      }
 
-    const submissions = submissionsResult.rows;
-    const courseId = submissions[0]?.course_id;
+      const submissions = submissionsResult.rows;
+      const courseId = submissions[0]?.course_id;
 
-    // Get scores for all submissions
-    const scoresResult = await query(
-      `SELECT 
+      // Get scores for all submissions
+      const scoresResult = await query(
+        `SELECT 
         sds.submission_id,
         sds.dimension_id,
         sds.personal_score,
@@ -81,58 +108,60 @@ router.get("/projects/:projectId/submissions", async (req: AuthRequest, res: Res
       JOIN dimensions d ON sds.dimension_id = d.id
       WHERE sds.submission_id = ANY($2)
       ORDER BY sds.dimension_id ASC`,
-      [courseId, submissions.map((s: any) => s.id)]
-    );
+        [courseId, submissions.map((s: Submission) => s.id)]
+      );
 
-    // Group scores by submission
-    const scoresBySubmission: Record<string, any[]> = {};
-    scoresResult.rows.forEach((score: any) => {
-      if (!scoresBySubmission[score.submission_id]) {
-        scoresBySubmission[score.submission_id] = [];
-      }
-      scoresBySubmission[score.submission_id]!.push(score);
-    });
+      // Group scores by submission
+      const scoresBySubmission: Record<string, DimensionScore[]> = {};
+      scoresResult.rows.forEach((score: DimensionScore) => {
+        if (!scoresBySubmission[score.submission_id]) {
+          scoresBySubmission[score.submission_id] = [];
+        }
+        scoresBySubmission[score.submission_id]!.push(score);
+      });
 
-    // Format submissions with scores
-    const formattedSubmissions = submissions.map((submission: any) => {
-      const scores: Record<string, { personal: number; classAvg: number }> = {};
-      const submissionScores = scoresBySubmission[submission.id] || [];
-      
-      submissionScores.forEach((score: any) => {
-        scores[score.dimension_id.toString()] = {
-          personal: parseInt(score.personal_score),
-          classAvg: parseFloat(score.class_avg_score) || 0,
+      // Format submissions with scores
+      const formattedSubmissions = submissions.map((submission: Submission) => {
+        const scores: Record<string, { personal: number; classAvg: number }> =
+          {};
+        const submissionScores = scoresBySubmission[submission.id] || [];
+
+        submissionScores.forEach((score: DimensionScore) => {
+          scores[score.dimension_id.toString()] = {
+            personal: score.personal_score,
+            classAvg: score.class_avg_score || 0,
+          };
+        });
+
+        return {
+          id: submission.id,
+          name: submission.name,
+          date: submission.submitted_at,
+          scores,
         };
       });
 
-      return {
-        id: submission.id,
-        name: submission.name,
-        date: submission.submitted_at,
-        scores,
-      };
-    });
-
-    return res.json({
-      success: true,
-      data: {
-        project: {
-          id: projectId,
-          name: submissions[0].project_name,
-          summary: submissions[0].project_summary,
-          date: submissions[submissions.length - 1].submitted_at, // Use last submission date
+      return res.json({
+        success: true,
+        data: {
+          project: {
+            id: projectId,
+            name: submissions[0].project_name,
+            summary: submissions[0].project_summary,
+            date: submissions[submissions.length - 1].submitted_at, // Use last submission date
+          },
+          submissions: formattedSubmissions,
         },
-        submissions: formattedSubmissions,
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching project submissions:", error);
-    return res.status(500).json({
-      success: false,
-      error: { message: "Failed to fetch project submissions" },
-    });
+      });
+    } catch (error) {
+      console.error("Error fetching project submissions:", error);
+      return res.status(500).json({
+        success: false,
+        error: { message: "Failed to fetch project submissions" },
+      });
+    }
   }
-});
+);
 
 // GET /api/dimensions/projects - Get all projects with their latest submission info
 router.get("/projects", async (req: AuthRequest, res: Response) => {
