@@ -150,6 +150,16 @@ INSERT INTO courses (id, code, title, description, instructor_id, term, created_
     'Fall 2025',
     now(),
     now()
+  ),
+  (
+    '770e8400-e29b-41d4-a716-446655440005',
+    'MSL 902',
+    'Multidisciplinary Systems Leadership',
+    'Advanced course on leading complex multidisciplinary systems and projects.',
+    (SELECT id FROM users WHERE email = 'instructor@ila.com' LIMIT 1),
+    'Fall 2025',
+    now(),
+    now()
   )
 ON CONFLICT (id) DO NOTHING;
 
@@ -198,6 +208,53 @@ INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_s
   ('770e8400-e29b-41d4-a716-446655440003', 7, 7),
   ('770e8400-e29b-41d4-a716-446655440003', 8, 7),
   ('770e8400-e29b-41d4-a716-446655440003', 9, 6)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Add more student submissions for class average calculation
+-- Mark Jacobs submission for the same course
+INSERT INTO project_submissions (id, project_id, course_id, user_id, name, submitted_at) VALUES
+  ('770e8400-e29b-41d4-a716-446655440004', '660e8400-e29b-41d4-a716-446655440002', '770e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440002', 'Final Submission', '2025-09-12 11:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440005', '660e8400-e29b-41d4-a716-446655440003', '770e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440003', 'Final Submission', '2025-09-12 12:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440004', '770e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440004', 'Final Submission', '2025-09-12 13:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+-- Scores for Mark Jacobs (slightly different to create averages)
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440004', 1, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 2, 7),
+  ('770e8400-e29b-41d4-a716-446655440004', 3, 5),
+  ('770e8400-e29b-41d4-a716-446655440004', 4, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 5, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 6, 7),
+  ('770e8400-e29b-41d4-a716-446655440004', 7, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 8, 5),
+  ('770e8400-e29b-41d4-a716-446655440004', 9, 5)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Scores for Kate Spade
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440005', 1, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 2, 8),
+  ('770e8400-e29b-41d4-a716-446655440005', 3, 6),
+  ('770e8400-e29b-41d4-a716-446655440005', 4, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 5, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 6, 6),
+  ('770e8400-e29b-41d4-a716-446655440005', 7, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 8, 6),
+  ('770e8400-e29b-41d4-a716-446655440005', 9, 6)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Scores for Giorgio Armani
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440006', 1, 5),
+  ('770e8400-e29b-41d4-a716-446655440006', 2, 6),
+  ('770e8400-e29b-41d4-a716-446655440006', 3, 4),
+  ('770e8400-e29b-41d4-a716-446655440006', 4, 6),
+  ('770e8400-e29b-41d4-a716-446655440006', 5, 5),
+  ('770e8400-e29b-41d4-a716-446655440006', 6, 6),
+  ('770e8400-e29b-41d4-a716-446655440006', 7, 5),
+  ('770e8400-e29b-41d4-a716-446655440006', 8, 4),
+  ('770e8400-e29b-41d4-a716-446655440006', 9, 5)
 ON CONFLICT (submission_id, dimension_id) DO NOTHING;
 
 -- Success message
