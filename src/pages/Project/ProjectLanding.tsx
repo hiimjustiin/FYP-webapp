@@ -130,7 +130,7 @@ const ProjectLanding = () => {
         p.interq_score || "—",
         p.status,
         <div key={`act-${p.id}`} className="flex gap-2">
-          <Button variant="blue" onClick={() => navigate(`/project/${p.id}`)}>
+          <Button variant="blue" onClick={() => navigate(`/projects/${p.id}`)}>
             Open
           </Button>
           <Button
