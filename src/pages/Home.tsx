@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import Dropdown, {
   type DropdownOption,
 } from "../components/ui/Dropdown/Dropdown";
-import Calendar from "../components/ui/Calendar/Calendar";
+import SearchBar from "../components/ui/SearchBar/SearchBar";
 import RadarChart, {
   type RadarDataPoint,
 } from "../components/ui/Charts/RadarChart/RadarChart";
@@ -36,6 +37,8 @@ const VARIANT_COLORS: Record<Variant, string> = {
 };
 
 const Home = () => {
+  const { projectId } = useParams<{ projectId?: string }>();
+
   // State for data from backend
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
@@ -49,7 +52,8 @@ const Home = () => {
     string | null
   >(null);
   const [selectedDimIds, setSelectedDimIds] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
+  const [projectSearchQuery, setProjectSearchQuery] = useState("");
 
   // Fetch dimensions on mount
   useEffect(() => {
@@ -76,11 +80,23 @@ const Home = () => {
         const projectsList = await dimensionsService.getProjects();
         setProjects(projectsList);
 
-        // Auto-select first project if available
-        if (projectsList.length > 0) {
-          await loadProjectSubmissions(projectsList[0].id);
+        // If projectId is provided in route params, load that specific project
+        if (projectId) {
+          const selectedProj = projectsList.find((p) => p.id === projectId);
+          if (selectedProj) {
+            await loadProjectSubmissions(selectedProj.id);
+          } else {
+            setError("Project not found");
+            setLoading(false);
+          }
         } else {
-          setLoading(false);
+          // Auto-select latest project (last in list) if available
+          if (projectsList.length > 0) {
+            const latestProject = projectsList[projectsList.length - 1];
+            await loadProjectSubmissions(latestProject.id);
+          } else {
+            setLoading(false);
+          }
         }
       } catch (err) {
         console.error("Error fetching projects:", err);
@@ -90,7 +106,7 @@ const Home = () => {
     };
 
     fetchProjects();
-  }, []);
+  }, [projectId]);
 
   // Load submissions for a specific project
   const loadProjectSubmissions = async (projectId: string) => {
@@ -143,19 +159,17 @@ const Home = () => {
   const submissionOptions: DropdownOption[] = useMemo(() => {
     return submissions.map((s) => ({
       id: s.id,
-      value: s.id,
       label: s.name,
     }));
   }, [submissions]);
 
-  // Build the dropdown options for projects
-  const projectOptions: DropdownOption[] = useMemo(() => {
-    return projects.map((p) => ({
-      id: p.id,
-      value: p.id,
-      label: `${p.name} (${p.submission_count} submissions)`,
-    }));
-  }, [projects]);
+  // Filter projects based on search query
+  const filteredProjects = useMemo(() => {
+    if (!projectSearchQuery.trim()) return projects;
+    return projects.filter((p) =>
+      p.name.toLowerCase().includes(projectSearchQuery.toLowerCase())
+    );
+  }, [projects, projectSearchQuery]);
 
   // Get selected dimensions for charts
   const selectedDims = useMemo(() => {
@@ -254,19 +268,20 @@ const Home = () => {
 
           {showFilters && (
             <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Project Selector */}
+              {/* Project Selector with Search */}
               <div>
                 <label className="caption text-[var(--color-grey-55)] mb-2 block">
                   Project
                 </label>
-                <Dropdown
-                  options={projectOptions}
-                  selectedOption={
-                    projectOptions.find((o) => o.id === selectedProject?.id) ||
-                    null
-                  }
-                  onSelect={(option) => handleProjectChange(option.id)}
-                  placeholder="Select a project"
+                <SearchBar
+                  members={filteredProjects.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                  }))}
+                  placeholder="Search projects..."
+                  onSearch={setProjectSearchQuery}
+                  onSelect={(member) => handleProjectChange(member.id)}
+                  maxResults={10}
                 />
               </div>
 
@@ -284,19 +299,6 @@ const Home = () => {
                   }
                   onSelect={(option) => setSelectedSubmissionId(option.id)}
                   placeholder="Select a submission"
-                />
-              </div>
-
-              {/* Date Filter (placeholder) */}
-              <div>
-                <label className="caption text-[var(--color-grey-55)] mb-2 block">
-                  Date Range
-                </label>
-                <Calendar
-                  selectedDate={
-                    selectedProject ? new Date(selectedProject.date) : null
-                  }
-                  onDateSelect={() => {}}
                 />
               </div>
             </div>
@@ -322,7 +324,7 @@ const Home = () => {
             <div className="space-y-6">
               {/* Project Info */}
               <div className="dashboard-card p-6">
-                <h2 className="heading-2 mb-2">{selectedProject.name}</h2>
+                <h2 className="heading-4 mb-2">{selectedProject.name}</h2>
                 <p className="body text-[var(--color-grey-55)]">
                   {selectedProject.summary}
                 </p>
@@ -401,11 +403,88 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* RIGHT: Details */}
+                {/* RIGHT: Report Details */}
                 <div className="dashboard-card px-6 py-5 flex flex-col">
-                  <div className="mt-6 flex-1 flex items-center justify-center subtitle-2 text-[var(--color-grey-55)]">
-                    Report Detail
-                  </div>
+                  {!selectedProject ? (
+                    <p className="body-2 text-[var(--color-grey-55)]">
+                      Select a project to view report details.
+                    </p>
+                  ) : !currentSubmission ? (
+                    <p className="body-2 text-[var(--color-grey-55)]">
+                      Select a submission to view scores.
+                    </p>
+                  ) : (
+                    <>
+                      {/* Header: always visible when a submission exists */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h6 className="heading-6">{selectedProject.name}</h6>
+                        </div>
+                        <div className="flex flex-row gap-5">
+                          <div className="flex flex-col items-end">
+                            <div className="subtitle-2">
+                              {currentSubmission.name}
+                            </div>
+                            <div className="caption">
+                              {new Date(
+                                currentSubmission.date
+                              ).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Body: only when expanded */}
+
+                      <div className="mt-4 space-y-4">
+                        {/* Scores table */}
+                        <div className="overflow-x-auto">
+                          <table className="min-w-[100%] w-full border-separate border-spacing-y-2">
+                            <thead>
+                              <tr className="text-left">
+                                <th className="ps-3 caption text-[var(--color-grey-55)]">
+                                  Dimension
+                                </th>
+                                <th className="caption text-[var(--color-grey-55)]">
+                                  Personal (0–10)
+                                </th>
+                                <th className="caption text-[var(--color-grey-55)]">
+                                  Class Avg (0–10)
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {dimensions.map(({ id, label }) => {
+                                const score =
+                                  currentSubmission.scores[id.toString()];
+                                return (
+                                  <tr
+                                    key={id}
+                                    className="bg-[var(--color-grey-05)] rounded-xl"
+                                  >
+                                    <td className="px-3 py-2 rounded-l-xl body-2">
+                                      {label}
+                                    </td>
+                                    <td className="px-3 py-2 body-2 font-medium">
+                                      {score?.personal ?? 0}
+                                    </td>
+                                    <td className="px-3 py-2 rounded-r-xl body-2">
+                                      {score?.classAvg ?? 0}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Summary */}
+                        <p className="body-2 text-[var(--color-grey-55)]">
+                          {selectedProject.summary}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
