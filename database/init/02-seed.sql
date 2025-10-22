@@ -153,9 +153,59 @@ INSERT INTO courses (id, code, title, description, instructor_id, term, created_
   )
 ON CONFLICT (id) DO NOTHING;
 
+-- Insert sample project submissions (based on Home.tsx mock data)
+-- Urban Heat Islands Study - Draft 1
+INSERT INTO project_submissions (id, project_id, course_id, user_id, name, submitted_at) VALUES
+  ('770e8400-e29b-41d4-a716-446655440001', '660e8400-e29b-41d4-a716-446655440001', (SELECT id FROM courses WHERE code = 'MSL 902' LIMIT 1), '550e8400-e29b-41d4-a716-446655440001', 'Draft 1', '2025-08-20 10:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440002', '660e8400-e29b-41d4-a716-446655440001', (SELECT id FROM courses WHERE code = 'MSL 902' LIMIT 1), '550e8400-e29b-41d4-a716-446655440001', 'Draft 2', '2025-09-01 14:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440003', '660e8400-e29b-41d4-a716-446655440001', (SELECT id FROM courses WHERE code = 'MSL 902' LIMIT 1), '550e8400-e29b-41d4-a716-446655440001', 'Final Submission', '2025-09-12 10:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert dimension scores for Urban Heat Islands Study - Draft 1
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440001', 1, 5),
+  ('770e8400-e29b-41d4-a716-446655440001', 2, 4),
+  ('770e8400-e29b-41d4-a716-446655440001', 3, 3),
+  ('770e8400-e29b-41d4-a716-446655440001', 4, 5),
+  ('770e8400-e29b-41d4-a716-446655440001', 5, 4),
+  ('770e8400-e29b-41d4-a716-446655440001', 6, 5),
+  ('770e8400-e29b-41d4-a716-446655440001', 7, 4),
+  ('770e8400-e29b-41d4-a716-446655440001', 8, 3),
+  ('770e8400-e29b-41d4-a716-446655440001', 9, 4)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Insert dimension scores for Urban Heat Islands Study - Draft 2
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440002', 1, 7),
+  ('770e8400-e29b-41d4-a716-446655440002', 2, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 3, 5),
+  ('770e8400-e29b-41d4-a716-446655440002', 4, 7),
+  ('770e8400-e29b-41d4-a716-446655440002', 5, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 6, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 7, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 8, 5),
+  ('770e8400-e29b-41d4-a716-446655440002', 9, 5)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Insert dimension scores for Urban Heat Islands Study - Final Submission
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440003', 1, 9),
+  ('770e8400-e29b-41d4-a716-446655440003', 2, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 3, 7),
+  ('770e8400-e29b-41d4-a716-446655440003', 4, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 5, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 6, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 7, 7),
+  ('770e8400-e29b-41d4-a716-446655440003', 8, 7),
+  ('770e8400-e29b-41d4-a716-446655440003', 9, 6)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
 -- Success message
 SELECT 'Seed data inserted successfully!' AS message,
        (SELECT COUNT(*) FROM users) AS users_count,
        (SELECT COUNT(*) FROM projects) AS projects_count,
        (SELECT COUNT(*) FROM project_members) AS project_members_count,
-       (SELECT COUNT(*) FROM courses) AS courses_count;
+       (SELECT COUNT(*) FROM courses) AS courses_count,
+       (SELECT COUNT(*) FROM dimensions) AS dimensions_count,
+       (SELECT COUNT(*) FROM project_submissions) AS submissions_count,
+       (SELECT COUNT(*) FROM submission_dimension_scores) AS scores_count;
