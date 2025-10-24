@@ -12,6 +12,7 @@ import projectRoutes from "./routes/projects.js";
 import essayRoutes from "./routes/essays.js";
 import courseRoutes from "./routes/courses.js";
 import dimensionsRoutes from "./routes/dimensions.js";
+import instructorRoutes from "./routes/instructor.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -65,6 +66,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/essays", essayRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/dimensions", dimensionsRoutes);
+app.use("/api/instructor", instructorRoutes);
 
 // Error handling middleware
 app.use(notFound);
