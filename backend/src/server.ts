@@ -37,24 +37,44 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// CORS configuration - Allow multiple origins for development
-const allowedOrigins = [
-  process.env.CORS_ORIGIN || "http://localhost:5173",
+// CORS configuration - Support multiple origins from environment
+// CORS_ORIGIN can be a single origin or comma-separated list
+const corsOriginEnv = process.env.CORS_ORIGIN || "http://localhost:5173";
+const allowedOrigins = corsOriginEnv.split(',').map(origin => origin.trim());
+
+// Always include common development origins
+const devOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
+  "http://localhost:5174", // Vite alternative port
 ];
+
+// Combine env origins with dev origins (remove duplicates)
+const allAllowedOrigins = Array.from(new Set([...allowedOrigins, ...devOrigins]));
+
+console.log('🔒 CORS allowed origins:', allAllowedOrigins);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+      // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
       }
+      
+      // Check if origin is in allowed list
+      if (allAllowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // In development, allow any localhost origin
+      if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+        return callback(null, true);
+      }
+      
+      // Reject other origins
+      console.warn('⚠️  CORS rejected origin:', origin);
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
