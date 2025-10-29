@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { body, validationResult } from "express-validator";
+import jwt from "jsonwebtoken";
 import { query } from "../models/database.js";
 import { hashPassword, comparePassword } from "../utils/password.js";
 import { generateToken, generateRefreshToken } from "../utils/jwt.js";
@@ -183,6 +184,81 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+// Refresh access token using refresh token
+export const refreshToken = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Refresh token is required" },
+      });
+      return;
+    }
+
+    // Verify refresh token
+    const secret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("JWT_REFRESH_SECRET not configured");
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(refreshToken, secret) as { userId: string };
+    } catch {
+      res.status(401).json({
+        success: false,
+        error: { message: "Invalid or expired refresh token" },
+      });
+      return;
+    }
+
+    // Get user from database
+    const result = await query(
+      "SELECT id, email, display_name, role, is_active FROM users WHERE id = $1 AND is_active = true",
+      [decoded.userId]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(401).json({
+        success: false,
+        error: { message: "User not found or inactive" },
+      });
+      return;
+    }
+
+    const user = result.rows[0] as User;
+
+    // Generate new tokens
+    const newToken = generateToken(user);
+    const newRefreshToken = generateRefreshToken(user);
+
+    res.json({
+      success: true,
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          display_name: user.display_name,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Token refresh error:", error);
     res.status(500).json({
       success: false,
       error: { message: "Internal server error" },

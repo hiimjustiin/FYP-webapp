@@ -6,6 +6,7 @@ import {
   me,
   verifyOTP,
   resendOTP,
+  refreshToken,
   registerValidation,
   loginValidation,
 } from "../controllers/authController.js";
@@ -18,6 +19,7 @@ router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
 router.post("/verify-otp", verifyOTP);
 router.post("/resend-otp", resendOTP);
+router.post("/refresh", refreshToken);
 
 // Protected routes
 router.get("/me", authenticate, me);
