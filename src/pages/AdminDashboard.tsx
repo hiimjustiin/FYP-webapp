@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { adminService, type AdminStats } from "../services/adminService";
 import Button from "../components/ui/Button/Button";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { isInitialized, isAuthenticated } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
+    // Wait for auth to be initialized before fetching data
+    if (!isInitialized || !isAuthenticated) {
+      return;
+    }
+
     loadStats();
-  }, []);
+  }, [isInitialized, isAuthenticated]);
 
   const loadStats = async () => {
     try {
