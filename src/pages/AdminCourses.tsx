@@ -4,7 +4,6 @@ import {
   type AdminCourse,
   type Instructor,
 } from "../services/adminService";
-import DashboardLayout from "../components/layout/DashboardLayout";
 import Button from "../components/ui/Button/Button";
 import InputField from "../components/ui/InputField/InputField";
 import TextArea from "../components/ui/TextArea/TextArea";
@@ -72,8 +71,7 @@ export default function AdminCourses() {
   );
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -164,11 +162,10 @@ export default function AdminCourses() {
                     </Button>
                   </div>,
                 ]),
-              ]}
+              ]}  
             />
           )}
         </div>
-      </div>
 
       {/* Create/Edit Course Modal */}
       {(showCreateModal || editingCourse) && (
@@ -186,7 +183,7 @@ export default function AdminCourses() {
           }}
         />
       )}
-    </DashboardLayout>
+    </div>
   );
 }
 

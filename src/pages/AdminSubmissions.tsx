@@ -4,7 +4,6 @@ import {
   type AdminSubmission,
   type AdminCourse,
 } from "../services/adminService";
-import DashboardLayout from "../components/layout/DashboardLayout";
 import Button from "../components/ui/Button/Button";
 import Dropdown from "../components/ui/Dropdown/Dropdown";
 import Table from "../components/ui/Table/Table";
@@ -107,8 +106,7 @@ export default function AdminSubmissions() {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -243,7 +241,6 @@ export default function AdminSubmissions() {
             />
           )}
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminService, type AdminStats } from "../services/adminService";
-import DashboardLayout from "../components/layout/DashboardLayout";
 import Button from "../components/ui/Button/Button";
 
 export default function AdminDashboard() {
@@ -32,35 +31,30 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading dashboard...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">{error}</p>
-          <Button variant="red" onClick={loadStats} className="mt-4">
-            Retry
-          </Button>
-        </div>
-      </DashboardLayout>
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-red-800">{error}</p>
+        <Button variant="red" onClick={loadStats} className="mt-4">
+          Retry
+        </Button>
+      </div>
     );
   }
 
   if (!stats) return null;
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -290,7 +284,6 @@ export default function AdminDashboard() {
             </Button>
           </div>
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

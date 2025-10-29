@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { adminService, type AdminUser } from "../services/adminService";
-import DashboardLayout from "../components/layout/DashboardLayout";
 import Button from "../components/ui/Button/Button";
 import InputField from "../components/ui/InputField/InputField";
 import Dropdown from "../components/ui/Dropdown/Dropdown";
@@ -76,8 +75,7 @@ export default function AdminUsers() {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -220,7 +218,6 @@ export default function AdminUsers() {
             </>
           )}
         </div>
-      </div>
 
       {/* Create/Edit User Modal */}
       {(showCreateModal || editingUser) && (
@@ -237,7 +234,7 @@ export default function AdminUsers() {
           }}
         />
       )}
-    </DashboardLayout>
+    </div>
   );
 }
 
