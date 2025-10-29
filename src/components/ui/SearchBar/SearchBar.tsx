@@ -51,6 +51,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, [onSearch]);
 
   useEffect(() => {
+    // Only run filtering logic if members array is provided
+    if (!members || members.length === 0) {
+      // Simple text search mode - only call onSearch when query changes
+      if (onSearchRef.current) {
+        onSearchRef.current(query);
+      }
+      return;
+    }
+
     if (showAll) {
       setFilteredResults(members);
       setShowResults(true);
