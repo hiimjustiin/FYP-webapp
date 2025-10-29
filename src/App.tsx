@@ -11,6 +11,7 @@ import "./assets/colors/gradients.css";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import RoleDashboard from "./components/RoleDashboard";
 import Home from "./pages/Home.js";
 import ProjectLanding from "./pages/Project/ProjectLanding.js";
 import ProjectNew from "./pages/Project/ProjectNew.js";
@@ -21,6 +22,13 @@ import Settings from "./pages/Settings.js";
 import LoginPage from "./pages/LoginPage.js";
 import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import InstructorDashboard from "./pages/InstructorDashboard";
+import CourseStudents from "./pages/CourseStudents";
+import CourseSubmissions from "./pages/CourseSubmissions";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminCourses from "./pages/AdminCourses";
+import AdminSubmissions from "./pages/AdminSubmissions";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -46,13 +54,86 @@ const AppContent = () => {
         }
       />
 
+      {/* Instructor routes */}
+      <Route
+        path="/instructor"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout>
+              <InstructorDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/courses/:courseId/students"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout>
+              <CourseStudents />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/courses/:courseId/submissions"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout>
+              <CourseSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminUsers />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/courses"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminCourses />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/submissions"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
       {/* Protected dashboard routes */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              <Home />
+              <RoleDashboard />
             </DashboardLayout>
           </ProtectedRoute>
         }

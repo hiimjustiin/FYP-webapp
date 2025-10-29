@@ -21,7 +21,7 @@ import LogoutIcon from "../../assets/icons/logout.svg";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
@@ -29,7 +29,8 @@ const Sidebar: React.FC = () => {
     }
   };
 
-  const navigationItems = [
+  // Student navigation items
+  const studentNavItems = [
     { name: "Home", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/" },
     {
       name: "Project",
@@ -46,9 +47,40 @@ const Sidebar: React.FC = () => {
     },
   ];
 
+  // Instructor navigation items
+  const instructorNavItems = [
+    { name: "Dashboard", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/instructor" },
+  ];
+
+  // Admin navigation items
+  const adminNavItems = [
+    { name: "Dashboard", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/admin" },
+    { name: "Users", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/admin/users" },
+    { name: "Courses", icon: ProjectIcon, iconFilled: ProjectIconFilled, path: "/admin/courses" },
+    { name: "Submissions", icon: ReportIcon, iconFilled: ReportIconFilled, path: "/admin/submissions" },
+  ];
+
+  // Determine which navigation items to show based on user role
+  const navigationItems = 
+    user?.role === "admin" 
+      ? adminNavItems 
+      : user?.role === "instructor"
+      ? instructorNavItems 
+      : studentNavItems;
+
   const isActive = (path: string) => {
     // exact match for home so it doesn't light up everywhere
     if (path === "/") return location.pathname === "/";
+
+    // For instructor dashboard, match exact or child routes
+    if (path === "/instructor") {
+      return location.pathname === "/instructor" || location.pathname.startsWith("/instructor/");
+    }
+
+    // For admin routes, match exact or child routes
+    if (path === "/admin") {
+      return location.pathname === "/admin" && !location.pathname.startsWith("/admin/");
+    }
 
     // active if exact match OR any child route (e.g. /project/new)
     return location.pathname === path || location.pathname.startsWith(path + "/");
