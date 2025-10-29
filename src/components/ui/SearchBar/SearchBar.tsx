@@ -43,19 +43,34 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [showAll, setShowAll] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const onSearchRef = useRef(onSearch);
+
+  // Keep the ref updated with the latest callback
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
 
   useEffect(() => {
+    // Only run filtering logic if members array is provided
+    if (!members || members.length === 0) {
+      // Simple text search mode - only call onSearch when query changes
+      if (onSearchRef.current) {
+        onSearchRef.current(query);
+      }
+      return;
+    }
+
     if (showAll) {
       setFilteredResults(members);
       setShowResults(true);
-      if (onSearch) onSearch(query);
+      if (onSearchRef.current) onSearchRef.current(query);
       return;
     }
 
     if (query.trim() === "") {
       setFilteredResults([]);
       setShowResults(false);
-      if (onSearch) onSearch("");
+      if (onSearchRef.current) onSearchRef.current("");
       return;
     }
 
@@ -68,8 +83,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setFilteredResults(results);
     setShowResults(results.length > 0);
 
-    if (onSearch) onSearch(query);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (onSearchRef.current) onSearchRef.current(query);
   }, [query, members, maxResults, showAll]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
