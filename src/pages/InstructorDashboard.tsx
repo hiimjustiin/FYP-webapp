@@ -59,18 +59,18 @@ const InstructorDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">Total Courses</div>
-            <div className="heading-3 text-[var(--color-blue-ntu)]">{courses.length}</div>
+            <div className="heading-3 text-[var(--color-blue-ntu)]">{Number(courses.length)}</div>
           </div>
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">Total Students</div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
-              {courses.reduce((sum, course) => sum + course.enrolled_count, 0)}
+              {Number(courses.reduce((sum, course) => sum + course.enrolled_count, 0))}
             </div>
           </div>
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">Pending Reviews</div>
             <div className="heading-3 text-[var(--color-red-ntu)]">
-              {courses.reduce((sum, course) => sum + course.pending_count, 0)}
+              {Number(courses.reduce((sum, course) => sum + course.pending_count, 0))}
             </div>
           </div>
         </div>
@@ -96,10 +96,10 @@ const InstructorDashboard = () => {
                   <span className="subtitle-2 text-[var(--color-blue-ntu)]">{row.code}</span>,
                   row.title,
                   <span className="caption">{row.term}</span>,
-                  <span className="body-2">{row.enrolled_count}</span>,
-                  <span className="body-2">{row.submission_count}</span>,
+                  <span className="body-2">{Number(row.enrolled_count)}</span>,
+                  <span className="body-2">{Number(row.submission_count)}</span>,
                   <span className={`body-2 font-medium ${row.pending_count > 0 ? 'text-[var(--color-red-ntu)]' : ''}`}>
-                    {row.pending_count}
+                    {Number(row.pending_count)}
                   </span>,
                   <div className="flex gap-2">
                     <Button 
