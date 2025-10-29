@@ -75,14 +75,15 @@ export default function AdminUsers() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--color-grey-05)]">
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-6 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="heading-3 mb-2">
               User Management
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="body text-[var(--color-grey-55)]">
               Manage all platform users and their roles
             </p>
           </div>
@@ -105,7 +106,7 @@ export default function AdminUsers() {
         </div>
 
         {/* Filters */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <SearchBar
@@ -136,7 +137,7 @@ export default function AdminUsers() {
         )}
 
         {/* Users Table */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
@@ -147,6 +148,7 @@ export default function AdminUsers() {
           ) : (
             <>
               <Table
+                noBorder
                 data={[
                   [
                     "Name",
@@ -219,21 +221,22 @@ export default function AdminUsers() {
           )}
         </div>
 
-      {/* Create/Edit User Modal */}
-      {(showCreateModal || editingUser) && (
-        <UserModal
-          user={editingUser}
-          onClose={() => {
-            setShowCreateModal(false);
-            setEditingUser(null);
-          }}
-          onSave={() => {
-            loadUsers();
-            setShowCreateModal(false);
-            setEditingUser(null);
-          }}
-        />
-      )}
+        {/* Create/Edit User Modal */}
+        {(showCreateModal || editingUser) && (
+          <UserModal
+            user={editingUser}
+            onClose={() => {
+              setShowCreateModal(false);
+              setEditingUser(null);
+            }}
+            onSave={() => {
+              loadUsers();
+              setShowCreateModal(false);
+              setEditingUser(null);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -95,6 +95,7 @@ const InstructorDashboard = () => {
             </div>
           ) : (
             <Table
+              noBorder
               data={[
                 ['Course Code', 'Title', 'Term', 'Students', 'Submissions', 'Pending', 'Actions'],
                 ...courses.map((row: InstructorCourse) => [

@@ -106,19 +106,20 @@ export default function AdminSubmissions() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--color-grey-05)]">
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-6">
+          <h1 className="heading-3 mb-2">
             Platform Submissions
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="body text-[var(--color-grey-55)]">
             View and manage all submissions across all courses
           </p>
         </div>
 
         {/* Filters */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1">
               <SearchBar
@@ -189,7 +190,7 @@ export default function AdminSubmissions() {
         )}
 
         {/* Submissions Table */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
@@ -203,6 +204,7 @@ export default function AdminSubmissions() {
             </div>
           ) : (
             <Table
+              noBorder
               data={[
                 [
                   "Student",
@@ -241,6 +243,7 @@ export default function AdminSubmissions() {
             />
           )}
         </div>
+      </div>
     </div>
   );
 }

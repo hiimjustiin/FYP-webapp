@@ -6,7 +6,7 @@ import Button from "../components/ui/Button/Button";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { isInitialized, isAuthenticated } = useAuth();
+  const { user, isInitialized, isAuthenticated } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="min-h-screen bg-[var(--color-grey-05)] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading dashboard...</p>
@@ -49,11 +49,13 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-        <p className="text-red-800">{error}</p>
-        <Button variant="red" onClick={loadStats} className="mt-4">
-          Retry
-        </Button>
+      <div className="min-h-screen bg-[var(--color-grey-05)] flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <p className="text-red-800">{error}</p>
+          <Button variant="red" onClick={loadStats} className="mt-4">
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -61,27 +63,25 @@ export default function AdminDashboard() {
   if (!stats) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--color-grey-05)]">
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="mt-2 text-gray-600">
-            Platform-wide management and statistics
+        <div className="mb-8">
+          <h1 className="heading-3 mb-2">Admin Dashboard</h1>
+          <p className="body text-[var(--color-grey-55)]">
+            Welcome back, {user?.display_name || "Admin"}
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Users Card */}
-          <div className="dashboard-card bg-gradient-to-br from-[#181C62] to-[#2a2f7a] text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Users</p>
-                <p className="text-3xl font-bold mt-1">{stats.users.total}</p>
-              </div>
-              <div className="bg-white/20 rounded-full p-3">
+          <div className="dashboard-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">Total Users</div>
+              <div className="bg-[var(--color-blue-ntu)] bg-opacity-10 rounded-full p-2">
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 text-[var(--color-blue-ntu)]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -95,40 +95,30 @@ export default function AdminDashboard() {
                 </svg>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-white/20">
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <p className="opacity-75">Students</p>
-                  <p className="font-semibold">
-                    {stats.users.byRole.student || 0}
-                  </p>
-                </div>
-                <div>
-                  <p className="opacity-75">Instructors</p>
-                  <p className="font-semibold">
-                    {stats.users.byRole.instructor || 0}
-                  </p>
-                </div>
-                <div>
-                  <p className="opacity-75">Admins</p>
-                  <p className="font-semibold">
-                    {stats.users.byRole.admin || 0}
-                  </p>
-                </div>
+            <div className="heading-3 text-[var(--color-blue-ntu)] mb-3">{stats.users.total}</div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <div className="caption text-[var(--color-grey-55)]">Students</div>
+                <div className="body-2 font-medium">{stats.users.byRole.student || 0}</div>
+              </div>
+              <div>
+                <div className="caption text-[var(--color-grey-55)]">Instructors</div>
+                <div className="body-2 font-medium">{stats.users.byRole.instructor || 0}</div>
+              </div>
+              <div>
+                <div className="caption text-[var(--color-grey-55)]">Admins</div>
+                <div className="body-2 font-medium">{stats.users.byRole.admin || 0}</div>
               </div>
             </div>
           </div>
 
           {/* Courses Card */}
-          <div className="dashboard-card bg-gradient-to-br from-[#D71440] to-[#e63a5e] text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Courses</p>
-                <p className="text-3xl font-bold mt-1">{stats.courses}</p>
-              </div>
-              <div className="bg-white/20 rounded-full p-3">
+          <div className="dashboard-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">Total Courses</div>
+              <div className="bg-[var(--color-red-ntu)] bg-opacity-10 rounded-full p-2">
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 text-[var(--color-red-ntu)]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -142,27 +132,16 @@ export default function AdminDashboard() {
                 </svg>
               </div>
             </div>
-            <div className="mt-4">
-              <Button
-                variant="white"
-                onClick={() => navigate("/admin/courses")}
-                className="w-full text-sm"
-              >
-                Manage Courses
-              </Button>
-            </div>
+            <div className="heading-3 text-[var(--color-blue-ntu)]">{stats.courses}</div>
           </div>
 
           {/* Projects Card */}
-          <div className="dashboard-card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Projects</p>
-                <p className="text-3xl font-bold mt-1">{stats.projects}</p>
-              </div>
-              <div className="bg-white/20 rounded-full p-3">
+          <div className="dashboard-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">Total Projects</div>
+              <div className="bg-green-100 rounded-full p-2">
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 text-green-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -176,20 +155,16 @@ export default function AdminDashboard() {
                 </svg>
               </div>
             </div>
+            <div className="heading-3 text-[var(--color-blue-ntu)]">{stats.projects}</div>
           </div>
 
           {/* Submissions Card */}
-          <div className="dashboard-card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Submissions</p>
-                <p className="text-3xl font-bold mt-1">
-                  {stats.submissions.total}
-                </p>
-              </div>
-              <div className="bg-white/20 rounded-full p-3">
+          <div className="dashboard-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">Submissions</div>
+              <div className="bg-purple-100 rounded-full p-2">
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5 text-purple-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -203,20 +178,17 @@ export default function AdminDashboard() {
                 </svg>
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-white/20">
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <p className="opacity-75">Pending</p>
-                  <p className="font-semibold">
-                    {stats.submissions.byStatus.submitted || 0}
-                  </p>
-                </div>
-                <div>
-                  <p className="opacity-75">Scored</p>
-                  <p className="font-semibold">
-                    {(stats.submissions.byStatus.scored || 0) +
-                      (stats.submissions.byStatus.reviewed || 0)}
-                  </p>
+            <div className="heading-3 text-[var(--color-blue-ntu)] mb-3">{stats.submissions.total}</div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <div className="caption text-[var(--color-grey-55)]">Pending</div>
+                <div className="body-2 font-medium">{stats.submissions.byStatus.submitted || 0}</div>
+              </div>
+              <div>
+                <div className="caption text-[var(--color-grey-55)]">Scored</div>
+                <div className="body-2 font-medium">
+                  {(stats.submissions.byStatus.scored || 0) +
+                    (stats.submissions.byStatus.reviewed || 0)}
                 </div>
               </div>
             </div>
@@ -224,15 +196,13 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <div className="dashboard-card">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Quick Actions
-          </h2>
+        <div className="dashboard-card p-6">
+          <h2 className="heading-4 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
               variant="blue"
               onClick={() => navigate("/admin/users")}
-              className="w-full"
+              className="w-full justify-center"
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -252,7 +222,7 @@ export default function AdminDashboard() {
             <Button
               variant="red"
               onClick={() => navigate("/admin/courses")}
-              className="w-full"
+              className="w-full justify-center"
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -272,7 +242,7 @@ export default function AdminDashboard() {
             <Button
               variant="darkBlue"
               onClick={() => navigate("/admin/submissions")}
-              className="w-full"
+              className="w-full justify-center"
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -287,10 +257,11 @@ export default function AdminDashboard() {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              View All Submissions
+              View Submissions
             </Button>
           </div>
         </div>
+      </div>
     </div>
   );
 }

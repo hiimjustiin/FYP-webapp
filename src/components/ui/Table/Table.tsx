@@ -6,16 +6,18 @@ export type TableData = (string | React.ReactNode)[][];
 interface TableProps {
     data: TableData;
     className?: string;
+    noBorder?: boolean; // New prop to remove border when wrapped in another container
 }
 
 const Table: React.FC<TableProps> = ({
     data,
-    className = ''
+    className = '',
+    noBorder = false
 }) => {
     // Empty data
     if (!data || data.length === 0) {
         return (
-            <div className={`table-container ${className}`}>
+            <div className={`${noBorder ? 'table-container-no-border' : 'table-container'} ${className}`}>
                 <div className="table-empty subtitle-2">
                     <p>No data available</p>
                 </div>
@@ -27,7 +29,7 @@ const Table: React.FC<TableProps> = ({
     const rows = data.slice(1);
 
     return (
-        <div className={`table-container ${className}`}>
+        <div className={`${noBorder ? 'table-container-no-border' : 'table-container'} ${className}`}>
             <div className="table-desktop">
                 <table className="table">
                     <thead>
