@@ -39,7 +39,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ila_user}:${POSTGRES_PASSWORD:-ila_password}@postgres:5432/${POSTGRES_DB:-ila_db}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
       PORT: 3001
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      # Support multiple origins for development and production
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5173}
       # SMTP Configuration for Email
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
