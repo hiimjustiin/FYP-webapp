@@ -13,6 +13,7 @@ import essayRoutes from "./routes/essays.js";
 import courseRoutes from "./routes/courses.js";
 import dimensionsRoutes from "./routes/dimensions.js";
 import instructorRoutes from "./routes/instructor.js";
+import notificationRoutes from "./routes/notifications.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -58,7 +59,6 @@ app.get("/health", (_req, res) => {
     service: "ILA Backend API",
   });
 });
-
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -66,6 +66,8 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/essays", essayRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/dimensions", dimensionsRoutes);
+app.use("/api/instructor", instructorRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use("/api/instructor", instructorRoutes);
 
 // Error handling middleware

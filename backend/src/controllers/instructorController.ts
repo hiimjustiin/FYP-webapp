@@ -2,6 +2,7 @@ import { Response } from "express";
 import type { AuthRequest } from "../middleware/auth.js";
 import { query } from "../models/database.js";
 import { aiService } from "../services/aiService.js";
+import { notificationService } from "../services/notificationService.js";
 
 // GET /api/instructor/courses
 export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
@@ -209,7 +210,8 @@ export const triggerScoring = async (req: AuthRequest, res: Response) => {
       submissionId,
     ]);
 
-    // TODO: Send notification to student
+    // Send notification to student
+    await notificationService.notifyScoringComplete(submissionId as string);
 
     return res.json({
       success: true,
@@ -339,7 +341,16 @@ export const uploadSubmission = async (req: AuthRequest, res: Response) => {
       ]
     );
 
-    return res.json({ success: true, data: { submission: result.rows[0] } });
+    const submission = result.rows[0];
+
+    // Send notification to instructor
+    await notificationService.notifySubmissionReceived(
+      submission.id,
+      courseId,
+      projectId
+    );
+
+    return res.json({ success: true, data: { submission } });
   } catch (error) {
     console.error("Error uploading submission:", error);
     return res
