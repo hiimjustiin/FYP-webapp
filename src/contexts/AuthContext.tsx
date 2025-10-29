@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import { saveTokens, clearTokens } from "../lib/api";
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface AuthContextType {
   logout: () => void;
   user: User | null;
   loading: boolean;
+  isInitialized: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,6 +34,8 @@ const API_BASE_URL =
 const BYPASS_AUTH =
   (import.meta.env.VITE_BYPASS_AUTH ?? "").toLowerCase() === "true";
 
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
+
 const createBypassUser = (overrides: Partial<User> = {}): User => ({
   id: "dev-bypass",
   email: import.meta.env.VITE_BYPASS_USER_EMAIL || "developer@ila.dev",
@@ -48,6 +52,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     BYPASS_AUTH ? createBypassUser() : null
   );
   const [loading, setLoading] = useState<boolean>(!BYPASS_AUTH);
+  const [isInitialized, setIsInitialized] = useState<boolean>(BYPASS_AUTH);
+  
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // Logout function
+  const logout = useCallback(() => {
+    setIsAuthenticated(false);
+    setUser(null);
+    clearTokens();
+    
+    // Clear inactivity timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    
+    // Redirect to login
+    window.location.href = "/login";
+  }, []);
+
+  // Reset inactivity timer
+  const resetInactivityTimer = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    
+    inactivityTimerRef.current = setTimeout(() => {
+      console.log("User inactive for 1 hour, logging out...");
+      logout();
+    }, INACTIVITY_TIMEOUT);
+  }, [logout]);
+
+  // Track user activity
+  useEffect(() => {
+    if (!isAuthenticated || BYPASS_AUTH) return;
+
+    const activities = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      resetInactivityTimer();
+    };
+
+    // Set up activity listeners
+    activities.forEach(activity => {
+      window.addEventListener(activity, handleActivity);
+    });
+
+    // Start initial timer
+    resetInactivityTimer();
+
+    // Cleanup
+    return () => {
+      activities.forEach(activity => {
+        window.removeEventListener(activity, handleActivity);
+      });
+      
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [isAuthenticated, resetInactivityTimer]);
 
   // Check if user is already logged in on app start
   useEffect(() => {
@@ -73,23 +140,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               setUser(data.data.user);
             } else {
               // Token is invalid, clear it
-              localStorage.removeItem("ila-token");
-              localStorage.removeItem("ila-refresh-token");
+              clearTokens();
             }
           } else {
             // Token is invalid, clear it
-            localStorage.removeItem("ila-token");
-            localStorage.removeItem("ila-refresh-token");
+            clearTokens();
           }
         } catch (error) {
           console.error("Auth check failed:", error);
           // Clear invalid tokens
-          localStorage.removeItem("ila-token");
-          localStorage.removeItem("ila-refresh-token");
+          clearTokens();
         }
       }
       setLoading(false);
+      setIsInitialized(true);
     };
+    
     checkAuthStatus();
   }, []);
 
@@ -105,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         })
       );
       setLoading(false);
+      setIsInitialized(true);
       return true;
     }
 
@@ -126,11 +193,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsAuthenticated(true);
         setUser(userData);
 
-        // Save tokens to localStorage
-        localStorage.setItem("ila-token", token);
-        if (refreshToken) {
-          localStorage.setItem("ila-refresh-token", refreshToken);
-        }
+        // Save tokens using centralized function
+        saveTokens(token, refreshToken);
 
         return true;
       } else {
@@ -142,14 +206,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return false;
     } finally {
       setLoading(false);
+      setIsInitialized(true);
     }
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem("ila-token");
-    localStorage.removeItem("ila-refresh-token");
   };
 
   const value = {
@@ -158,6 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     logout,
     user,
     loading,
+    isInitialized,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
