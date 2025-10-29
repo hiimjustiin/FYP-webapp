@@ -21,6 +21,9 @@ import Settings from "./pages/Settings.js";
 import LoginPage from "./pages/LoginPage.js";
 import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import InstructorDashboard from "./pages/InstructorDashboard";
+import CourseStudents from "./pages/CourseStudents";
+import CourseSubmissions from "./pages/CourseSubmissions";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -43,6 +46,38 @@ const AppContent = () => {
         path="/verify-email"
         element={
           isAuthenticated ? <Navigate to="/" replace /> : <VerifyEmailPage />
+        }
+      />
+
+      {/* Instructor routes */}
+      <Route
+        path="/instructor"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout>
+              <InstructorDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/courses/:courseId/students"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout>
+              <CourseStudents />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/courses/:courseId/submissions"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout>
+              <CourseSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
         }
       />
 
