@@ -24,6 +24,10 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import InstructorDashboard from "./pages/InstructorDashboard";
 import CourseStudents from "./pages/CourseStudents";
 import CourseSubmissions from "./pages/CourseSubmissions";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminCourses from "./pages/AdminCourses";
+import AdminSubmissions from "./pages/AdminSubmissions";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -76,6 +80,48 @@ const AppContent = () => {
           <ProtectedRoute requiredRole="instructor">
             <DashboardLayout>
               <CourseSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminUsers />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/courses"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminCourses />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/submissions"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout>
+              <AdminSubmissions />
             </DashboardLayout>
           </ProtectedRoute>
         }

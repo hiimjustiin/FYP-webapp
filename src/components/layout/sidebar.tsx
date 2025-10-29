@@ -52,10 +52,21 @@ const Sidebar: React.FC = () => {
     { name: "Dashboard", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/instructor" },
   ];
 
+  // Admin navigation items
+  const adminNavItems = [
+    { name: "Dashboard", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/admin" },
+    { name: "Users", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/admin/users" },
+    { name: "Courses", icon: ProjectIcon, iconFilled: ProjectIconFilled, path: "/admin/courses" },
+    { name: "Submissions", icon: ReportIcon, iconFilled: ReportIconFilled, path: "/admin/submissions" },
+  ];
+
   // Determine which navigation items to show based on user role
-  const navigationItems = user?.role === "instructor" || user?.role === "admin" 
-    ? instructorNavItems 
-    : studentNavItems;
+  const navigationItems = 
+    user?.role === "admin" 
+      ? adminNavItems 
+      : user?.role === "instructor"
+      ? instructorNavItems 
+      : studentNavItems;
 
   const isActive = (path: string) => {
     // exact match for home so it doesn't light up everywhere
@@ -64,6 +75,11 @@ const Sidebar: React.FC = () => {
     // For instructor dashboard, match exact or child routes
     if (path === "/instructor") {
       return location.pathname === "/instructor" || location.pathname.startsWith("/instructor/");
+    }
+
+    // For admin routes, match exact or child routes
+    if (path === "/admin") {
+      return location.pathname === "/admin" && !location.pathname.startsWith("/admin/");
     }
 
     // active if exact match OR any child route (e.g. /project/new)

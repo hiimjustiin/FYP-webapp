@@ -14,6 +14,7 @@ import courseRoutes from "./routes/courses.js";
 import dimensionsRoutes from "./routes/dimensions.js";
 import instructorRoutes from "./routes/instructor.js";
 import notificationRoutes from "./routes/notifications.js";
+import adminRoutes from "./routes/admin.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -68,7 +69,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/dimensions", dimensionsRoutes);
 app.use("/api/instructor", instructorRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/instructor", instructorRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Error handling middleware
 app.use(notFound);
