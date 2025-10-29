@@ -6,13 +6,18 @@ import Table from '../components/ui/Table/Table';
 import { useNavigate } from 'react-router-dom';
 
 const InstructorDashboard = () => {
-  const { user } = useAuth();
+  const { user, isInitialized, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Wait for auth to be initialized before fetching data
+    if (!isInitialized || !isAuthenticated) {
+      return;
+    }
+
     const fetchCourses = async () => {
       try {
         const data = await instructorService.getCourses();
@@ -26,7 +31,7 @@ const InstructorDashboard = () => {
     };
 
     fetchCourses();
-  }, []);
+  }, [isInitialized, isAuthenticated]);
 
   if (loading) {
     return (

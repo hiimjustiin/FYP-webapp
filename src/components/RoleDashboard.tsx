@@ -23,7 +23,7 @@ const RoleDashboard = () => {
 
   // Redirect instructors to instructor dashboard
   if (user.role === "instructor") {
-    return <Navigate to="/instructor/dashboard" replace />;
+    return <Navigate to="/instructor" replace />;
   }
 
   // Students see the default Home dashboard
