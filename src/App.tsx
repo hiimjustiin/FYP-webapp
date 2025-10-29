@@ -14,6 +14,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import Home from "./pages/Home.js";
 import ProjectLanding from "./pages/Project/ProjectLanding.js";
 import ProjectNew from "./pages/Project/ProjectNew.js";
+import ProjectEdit from "./pages/Project/ProjectEdit.js";
 import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
@@ -72,6 +73,26 @@ const AppContent = () => {
           <ProtectedRoute>
             <DashboardLayout>
               <ProjectNew />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/project/:projectId/edit"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <ProjectEdit />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <Home />
             </DashboardLayout>
           </ProtectedRoute>
         }

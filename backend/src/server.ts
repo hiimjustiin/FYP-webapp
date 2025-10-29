@@ -11,6 +11,7 @@ import userRoutes from "./routes/users.js";
 import projectRoutes from "./routes/projects.js";
 import essayRoutes from "./routes/essays.js";
 import courseRoutes from "./routes/courses.js";
+import dimensionsRoutes from "./routes/dimensions.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -63,6 +64,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/essays", essayRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/dimensions", dimensionsRoutes);
 
 // Error handling middleware
 app.use(notFound);

@@ -104,13 +104,13 @@ const LoginPage: React.FC = () => {
           >
             Welcome to Interdisciplinary Learning Analytics (ILA)!
           </h1>
-          <p className="body-1 text-white">
+          <div className="body-1 text-white space-y-2">
             <p> Engage in interdisciplinary learning seamlessly. </p>
             <p>
               We provide feedback for your interdisciplinary natured essays
               within seconds.
             </p>
-          </p>
+          </div>
         </div>
         <footer className="body-2 text-white">
           &lt; &copy; 2025 Copyright Info &gt;

@@ -150,12 +150,119 @@ INSERT INTO courses (id, code, title, description, instructor_id, term, created_
     'Fall 2025',
     now(),
     now()
+  ),
+  (
+    '770e8400-e29b-41d4-a716-446655440005',
+    'MSL 902',
+    'Multidisciplinary Systems Leadership',
+    'Advanced course on leading complex multidisciplinary systems and projects.',
+    (SELECT id FROM users WHERE email = 'instructor@ila.com' LIMIT 1),
+    'Fall 2025',
+    now(),
+    now()
   )
 ON CONFLICT (id) DO NOTHING;
+
+-- Insert sample project submissions (based on Home.tsx mock data)
+-- Urban Heat Islands Study - Draft 1
+INSERT INTO project_submissions (id, project_id, course_id, user_id, name, submitted_at) VALUES
+  ('770e8400-e29b-41d4-a716-446655440001', '660e8400-e29b-41d4-a716-446655440001', (SELECT id FROM courses WHERE code = 'MSL 902' LIMIT 1), '550e8400-e29b-41d4-a716-446655440001', 'Draft 1', '2025-08-20 10:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440002', '660e8400-e29b-41d4-a716-446655440001', (SELECT id FROM courses WHERE code = 'MSL 902' LIMIT 1), '550e8400-e29b-41d4-a716-446655440001', 'Draft 2', '2025-09-01 14:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440003', '660e8400-e29b-41d4-a716-446655440001', (SELECT id FROM courses WHERE code = 'MSL 902' LIMIT 1), '550e8400-e29b-41d4-a716-446655440001', 'Final Submission', '2025-09-12 10:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert dimension scores for Urban Heat Islands Study - Draft 1
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440001', 1, 5),
+  ('770e8400-e29b-41d4-a716-446655440001', 2, 4),
+  ('770e8400-e29b-41d4-a716-446655440001', 3, 3),
+  ('770e8400-e29b-41d4-a716-446655440001', 4, 5),
+  ('770e8400-e29b-41d4-a716-446655440001', 5, 4),
+  ('770e8400-e29b-41d4-a716-446655440001', 6, 5),
+  ('770e8400-e29b-41d4-a716-446655440001', 7, 4),
+  ('770e8400-e29b-41d4-a716-446655440001', 8, 3),
+  ('770e8400-e29b-41d4-a716-446655440001', 9, 4)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Insert dimension scores for Urban Heat Islands Study - Draft 2
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440002', 1, 7),
+  ('770e8400-e29b-41d4-a716-446655440002', 2, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 3, 5),
+  ('770e8400-e29b-41d4-a716-446655440002', 4, 7),
+  ('770e8400-e29b-41d4-a716-446655440002', 5, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 6, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 7, 6),
+  ('770e8400-e29b-41d4-a716-446655440002', 8, 5),
+  ('770e8400-e29b-41d4-a716-446655440002', 9, 5)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Insert dimension scores for Urban Heat Islands Study - Final Submission
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440003', 1, 9),
+  ('770e8400-e29b-41d4-a716-446655440003', 2, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 3, 7),
+  ('770e8400-e29b-41d4-a716-446655440003', 4, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 5, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 6, 8),
+  ('770e8400-e29b-41d4-a716-446655440003', 7, 7),
+  ('770e8400-e29b-41d4-a716-446655440003', 8, 7),
+  ('770e8400-e29b-41d4-a716-446655440003', 9, 6)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Add more student submissions for class average calculation
+-- Mark Jacobs submission for the same course
+INSERT INTO project_submissions (id, project_id, course_id, user_id, name, submitted_at) VALUES
+  ('770e8400-e29b-41d4-a716-446655440004', '660e8400-e29b-41d4-a716-446655440002', '770e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440002', 'Final Submission', '2025-09-12 11:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440005', '660e8400-e29b-41d4-a716-446655440003', '770e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440003', 'Final Submission', '2025-09-12 12:00:00+00'),
+  ('770e8400-e29b-41d4-a716-446655440006', '660e8400-e29b-41d4-a716-446655440004', '770e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440004', 'Final Submission', '2025-09-12 13:00:00+00')
+ON CONFLICT (id) DO NOTHING;
+
+-- Scores for Mark Jacobs (slightly different to create averages)
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440004', 1, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 2, 7),
+  ('770e8400-e29b-41d4-a716-446655440004', 3, 5),
+  ('770e8400-e29b-41d4-a716-446655440004', 4, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 5, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 6, 7),
+  ('770e8400-e29b-41d4-a716-446655440004', 7, 6),
+  ('770e8400-e29b-41d4-a716-446655440004', 8, 5),
+  ('770e8400-e29b-41d4-a716-446655440004', 9, 5)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Scores for Kate Spade
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440005', 1, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 2, 8),
+  ('770e8400-e29b-41d4-a716-446655440005', 3, 6),
+  ('770e8400-e29b-41d4-a716-446655440005', 4, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 5, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 6, 6),
+  ('770e8400-e29b-41d4-a716-446655440005', 7, 7),
+  ('770e8400-e29b-41d4-a716-446655440005', 8, 6),
+  ('770e8400-e29b-41d4-a716-446655440005', 9, 6)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
+
+-- Scores for Giorgio Armani
+INSERT INTO submission_dimension_scores (submission_id, dimension_id, personal_score) VALUES
+  ('770e8400-e29b-41d4-a716-446655440006', 1, 5),
+  ('770e8400-e29b-41d4-a716-446655440006', 2, 6),
+  ('770e8400-e29b-41d4-a716-446655440006', 3, 4),
+  ('770e8400-e29b-41d4-a716-446655440006', 4, 6),
+  ('770e8400-e29b-41d4-a716-446655440006', 5, 5),
+  ('770e8400-e29b-41d4-a716-446655440006', 6, 6),
+  ('770e8400-e29b-41d4-a716-446655440006', 7, 5),
+  ('770e8400-e29b-41d4-a716-446655440006', 8, 4),
+  ('770e8400-e29b-41d4-a716-446655440006', 9, 5)
+ON CONFLICT (submission_id, dimension_id) DO NOTHING;
 
 -- Success message
 SELECT 'Seed data inserted successfully!' AS message,
        (SELECT COUNT(*) FROM users) AS users_count,
        (SELECT COUNT(*) FROM projects) AS projects_count,
        (SELECT COUNT(*) FROM project_members) AS project_members_count,
-       (SELECT COUNT(*) FROM courses) AS courses_count;
+       (SELECT COUNT(*) FROM courses) AS courses_count,
+       (SELECT COUNT(*) FROM dimensions) AS dimensions_count,
+       (SELECT COUNT(*) FROM project_submissions) AS submissions_count,
+       (SELECT COUNT(*) FROM submission_dimension_scores) AS scores_count;
