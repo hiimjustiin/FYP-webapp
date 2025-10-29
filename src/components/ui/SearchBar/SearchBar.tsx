@@ -69,8 +69,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setShowResults(results.length > 0);
 
     if (onSearch) onSearch(query);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, members, maxResults, showAll]);
+  }, [query, members, maxResults, showAll, onSearch]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
