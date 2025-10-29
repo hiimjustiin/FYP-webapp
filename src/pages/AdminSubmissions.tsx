@@ -53,8 +53,8 @@ export default function AdminSubmissions() {
       setLoading(true);
       setError("");
       const data = await adminService.getSubmissions({
-        status: statusFilter !== "all" ? statusFilter : undefined,
-        courseId: courseFilter !== "all" ? courseFilter : undefined,
+        ...(statusFilter !== "all" && { status: statusFilter }),
+        ...(courseFilter !== "all" && { courseId: courseFilter }),
       });
       setSubmissions(data);
     } catch (err) {

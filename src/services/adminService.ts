@@ -96,7 +96,9 @@ export const adminService = {
   }): Promise<PaginationResult<AdminUser[]>> {
     const queryString = new URLSearchParams(
       Object.fromEntries(
-        Object.entries(params || {}).map(([k, v]) => [k, String(v)])
+        Object.entries(params || {})
+          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .map(([k, v]) => [k, String(v)])
       )
     ).toString();
     const data = await api.get<{
@@ -180,7 +182,11 @@ export const adminService = {
     courseId?: string;
   }): Promise<AdminSubmission[]> {
     const queryString = new URLSearchParams(
-      params as Record<string, string>
+      Object.fromEntries(
+        Object.entries(params || {})
+          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .map(([k, v]) => [k, String(v)])
+      )
     ).toString();
     const data = await api.get<{ submissions: AdminSubmission[] }>(
       `/admin/submissions${queryString ? `?${queryString}` : ""}`

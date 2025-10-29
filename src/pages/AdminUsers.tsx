@@ -30,8 +30,8 @@ export default function AdminUsers() {
       const result = await adminService.getUsers({
         page,
         limit: 20,
-        role: roleFilter !== "all" ? roleFilter : undefined,
-        search: searchTerm || undefined,
+        ...(roleFilter !== "all" && { role: roleFilter }),
+        ...(searchTerm && { search: searchTerm }),
       });
       setUsers(result.items);
       setTotalPages(result.pagination.totalPages);
