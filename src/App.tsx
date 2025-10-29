@@ -11,6 +11,7 @@ import "./assets/colors/gradients.css";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import RoleDashboard from "./components/RoleDashboard";
 import Home from "./pages/Home.js";
 import ProjectLanding from "./pages/Project/ProjectLanding.js";
 import ProjectNew from "./pages/Project/ProjectNew.js";
@@ -126,14 +127,13 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
-
       {/* Protected dashboard routes */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              <Home />
+              <RoleDashboard />
             </DashboardLayout>
           </ProtectedRoute>
         }
