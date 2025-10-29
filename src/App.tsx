@@ -59,7 +59,7 @@ const AppContent = () => {
         path="/instructor"
         element={
           <ProtectedRoute requiredRole="instructor">
-            <DashboardLayout>
+            <DashboardLayout key="instructor-dashboard">
               <InstructorDashboard />
             </DashboardLayout>
           </ProtectedRoute>
@@ -69,7 +69,7 @@ const AppContent = () => {
         path="/instructor/courses/:courseId/students"
         element={
           <ProtectedRoute requiredRole="instructor">
-            <DashboardLayout>
+            <DashboardLayout key="instructor-students">
               <CourseStudents />
             </DashboardLayout>
           </ProtectedRoute>
@@ -79,7 +79,7 @@ const AppContent = () => {
         path="/instructor/courses/:courseId/submissions"
         element={
           <ProtectedRoute requiredRole="instructor">
-            <DashboardLayout>
+            <DashboardLayout key="instructor-submissions">
               <CourseSubmissions />
             </DashboardLayout>
           </ProtectedRoute>
@@ -91,7 +91,7 @@ const AppContent = () => {
         path="/admin"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardLayout>
+            <DashboardLayout key="admin-dashboard">
               <AdminDashboard />
             </DashboardLayout>
           </ProtectedRoute>
@@ -101,7 +101,7 @@ const AppContent = () => {
         path="/admin/users"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardLayout>
+            <DashboardLayout key="admin-users">
               <AdminUsers />
             </DashboardLayout>
           </ProtectedRoute>
@@ -111,7 +111,7 @@ const AppContent = () => {
         path="/admin/courses"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardLayout>
+            <DashboardLayout key="admin-courses">
               <AdminCourses />
             </DashboardLayout>
           </ProtectedRoute>
@@ -121,7 +121,7 @@ const AppContent = () => {
         path="/admin/submissions"
         element={
           <ProtectedRoute requiredRole="admin">
-            <DashboardLayout>
+            <DashboardLayout key="admin-submissions">
               <AdminSubmissions />
             </DashboardLayout>
           </ProtectedRoute>
@@ -132,7 +132,7 @@ const AppContent = () => {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="home">
               <RoleDashboard />
             </DashboardLayout>
           </ProtectedRoute>
@@ -142,7 +142,7 @@ const AppContent = () => {
         path="/project"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="project-landing">
               <ProjectLanding />
             </DashboardLayout>
           </ProtectedRoute>
@@ -152,7 +152,7 @@ const AppContent = () => {
         path="/project/new"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="project-new">
               <ProjectNew />
             </DashboardLayout>
           </ProtectedRoute>
@@ -162,7 +162,7 @@ const AppContent = () => {
         path="/project/:projectId/edit"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="project-edit">
               <ProjectEdit />
             </DashboardLayout>
           </ProtectedRoute>
@@ -172,7 +172,7 @@ const AppContent = () => {
         path="/projects/:projectId"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="project-view">
               <Home />
             </DashboardLayout>
           </ProtectedRoute>
@@ -182,7 +182,7 @@ const AppContent = () => {
         path="/team"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="team">
               <Team />
             </DashboardLayout>
           </ProtectedRoute>
@@ -192,7 +192,7 @@ const AppContent = () => {
         path="/report"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="report">
               <Report />
             </DashboardLayout>
           </ProtectedRoute>
@@ -202,7 +202,7 @@ const AppContent = () => {
         path="/settings"
         element={
           <ProtectedRoute>
-            <DashboardLayout>
+            <DashboardLayout key="settings">
               <Settings />
             </DashboardLayout>
           </ProtectedRoute>
