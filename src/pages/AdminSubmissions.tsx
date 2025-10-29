@@ -106,13 +106,14 @@ export default function AdminSubmissions() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--color-grey-05)]">
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-6">
+          <h1 className="heading-3 mb-2">
             Platform Submissions
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="body text-[var(--color-grey-55)]">
             View and manage all submissions across all courses
           </p>
         </div>
@@ -242,6 +243,7 @@ export default function AdminSubmissions() {
             />
           )}
         </div>
+      </div>
     </div>
   );
 }

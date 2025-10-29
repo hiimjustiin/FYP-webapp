@@ -71,14 +71,15 @@ export default function AdminCourses() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-[var(--color-grey-05)]">
+      <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-6 mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="heading-3 mb-2">
               Course Management
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="body text-[var(--color-grey-55)]">
               Manage all courses and assign instructors
             </p>
           </div>
@@ -168,22 +169,23 @@ export default function AdminCourses() {
           )}
         </div>
 
-      {/* Create/Edit Course Modal */}
-      {(showCreateModal || editingCourse) && (
-        <CourseModal
-          course={editingCourse}
-          instructors={instructors}
-          onClose={() => {
-            setShowCreateModal(false);
-            setEditingCourse(null);
-          }}
-          onSave={() => {
-            loadData();
-            setShowCreateModal(false);
-            setEditingCourse(null);
-          }}
-        />
-      )}
+        {/* Create/Edit Course Modal */}
+        {(showCreateModal || editingCourse) && (
+          <CourseModal
+            course={editingCourse}
+            instructors={instructors}
+            onClose={() => {
+              setShowCreateModal(false);
+              setEditingCourse(null);
+            }}
+            onSave={() => {
+              loadData();
+              setShowCreateModal(false);
+              setEditingCourse(null);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
