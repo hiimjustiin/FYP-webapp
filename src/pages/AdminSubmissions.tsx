@@ -118,7 +118,7 @@ export default function AdminSubmissions() {
         </div>
 
         {/* Filters */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-1">
               <SearchBar
@@ -189,7 +189,7 @@ export default function AdminSubmissions() {
         )}
 
         {/* Submissions Table */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
@@ -203,6 +203,7 @@ export default function AdminSubmissions() {
             </div>
           ) : (
             <Table
+              noBorder
               data={[
                 [
                   "Student",

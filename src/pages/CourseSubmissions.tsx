@@ -165,6 +165,7 @@ const CourseSubmissions = () => {
             </div>
           ) : (
             <Table
+              noBorder
               data={[
                 ['Student', 'Project', 'File', 'Status', 'Scores', 'Submitted', 'Actions'],
                 ...filteredSubmissions.map((row: CourseSubmission) => [

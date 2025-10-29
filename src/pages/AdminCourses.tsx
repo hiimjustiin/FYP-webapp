@@ -101,7 +101,7 @@ export default function AdminCourses() {
         </div>
 
         {/* Search */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           <SearchBar
             placeholder="Search by course code, title, or instructor..."
             onSearch={handleSearch}
@@ -116,7 +116,7 @@ export default function AdminCourses() {
         )}
 
         {/* Courses Table */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
@@ -128,6 +128,7 @@ export default function AdminCourses() {
             </div>
           ) : (
             <Table
+              noBorder
               data={[
                 [
                   "Code",

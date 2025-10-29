@@ -7,6 +7,15 @@
     overflow: hidden;
 }
 
+.table-container-no-border {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    font-family: 'PF Din Text Universal', Arial, sans-serif;
+    overflow: hidden;
+}
+
 .table-header {
     margin-bottom: 0;
 }
@@ -96,7 +105,7 @@
     display: none;
     gap: 16px;
     flex-direction: column;
-    padding: 16px;
+    padding: 0;
 }
 
 .table-card {

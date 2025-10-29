@@ -126,6 +126,7 @@ const CourseStudents = () => {
             </div>
           ) : (
             <Table
+              noBorder
               data={[
                 ['Student ID', 'Name', 'Email', 'Submissions', 'Enrolled'],
                 ...filteredStudents.map((row: CourseStudent) => [

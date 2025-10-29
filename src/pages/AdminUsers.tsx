@@ -105,7 +105,7 @@ export default function AdminUsers() {
         </div>
 
         {/* Filters */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <SearchBar
@@ -136,7 +136,7 @@ export default function AdminUsers() {
         )}
 
         {/* Users Table */}
-        <div className="dashboard-card">
+        <div className="dashboard-card p-4">
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#181C62] mx-auto"></div>
@@ -147,6 +147,7 @@ export default function AdminUsers() {
           ) : (
             <>
               <Table
+                noBorder
                 data={[
                   [
                     "Name",
