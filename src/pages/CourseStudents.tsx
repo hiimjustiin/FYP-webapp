@@ -72,7 +72,7 @@ const CourseStudents = () => {
         <div className="mb-6">
           <Button 
             variant="grey" 
-            onClick={() => navigate('/instructor')}
+            onClick={() => navigate('/instructor', { replace: false })}
             className="mb-4"
           >
             ← Back to Dashboard
