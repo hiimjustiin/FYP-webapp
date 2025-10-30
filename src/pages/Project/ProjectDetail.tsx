@@ -14,71 +14,112 @@ const formatDate = (iso: string) =>
   });
 
 /** ------------------------------- Mock AI Feedback ------------------------------- */
-interface RubricCriteria {
+interface DimensionFeedback {
   name: string;
   score: number;
   maxScore: number;
   feedback: string;
+  variant: string;
 }
 
 interface AIFeedback {
   overallScore: number;
   maxScore: number;
-  criteria: RubricCriteria[];
+  dimensions: DimensionFeedback[];
   summary: string;
   strengths: string[];
   improvements: string[];
   generatedAt: string;
 }
 
+// ILA Dimensions based on the app's actual dimensions
+const ILA_DIMENSIONS = [
+  {
+    label: "Frame the problem with an integrative approach",
+    variant: "lime",
+    feedback: "Strong problem framing that considers multiple perspectives. The interdisciplinary approach is evident and well-articulated.",
+    score: 8,
+  },
+  {
+    label: "Stakeholder consideration",
+    variant: "yellow",
+    feedback: "Good identification of key stakeholders. Consider expanding analysis to include indirect stakeholders and their potential impacts.",
+    score: 7,
+  },
+  {
+    label: "Range of disciplinary perspectives",
+    variant: "purple",
+    feedback: "Excellent integration of diverse disciplinary viewpoints. The breadth of perspectives demonstrates comprehensive understanding.",
+    score: 9,
+  },
+  {
+    label: "Disciplinary reasoning",
+    variant: "teal",
+    feedback: "Solid application of discipline-specific methodologies. The reasoning follows established frameworks appropriately.",
+    score: 8,
+  },
+  {
+    label: "Credibility of disciplinary knowledge",
+    variant: "blue",
+    feedback: "Sources are credible and well-cited. Consider incorporating more recent studies to strengthen the knowledge base.",
+    score: 7,
+  },
+  {
+    label: "Number of disciplinary integration",
+    variant: "grey",
+    feedback: "Good integration across multiple disciplines. The connections between fields are clear and purposeful.",
+    score: 8,
+  },
+  {
+    label: "Depth of disciplinary integration",
+    variant: "green",
+    feedback: "Integration goes beyond surface level. Shows understanding of how disciplines complement each other in addressing the problem.",
+    score: 9,
+  },
+  {
+    label: "Social (society) impact",
+    variant: "navy",
+    feedback: "Strong consideration of societal implications. The analysis demonstrates awareness of broader social contexts and potential impacts.",
+    score: 8,
+  },
+  {
+    label: "Limitations",
+    variant: "pink",
+    feedback: "Good acknowledgment of study limitations. Consider discussing methodological constraints and potential biases more explicitly.",
+    score: 7,
+  },
+];
+
 const generateMockAIFeedback = (): AIFeedback => {
+  const dimensions: DimensionFeedback[] = ILA_DIMENSIONS.map((dim) => ({
+    name: dim.label,
+    score: dim.score,
+    maxScore: 10,
+    feedback: dim.feedback,
+    variant: dim.variant,
+  }));
+
+  const totalScore = dimensions.reduce((sum, dim) => sum + dim.score, 0);
+  const maxTotalScore = dimensions.length * 10;
+
   return {
-    overallScore: 82,
-    maxScore: 100,
-    criteria: [
-      {
-        name: "Technical Implementation",
-        score: 28,
-        maxScore: 30,
-        feedback:
-          "Excellent code quality with well-structured components. API integration is seamless and follows best practices.",
-      },
-      {
-        name: "Documentation",
-        score: 18,
-        maxScore: 25,
-        feedback:
-          "Good documentation overall. README is comprehensive but could benefit from more inline code comments and API documentation.",
-      },
-      {
-        name: "Innovation & Creativity",
-        score: 16,
-        maxScore: 20,
-        feedback:
-          "Demonstrates creative problem-solving. The approach to user interface design shows originality.",
-      },
-      {
-        name: "Team Collaboration",
-        score: 20,
-        maxScore: 25,
-        feedback:
-          "Strong evidence of teamwork through commit history and code reviews. Well-distributed workload among team members.",
-      },
-    ],
+    overallScore: totalScore,
+    maxScore: maxTotalScore,
+    dimensions,
     summary:
-      "This project demonstrates strong technical skills and effective team collaboration. The implementation is robust and well-tested. Some areas for improvement include documentation depth and edge case handling.",
+      "This project demonstrates strong interdisciplinary learning and integration. The work shows comprehensive understanding of multiple perspectives and their integration. The problem is well-framed with clear stakeholder consideration. Areas for enhancement include expanding stakeholder analysis and incorporating more recent scholarly sources.",
     strengths: [
-      "Clean and maintainable code architecture",
-      "Comprehensive test coverage (85%)",
-      "Effective use of modern frameworks and libraries",
-      "Strong attention to user experience",
-      "Excellent git workflow and version control practices",
+      "Exceptional depth of disciplinary integration across multiple fields",
+      "Clear and comprehensive problem framing with integrative approach",
+      "Strong demonstration of disciplinary reasoning and methodologies",
+      "Thoughtful consideration of societal impact and broader implications",
+      "Effective synthesis of diverse disciplinary perspectives",
     ],
     improvements: [
-      "Add more detailed API documentation",
-      "Implement additional error handling for edge cases",
-      "Consider performance optimization for larger datasets",
-      "Expand unit tests to cover more integration scenarios",
+      "Expand stakeholder analysis to include indirect stakeholders",
+      "Incorporate more recent studies to strengthen credibility of knowledge",
+      "Provide more explicit discussion of methodological limitations",
+      "Consider additional ethical implications in the social impact section",
     ],
     generatedAt: new Date().toISOString(),
   };
@@ -303,27 +344,38 @@ const ProjectDetail = () => {
               </div>
             </div>
 
-            {/* Rubric Criteria */}
+            {/* ILA Dimensions Assessment */}
             <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-              <h5 className="subtitle-1 mb-4">Rubric Assessment</h5>
+              <h5 className="subtitle-1 mb-4">ILA Dimensions Assessment</h5>
               <div className="space-y-4">
-                {aiFeedback.criteria.map((criteria, idx) => (
+                {aiFeedback.dimensions.map((dimension, idx) => (
                   <div key={idx} className="border-b border-grey-10 pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="subtitle-2">{criteria.name}</span>
-                      <span className="body-2 font-medium">
-                        {criteria.score}/{criteria.maxScore}
+                    <div className="flex items-start justify-between mb-2 gap-4">
+                      <div className="flex items-center gap-2 flex-1">
+                        <span
+                          className={`inline-block px-2 py-1 rounded text-xs font-medium bg-${dimension.variant}-100 text-${dimension.variant}-800`}
+                          style={{
+                            backgroundColor: `var(--color-${dimension.variant}-10, #f0f0f0)`,
+                            color: `var(--color-${dimension.variant}-70, #333)`,
+                          }}
+                        >
+                          {dimension.variant}
+                        </span>
+                        <span className="subtitle-2 flex-1">{dimension.name}</span>
+                      </div>
+                      <span className="body-2 font-medium whitespace-nowrap">
+                        {dimension.score}/{dimension.maxScore}
                       </span>
                     </div>
                     <div className="w-full bg-grey-20 rounded-full h-2 mb-2">
                       <div
                         className="bg-[#D71440] h-2 rounded-full transition-all"
                         style={{
-                          width: `${(criteria.score / criteria.maxScore) * 100}%`,
+                          width: `${(dimension.score / dimension.maxScore) * 100}%`,
                         }}
                       />
                     </div>
-                    <p className="caption text-grey-80">{criteria.feedback}</p>
+                    <p className="caption text-grey-80">{dimension.feedback}</p>
                   </div>
                 ))}
               </div>
@@ -374,7 +426,7 @@ const ProjectDetail = () => {
             <div className="text-5xl mb-3">📋</div>
             <h5 className="subtitle-1 mb-2">No AI Feedback Yet</h5>
             <p className="body-2 text-grey-80">
-              Submit your project to receive detailed AI feedback and assessment based on course rubrics.
+              Submit your project to receive detailed AI feedback and assessment based on the 9 ILA dimensions for interdisciplinary learning.
             </p>
           </div>
         )}
