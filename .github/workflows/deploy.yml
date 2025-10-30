@@ -139,7 +139,7 @@ jobs:
           # Application Configuration
           NODE_ENV=production
           JWT_SECRET=${{ secrets.JWT_SECRET }}
-          CORS_ORIGIN=http://${{ env.EC2_HOST }}:3000
+          CORS_ORIGIN=http://${{ env.EC2_HOST }}
 
           # Email Configuration (SMTP)
           SMTP_HOST=${{ secrets.SMTP_HOST }}
@@ -149,13 +149,13 @@ jobs:
           SMTP_PASS=${{ secrets.SMTP_PASS }}
 
           # Port Configuration
-          FRONTEND_PORT=3000
+          FRONTEND_PORT=80
           BACKEND_PORT=3001
 
           # Production Database URL
           DATABASE_URL=postgresql://ila_user:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ila_db
 
-          # API Base URL
+          # API Base URL - Point to backend through port 3001
           VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
           EOF
             
@@ -237,13 +237,13 @@ jobs:
           
           # Check if frontend is responding
           echo "Checking frontend..."
-          curl -f -I http://${{ env.EC2_HOST }}:3000 || echo "⚠️ Frontend health check failed"
+          curl -f -I http://${{ env.EC2_HOST }} || echo "⚠️ Frontend health check failed"
 
       - name: Deployment Summary
         if: success()
         run: |
           echo "✅ Deployment successful!"
-          echo "🌐 Frontend: http://${{ env.EC2_HOST }}:3000"
+          echo "🌐 Frontend: http://${{ env.EC2_HOST }}"
           echo "🔌 Backend: http://${{ env.EC2_HOST }}:3001/api"
 
       - name: Notify on Failure
