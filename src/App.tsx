@@ -12,10 +12,10 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import RoleDashboard from "./components/RoleDashboard";
-import Home from "./pages/Home.js";
 import ProjectLanding from "./pages/Project/ProjectLanding.js";
 import ProjectNew from "./pages/Project/ProjectNew.js";
 import ProjectEdit from "./pages/Project/ProjectEdit.js";
+import ProjectDetail from "./pages/Project/ProjectDetail.js";
 import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
@@ -173,7 +173,7 @@ const AppContent = () => {
         element={
           <ProtectedRoute>
             <DashboardLayout key="project-view">
-              <Home />
+              <ProjectDetail />
             </DashboardLayout>
           </ProtectedRoute>
         }
