@@ -38,16 +38,14 @@ INSERT INTO users (id, email, password_hash, display_name, role, is_active, emai
 ON CONFLICT (email) DO NOTHING;
 
 -- Insert sample projects (matching the mock data from ProjectLanding)
-INSERT INTO projects (id, title, description, owner_id, status, course_code, submission_date, interq_score, created_at, updated_at) VALUES
+-- Note: course_code, submission_date, and interq_score are added by migration 1760671987000_enhance-projects-for-ui.js
+INSERT INTO projects (id, title, description, owner_id, status, created_at, updated_at) VALUES
   (
     '660e8400-e29b-41d4-a716-446655440001',
     'Urban Heat Islands Study',
     'A comprehensive study on urban heat islands and their environmental impact.',
     '550e8400-e29b-41d4-a716-446655440001', -- Calvin Klein
-    'Submitted',
-    'MSL 902',
-    '2025-09-12 10:00:00+00',
-    '—',
+    'active',
     now() - interval '2 months',
     now() - interval '1 month'
   ),
@@ -56,10 +54,7 @@ INSERT INTO projects (id, title, description, owner_id, status, course_code, sub
     'Renewable Microgrids Pilot',
     'Pilot project for implementing renewable energy microgrids in urban areas.',
     '550e8400-e29b-41d4-a716-446655440005', -- Tommy Hilfiger
-    'Completed',
-    'EEE 311',
-    '2025-03-18 10:00:00+00',
-    '—',
+    'active',
     now() - interval '6 months',
     now() - interval '5 months'
   ),
@@ -68,10 +63,7 @@ INSERT INTO projects (id, title, description, owner_id, status, course_code, sub
     'AI Ethics in Clinics',
     'Exploring ethical considerations of AI implementation in clinical settings.',
     '550e8400-e29b-41d4-a716-446655440007', -- Jane Smith
-    'Submitted',
-    'HSS 210',
-    '2025-06-01 10:00:00+00',
-    '—',
+    'active',
     now() - interval '4 months',
     now() - interval '3 months'
   ),
@@ -80,14 +72,41 @@ INSERT INTO projects (id, title, description, owner_id, status, course_code, sub
     'Coastal Erosion Mitigation',
     'Research project on innovative methods to mitigate coastal erosion.',
     '550e8400-e29b-41d4-a716-446655440008', -- David Chen
-    'Draft',
-    'CEE 450',
-    '2025-08-10 10:00:00+00',
-    '—',
+    'active',
     now() - interval '1 month',
     now() - interval '1 week'
   )
 ON CONFLICT (id) DO NOTHING;
+
+-- Update projects with UI-specific data (after migration adds columns)
+-- This UPDATE will work after migration 1760671987000 runs
+UPDATE projects SET 
+  course_code = 'MSL 902',
+  submission_date = '2025-09-12 10:00:00+00',
+  interq_score = '—',
+  status = 'Submitted'
+WHERE id = '660e8400-e29b-41d4-a716-446655440001';
+
+UPDATE projects SET 
+  course_code = 'EEE 311',
+  submission_date = '2025-03-18 10:00:00+00',
+  interq_score = '—',
+  status = 'Completed'
+WHERE id = '660e8400-e29b-41d4-a716-446655440002';
+
+UPDATE projects SET 
+  course_code = 'HSS 210',
+  submission_date = '2025-06-01 10:00:00+00',
+  interq_score = '—',
+  status = 'Submitted'
+WHERE id = '660e8400-e29b-41d4-a716-446655440003';
+
+UPDATE projects SET 
+  course_code = 'CEE 450',
+  submission_date = '2025-08-10 10:00:00+00',
+  interq_score = '—',
+  status = 'Draft'
+WHERE id = '660e8400-e29b-41d4-a716-446655440004';
 
 -- Insert project members (team collaborations)
 INSERT INTO project_members (project_id, user_id, role) VALUES
