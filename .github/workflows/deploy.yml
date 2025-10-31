@@ -10,6 +10,7 @@ env:
   EC2_HOST: 13.229.1.151
   EC2_USER: ec2-user
   DEPLOY_PATH: /home/ec2-user/ila-webapp
+  DOMAIN: ila-analytics.rdc.nie.edu.sg
 
 jobs:
   deploy:
@@ -135,11 +136,10 @@ jobs:
           POSTGRES_USER=ila_user
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_PORT=5432
-
           # Application Configuration
           NODE_ENV=production
           JWT_SECRET=${{ secrets.JWT_SECRET }}
-          CORS_ORIGIN=http://${{ env.EC2_HOST }}
+          CORS_ORIGIN=https://${{ env.DOMAIN }}
 
           # Email Configuration (SMTP)
           SMTP_HOST=${{ secrets.SMTP_HOST }}
@@ -155,7 +155,8 @@ jobs:
           # Production Database URL
           DATABASE_URL=postgresql://ila_user:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ila_db
 
-          # API Base URL - Point to backend through port 3001
+          # API Base URL - Use HTTPS with domain
+          VITE_API_BASE_URL=https://${{ env.DOMAIN }}/api
           VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
           EOF
             
