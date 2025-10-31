@@ -12,7 +12,7 @@ echo ""
 
 # Configuration
 DOMAIN="ila-analytics.rdc.nie.edu.sg"
-EMAIL="your-email@nie.edu.sg"  # Change this!
+EMAIL="nieilawebapp@gmail.com"  # Change this!
 WEBAPP_DIR="$HOME/ila-webapp"
 
 # Colors for output
