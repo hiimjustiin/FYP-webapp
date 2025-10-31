@@ -157,7 +157,7 @@ git push origin main
 
 ```bash
 # SSH to EC2
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # Deploy
 cd ~/ila-webapp
@@ -205,8 +205,8 @@ https://github.com/ntu-dsair/ila-webapp/settings/secrets/actions
 After deployment, verify:
 
 - [ ] Containers are running: `docker compose ps`
-- [ ] Frontend accessible: http://13.212.19.144:3000
-- [ ] Backend accessible: http://13.212.19.144:3001/health
+- [ ] Frontend accessible: http://13.229.1.151:3000
+- [ ] Backend accessible: http://13.229.1.151:3001/health
 - [ ] Database initialized (check logs)
 - [ ] Security Group allows ports 3000, 3001
 - [ ] Environment variables set correctly
@@ -218,7 +218,7 @@ After deployment, verify:
 
 ```bash
 # SSH to EC2
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # Check container status
 docker compose ps

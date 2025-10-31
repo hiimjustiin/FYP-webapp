@@ -25,7 +25,7 @@ git push origin main
 **Direct Docker** - On EC2 instance
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd ~/ila-webapp
 git pull origin main
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
@@ -46,7 +46,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ```bash
 # SSH to EC2
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # View logs
 docker compose logs -f
@@ -62,5 +62,5 @@ docker compose ps
 
 ## 🌐 Access
 
-- Frontend: http://13.212.19.144:3000
-- Backend: http://13.212.19.144:3001/api
+- Frontend: http://13.229.1.151:3000
+- Backend: http://13.229.1.151:3001/api

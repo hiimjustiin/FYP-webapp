@@ -100,13 +100,13 @@ POSTGRES_PORT=5432
 # Application Configuration
 NODE_ENV=production
 JWT_SECRET=nqAX46vHRp2TtjlCVjF7q1+5IDpY2EaYjnEA1m7Et8A=
-CORS_ORIGIN=http://13.212.19.144:3000
+CORS_ORIGIN=http://13.229.1.151:3000
 
 # Production Database URL
 DATABASE_URL=postgresql://ila_user:JPBFpINsKQ4hQDrJYSDe@postgres:5432/ila_db
 
 # API Base URL
-VITE_API_BASE_URL=http://13.212.19.144:3001/api
+VITE_API_BASE_URL=http://13.229.1.151:3001/api
 ```
 
 **To deploy:**
@@ -236,7 +236,7 @@ After deploying, verify:
 ### On EC2:
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd /home/ec2-user/ila-webapp
 
 # 1. Check production env file exists
@@ -265,9 +265,9 @@ curl http://localhost:3001/health
 
 ### From Browser:
 
-- ✅ Frontend loads: http://13.212.19.144:3000
-- ✅ Backend health: http://13.212.19.144:3001/health
-- ✅ Registration works: http://13.212.19.144:3000/register
+- ✅ Frontend loads: http://13.229.1.151:3000
+- ✅ Backend health: http://13.229.1.151:3001/health
+- ✅ Registration works: http://13.229.1.151:3000/register
 
 ---
 
@@ -316,7 +316,7 @@ curl http://localhost:3001/health
 
 ```bash
 # SSH to EC2
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd /home/ec2-user/ila-webapp
 
 # Check what password PostgreSQL is using

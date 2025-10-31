@@ -10,7 +10,7 @@
 set -e  # Exit on any error
 
 # Configuration
-EC2_HOST="13.212.19.144"
+EC2_HOST="13.229.1.151"
 EC2_USER="ec2-user"
 PEM_KEY="./ila-pk.pem"
 DEPLOY_PATH="/home/ec2-user/ila-webapp"
@@ -158,7 +158,7 @@ POSTGRES_PORT=5432
 # Application Configuration
 NODE_ENV=production
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-CORS_ORIGIN=http://13.212.19.144:3000
+CORS_ORIGIN=http://13.229.1.151:3000
 
 # Port Configuration
 FRONTEND_PORT=3000
@@ -168,7 +168,7 @@ BACKEND_PORT=3001
 DATABASE_URL=postgresql://ila_user:ila_secure_password_2025@postgres:5432/ila_db
 
 # API Base URL
-VITE_API_BASE_URL=http://13.212.19.144:3001/api
+VITE_API_BASE_URL=http://13.229.1.151:3001/api
 EOF
     echo "⚠️  IMPORTANT: Update .env with secure production values!"
 else
@@ -218,8 +218,8 @@ echo ""
 echo "============================================"
 echo "✅ Deployment completed successfully!"
 echo "============================================"
-echo "Frontend: http://13.212.19.144:3000"
-echo "Backend API: http://13.212.19.144:3001"
+echo "Frontend: http://13.229.1.151:3000"
+echo "Backend API: http://13.229.1.151:3001"
 echo ""
 echo "Useful commands:"
 echo "  docker compose ps                    - Check container status"

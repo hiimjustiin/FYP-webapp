@@ -31,7 +31,7 @@ The CI/CD pipeline automatically deploys your Dockerized application to EC2 when
 SSH into your EC2 instance and ensure Docker is installed:
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # Install Docker
 sudo dnf install -y docker
@@ -48,7 +48,7 @@ docker compose version
 
 # Important: Log out and back in for group membership to take effect
 exit
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 ```
 
 ### 2. Set Up GitHub Repository Secrets
@@ -129,7 +129,7 @@ Watch the deployment in GitHub Actions:
 After first deployment, SSH to EC2 and update `.env`:
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd ~/ila-webapp
 nano .env
 ```
@@ -142,8 +142,8 @@ POSTGRES_PASSWORD=<your-secure-password>
 JWT_SECRET=<your-jwt-secret>
 
 # Update with your domain or IP
-CORS_ORIGIN=http://13.212.19.144:3000
-VITE_API_BASE_URL=http://13.212.19.144:3001/api
+CORS_ORIGIN=http://13.229.1.151:3000
+VITE_API_BASE_URL=http://13.229.1.151:3001/api
 ```
 
 Restart containers after updating:
@@ -183,7 +183,7 @@ git push origin main
 ### View Application Logs on EC2
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd ~/ila-webapp
 
 # View all container logs
@@ -201,7 +201,7 @@ docker compose logs --tail=100
 ### Check Container Status
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # Check running containers
 docker compose ps
@@ -240,7 +240,7 @@ Error: Permission denied (publickey)
 **Check containers:**
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd ~/ila-webapp
 docker compose ps
 ```

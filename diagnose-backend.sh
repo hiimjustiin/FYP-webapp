@@ -4,7 +4,7 @@
 # Backend Diagnostics Script for AWS EC2
 # =============================================================================
 # Run this script on your EC2 instance to diagnose backend issues
-# Usage: ssh -i ila-pk.pem ec2-user@13.212.19.144 'bash -s' < diagnose-backend.sh
+# Usage: ssh -i ila-pk.pem ec2-user@13.229.1.151 'bash -s' < diagnose-backend.sh
 # =============================================================================
 
 set +e  # Don't exit on errors, we want to see all diagnostics
@@ -194,7 +194,7 @@ else
     echo ""
     echo "If registration still fails:"
     echo "1. Check EC2 Security Group allows port 3001"
-    echo "2. Test from outside: curl http://13.212.19.144:3001/health"
+    echo "2. Test from outside: curl http://13.229.1.151:3001/health"
     echo "3. Check browser console for CORS errors"
     echo "4. Verify API endpoint in frontend: VITE_API_BASE_URL"
 fi
