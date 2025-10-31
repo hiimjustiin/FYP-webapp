@@ -64,26 +64,40 @@ echo ""
 
 # Step 4: Obtain SSL Certificate
 echo "Step 4: Obtaining SSL certificate from Let's Encrypt..."
-if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+    echo -e "${GREEN}✓ Certificate already exists${NC}"
+    # Try to renew in case it needs renewal
+    sudo certbot renew --standalone --force-renewal --cert-name $DOMAIN || echo "Certificate is up to date"
+else
     echo "Requesting new certificate..."
     sudo certbot certonly --standalone \
         -d $DOMAIN \
         --email $EMAIL \
         --agree-tos \
         --non-interactive
-    echo -e "${GREEN}✓ Certificate obtained successfully${NC}"
-else
-    echo -e "${GREEN}✓ Certificate already exists${NC}"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✓ Certificate obtained successfully${NC}"
+    else
+        echo -e "${RED}Failed to obtain certificate${NC}"
+        exit 1
+    fi
 fi
 echo ""
 
 # Step 5: Verify certificate files
 echo "Step 5: Verifying certificate files..."
-if [ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ] && [ -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem" ]; then
+echo "Checking for certificate at: /etc/letsencrypt/live/$DOMAIN"
+
+if sudo test -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem"; then
     echo -e "${GREEN}✓ Certificate files verified${NC}"
     sudo ls -la /etc/letsencrypt/live/$DOMAIN/
 else
     echo -e "${RED}Error: Certificate files not found${NC}"
+    echo "Checking what exists in /etc/letsencrypt/live/:"
+    sudo ls -la /etc/letsencrypt/live/ || echo "Directory not accessible"
+    echo ""
+    echo "Checking certificate status:"
+    sudo certbot certificates || echo "No certificates found"
     exit 1
 fi
 echo ""
