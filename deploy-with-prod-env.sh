@@ -21,7 +21,7 @@ echo ""
 read -p "Press ENTER to continue or Ctrl+C to cancel..."
 echo ""
 
-ssh -i ila-pk.pem ec2-user@13.212.19.144 'bash -s' << 'ENDSSH'
+ssh -i ila-pk.pem ec2-user@13.229.1.151 'bash -s' << 'ENDSSH'
 set -e
 
 cd /home/ec2-user/ila-webapp
@@ -48,7 +48,7 @@ POSTGRES_PORT=5432
 # Application Configuration
 NODE_ENV=production
 JWT_SECRET=nqAX46vHRp2TtjlCVjF7q1+5IDpY2EaYjnEA1m7Et8A=
-CORS_ORIGIN=http://13.212.19.144:3000
+CORS_ORIGIN=http://13.229.1.151:3000
 
 # Port Configuration
 FRONTEND_PORT=3000
@@ -58,7 +58,7 @@ BACKEND_PORT=3001
 DATABASE_URL=postgresql://ila_user:JPBFpINsKQ4hQDrJYSDe@postgres:5432/ila_db
 
 # API Base URL
-VITE_API_BASE_URL=http://13.212.19.144:3001/api
+VITE_API_BASE_URL=http://13.229.1.151:3001/api
 
 # Frontend Production Settings
 VITE_BYPASS_AUTH=false
@@ -136,9 +136,9 @@ if curl -f -s http://localhost:3001/health; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "🌐 Your application is ready:"
-    echo "   Frontend:     http://13.212.19.144:3000"
-    echo "   Backend API:  http://13.212.19.144:3001"
-    echo "   Registration: http://13.212.19.144:3000/register"
+    echo "   Frontend:     http://13.229.1.151:3000"
+    echo "   Backend API:  http://13.229.1.151:3001"
+    echo "   Registration: http://13.229.1.151:3000/register"
     echo ""
     echo "🎉 Environment separation implemented successfully!"
     echo "   - Local development: uses .env"

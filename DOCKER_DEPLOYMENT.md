@@ -73,7 +73,7 @@ Direct deployment on EC2 instance.
 
 ```bash
 # SSH into EC2
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # Install Docker
 sudo dnf install -y docker docker-compose-plugin
@@ -83,7 +83,7 @@ sudo usermod -aG docker ec2-user
 
 # Log out and back in for group membership
 exit
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 
 # Clone repository
 cd ~
@@ -101,7 +101,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ### Subsequent Deployments
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd ~/ila-webapp
 
 # Pull latest changes
@@ -132,7 +132,7 @@ POSTGRES_PORT=5432
 # Application Configuration
 NODE_ENV=production
 JWT_SECRET=your_jwt_secret_from_openssl_rand
-CORS_ORIGIN=http://13.212.19.144:3000
+CORS_ORIGIN=http://13.229.1.151:3000
 
 # Port Configuration
 FRONTEND_PORT=3000
@@ -142,7 +142,7 @@ BACKEND_PORT=3001
 DATABASE_URL=postgresql://ila_user:your_secure_password_here@postgres:5432/ila_db
 
 # API Base URL
-VITE_API_BASE_URL=http://13.212.19.144:3001/api
+VITE_API_BASE_URL=http://13.229.1.151:3001/api
 ```
 
 ### EC2 Security Group Rules
@@ -188,7 +188,7 @@ Configure inbound rules in AWS Console:
                       │
                       ▼
               Internet Users
-        http://13.212.19.144:3000
+        http://13.229.1.151:3000
 ```
 
 ---
@@ -535,14 +535,14 @@ docker system prune -a
 
 ### Access URLs
 
-- **Frontend**: http://13.212.19.144:3000
-- **Backend API**: http://13.212.19.144:3001/api
+- **Frontend**: http://13.229.1.151:3000
+- **Backend API**: http://13.229.1.151:3001/api
 - **Database**: postgres://ila_user:password@postgres:5432/ila_db (internal)
 
 ### SSH Access
 
 ```bash
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 ```
 
 ---

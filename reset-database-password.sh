@@ -29,7 +29,7 @@ echo "🔧 Resetting PostgreSQL Database on EC2"
 echo "===================================="
 echo ""
 
-ssh -i ila-pk.pem ec2-user@13.212.19.144 << 'ENDSSH'
+ssh -i ila-pk.pem ec2-user@13.229.1.151 << 'ENDSSH'
 set -e
 
 cd /home/ec2-user/ila-webapp
@@ -75,9 +75,9 @@ if curl -f http://localhost:3001/health 2>/dev/null; then
     echo "✅ SUCCESS! Backend connected to database!"
     echo ""
     echo "🌐 Your application is ready:"
-    echo "   - Frontend: http://13.212.19.144:3000"
-    echo "   - Backend: http://13.212.19.144:3001"
-    echo "   - Registration: http://13.212.19.144:3000/register"
+    echo "   - Frontend: http://13.229.1.151:3000"
+    echo "   - Backend: http://13.229.1.151:3001"
+    echo "   - Registration: http://13.229.1.151:3000/register"
 else
     echo ""
     echo "❌ Backend still not connecting"

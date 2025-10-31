@@ -156,7 +156,7 @@ docker compose exec backend pnpm db:migrate
 
 ```bash
 # SSH to EC2
-ssh -i ila-pk.pem ec2-user@13.212.19.144
+ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd /home/ec2-user/ila-webapp
 
 # Run migrations (ensure postgres is healthy first)

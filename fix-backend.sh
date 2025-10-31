@@ -4,7 +4,7 @@
 # Backend Fix Script for AWS EC2
 # =============================================================================
 # This script attempts to fix common backend issues
-# Usage: ssh -i ila-pk.pem ec2-user@13.212.19.144 'bash -s' < fix-backend.sh
+# Usage: ssh -i ila-pk.pem ec2-user@13.229.1.151 'bash -s' < fix-backend.sh
 # =============================================================================
 
 set -e
