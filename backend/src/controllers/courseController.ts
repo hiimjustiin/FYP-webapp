@@ -71,7 +71,7 @@ export const getEnrolledCourses = async (
        FROM course_enrollments ce
        JOIN courses c ON ce.course_id = c.id
        LEFT JOIN users u ON c.instructor_id = u.id
-       WHERE ce.user_id = $1
+       WHERE ce.user_id = $1 AND ce.status = 'active'
        ORDER BY ce.enrolled_at DESC`,
       [req.user.id]
     );
