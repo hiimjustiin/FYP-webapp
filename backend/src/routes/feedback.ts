@@ -16,7 +16,7 @@ const router: Router = Router();
 router.get(
   "/submissions/:submissionId",
   authenticate,
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { submissionId } = req.params;
 
@@ -30,10 +30,11 @@ router.get(
       );
 
       if (submissionResult.rows.length === 0) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: { message: "Submission not found" },
         });
+        return;
       }
 
       const submission = submissionResult.rows[0];
@@ -45,10 +46,11 @@ router.get(
         req.user?.role === "admin";
 
       if (!hasAccess) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: { message: "Access denied" },
         });
+        return;
       }
 
       // Fetch feedback from Python AI service
@@ -78,7 +80,7 @@ router.post(
   "/submissions/:submissionId/reanalyze",
   authenticate,
   authorize("instructor", "admin"),
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { submissionId } = req.params;
 
@@ -93,10 +95,11 @@ router.post(
         );
 
         if (submissionResult.rows.length === 0) {
-          return res.status(403).json({
+          res.status(403).json({
             success: false,
             error: { message: "Access denied" },
           });
+          return;
         }
       }
 
@@ -136,14 +139,15 @@ router.patch(
       .isLength({ min: 10, max: 500 })
       .withMessage("Comment must be between 10 and 500 characters"),
   ],
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: { message: "Validation failed", details: errors.array() },
         });
+        return;
       }
 
       const { submissionId, dimensionId } = req.params;
@@ -160,10 +164,11 @@ router.patch(
         );
 
         if (submissionResult.rows.length === 0) {
-          return res.status(403).json({
+          res.status(403).json({
             success: false,
             error: { message: "Access denied" },
           });
+          return;
         }
       }
 
@@ -180,10 +185,11 @@ router.patch(
       );
 
       if (updateResult.rows.length === 0) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: { message: "Dimension score not found" },
         });
+        return;
       }
 
       res.json({
@@ -210,7 +216,7 @@ router.patch(
 router.get(
   "/submissions/:submissionId/status",
   authenticate,
-  async (req: AuthRequest, res: Response) => {
+  async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { submissionId } = req.params;
 
@@ -226,10 +232,11 @@ router.get(
       );
 
       if (submissionResult.rows.length === 0) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           error: { message: "Submission not found" },
         });
+        return;
       }
 
       const submission = submissionResult.rows[0];
@@ -241,10 +248,11 @@ router.get(
         req.user?.role === "admin";
 
       if (!hasAccess) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: { message: "Access denied" },
         });
+        return;
       }
 
       res.json({
