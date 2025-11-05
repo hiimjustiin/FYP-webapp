@@ -76,6 +76,11 @@ export const getEnrolledCourses = async (
       [req.user.id]
     );
 
+    console.log(`📚 User ${req.user.id} has ${result.rows.length} active enrollments`);
+    result.rows.forEach((course) => {
+      console.log(`  - ${course.code}: status=${course.enrollment_status}`);
+    });
+
     res.json({
       success: true,
       data: { courses: result.rows },
@@ -192,6 +197,7 @@ export const unenrollCourse = async (
     }
 
     const { courseId } = req.params;
+    console.log(`🚪 User ${req.user.id} unenrolling from course ${courseId}`);
 
     const result = await query(
       `UPDATE course_enrollments 
@@ -202,12 +208,16 @@ export const unenrollCourse = async (
     );
 
     if (result.rows.length === 0) {
+      console.log(`⚠️  No active enrollment found for course ${courseId}`);
       res.status(404).json({
         success: false,
         error: { message: "Enrollment not found or already inactive" },
       });
       return;
     }
+
+    console.log(`✅ Successfully updated enrollment status to 'dropped'`);
+    console.log(`   Old status: ${result.rows[0].status || 'active'}`);
 
     res.json({
       success: true,
