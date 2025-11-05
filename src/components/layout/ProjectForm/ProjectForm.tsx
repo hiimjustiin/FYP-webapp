@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "../../ui/Button/Button";
 import SearchBar, { type Member } from "../../ui/SearchBar/SearchBar";
 import Dropdown, { type DropdownOption } from "../../ui/Dropdown/Dropdown";
@@ -9,6 +9,7 @@ import {
   AlertDialog,
   type AlertDialogType,
 } from "../../ui/AlertDialog/AlertDialog";
+import { courseService, type Course } from "../../../services/courseService";
 
 export interface ProjectFormData {
   course: string;
@@ -46,40 +47,6 @@ const projectTypeOptions: DropdownOption[] = [
   { id: "individual", label: "Individual Project" },
 ];
 
-// Sample members data
-const sampleMembers: Member[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    initials: "JD",
-    backgroundColor: "blue",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    initials: "JS",
-    backgroundColor: "green",
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    initials: "MJ",
-    backgroundColor: "purple",
-  },
-  {
-    id: "4",
-    name: "Sarah Wilson",
-    initials: "SW",
-    backgroundColor: "pink",
-  },
-  {
-    id: "5",
-    name: "David Chen",
-    initials: "DC",
-    backgroundColor: "teal",
-  },
-];
-
 const ProjectForm: React.FC<ProjectFormProps> = ({
   initialData,
   selectedTeamMembers: initialTeamMembers = [],
@@ -103,10 +70,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     useState<Member[]>(initialTeamMembers);
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialFiles);
 
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [courseOptions, setCourseOptions] = useState<DropdownOption[]>([]);
+  const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
   const [selectedCourse, setSelectedCourse] = useState<DropdownOption | null>(
-    initialData && initialData.course
-      ? courseOptions.find((c) => c.id === initialData.course) || null
-      : null
+    null
   );
 
   const [selectedProjectType, setSelectedProjectType] =
@@ -122,6 +93,89 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [alertTitle, setAlertTitle] = useState("Review your submission");
   const [primaryButtonText, setPrimaryButtonText] = useState("Confirm");
   const [alertMsg, setAlertMsg] = useState("");
+
+  // Fetch enrolled courses on mount
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      try {
+        setIsLoadingCourses(true);
+        const courses = await courseService.getEnrolledCourses();
+        setEnrolledCourses(courses);
+        
+        // Convert courses to dropdown options
+        const options: DropdownOption[] = courses.map((course) => ({
+          id: course.id,
+          label: course.code ? `${course.code} - ${course.title}` : course.title,
+        }));
+        setCourseOptions(options);
+
+        // Set initial selected course if editing
+        if (initialData && initialData.course) {
+          const initialCourse = options.find((c) => c.id === initialData.course);
+          if (initialCourse) {
+            setSelectedCourse(initialCourse);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch enrolled courses:", error);
+        setAlertType("error");
+        setAlertTitle("Error");
+        setAlertMsg("Failed to load your enrolled courses. Please refresh the page.");
+        setIsAlertOpen(true);
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    };
+
+    fetchEnrolledCourses();
+  }, [initialData]);
+
+  // Fetch enrolled students when course is selected
+  useEffect(() => {
+    const fetchEnrolledStudents = async () => {
+      if (!selectedCourse) {
+        setAvailableMembers([]);
+        return;
+      }
+
+      try {
+        setIsLoadingMembers(true);
+        const students = await courseService.getEnrolledStudents(selectedCourse.id);
+        
+        // Convert students to Member format
+        const members: Member[] = students.map((student) => {
+          const nameParts = student.display_name.split(" ");
+          const initials = nameParts
+            .map((part) => part.charAt(0).toUpperCase())
+            .join("")
+            .substring(0, 2);
+
+          // Generate consistent color based on student ID
+          const colors = ["blue", "green", "purple", "pink", "teal", "orange"];
+          const colorIndex = parseInt(student.id.substring(0, 8), 16) % colors.length;
+
+          return {
+            id: student.id,
+            name: student.display_name,
+            initials,
+            backgroundColor: colors[colorIndex] as any,
+          };
+        });
+
+        setAvailableMembers(members);
+      } catch (error) {
+        console.error("Failed to fetch enrolled students:", error);
+        setAlertType("error");
+        setAlertTitle("Error");
+        setAlertMsg("Failed to load classmates for this course.");
+        setIsAlertOpen(true);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+
+    fetchEnrolledStudents();
+  }, [selectedCourse]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -235,12 +289,24 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <label className="caption text-[var(--color-grey-55)] mb-2 block">
                     Course
                   </label>
-                  <Dropdown
-                    options={courseOptions}
-                    selectedOption={selectedCourse}
-                    onSelect={setSelectedCourse}
-                    placeholder="Select course"
-                  />
+                  {isLoadingCourses ? (
+                    <div className="p-3 border rounded bg-gray-50">
+                      <p className="text-sm text-gray-500">Loading courses...</p>
+                    </div>
+                  ) : courseOptions.length === 0 ? (
+                    <div className="p-3 border rounded bg-yellow-50">
+                      <p className="text-sm text-gray-700">
+                        You are not enrolled in any courses. Please enroll in a course first.
+                      </p>
+                    </div>
+                  ) : (
+                    <Dropdown
+                      options={courseOptions}
+                      selectedOption={selectedCourse}
+                      onSelect={setSelectedCourse}
+                      placeholder="Select course"
+                    />
+                  )}
                 </div>
 
                 {/* Project Name */}
@@ -294,18 +360,36 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     <label className="caption text-[var(--color-grey-55)] mb-2 block">
                       Team Members
                     </label>
-                    <SearchBar
-                      placeholder="Search and select team members"
-                      members={sampleMembers}
-                      onSelect={(member) => {
-                        if (
-                          !selectedTeamMembers.find((m) => m.id === member.id)
-                        ) {
-                          setSelectedTeamMembers((prev) => [...prev, member]);
-                        }
-                      }}
-                      maxResults={6}
-                    />
+                    {!selectedCourse ? (
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm text-gray-500">
+                          Please select a course first to see available classmates
+                        </p>
+                      </div>
+                    ) : isLoadingMembers ? (
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm text-gray-500">Loading classmates...</p>
+                      </div>
+                    ) : availableMembers.length === 0 ? (
+                      <div className="p-3 border rounded bg-yellow-50">
+                        <p className="text-sm text-gray-700">
+                          No other students are enrolled in this course yet.
+                        </p>
+                      </div>
+                    ) : (
+                      <SearchBar
+                        placeholder="Search and select team members"
+                        members={availableMembers}
+                        onSelect={(member) => {
+                          if (
+                            !selectedTeamMembers.find((m) => m.id === member.id)
+                          ) {
+                            setSelectedTeamMembers((prev) => [...prev, member]);
+                          }
+                        }}
+                        maxResults={6}
+                      />
+                    )}
 
                     {/* Selected Team Members Display */}
                     {selectedTeamMembers.length > 0 && (

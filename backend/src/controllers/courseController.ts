@@ -255,3 +255,62 @@ export const unenrollCourse = async (
     });
   }
 };
+
+// Get enrolled students in a course
+export const getEnrolledStudents = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { courseId } = req.params;
+
+    // Verify the requester is enrolled in the course
+    const enrollmentCheck = await query(
+      "SELECT * FROM course_enrollments WHERE course_id = $1 AND user_id = $2 AND status = 'active'",
+      [courseId, req.user.id]
+    );
+
+    if (enrollmentCheck.rows.length === 0) {
+      res.status(403).json({
+        success: false,
+        error: { message: "You must be enrolled in this course to view classmates" },
+      });
+      return;
+    }
+
+    // Get all enrolled students (excluding the requester)
+    const result = await query(
+      `SELECT 
+        u.id,
+        u.display_name,
+        u.email,
+        u.student_id
+       FROM course_enrollments ce
+       JOIN users u ON ce.user_id = u.id
+       WHERE ce.course_id = $1 
+       AND ce.status = 'active'
+       AND u.id != $2
+       ORDER BY u.display_name ASC`,
+      [courseId, req.user.id]
+    );
+
+    res.json({
+      success: true,
+      data: { students: result.rows },
+    });
+  } catch (error) {
+    console.error("Get enrolled students error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};

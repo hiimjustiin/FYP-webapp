@@ -219,15 +219,6 @@ export const createProject = async (
   res: Response
 ): Promise<void> => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: { message: "Validation failed", details: errors.array() },
-      });
-      return;
-    }
-
     if (!req.user) {
       res.status(401).json({
         success: false,
@@ -236,38 +227,177 @@ export const createProject = async (
       return;
     }
 
+    // Parse form data (sent as multipart/form-data with files)
     const {
       title,
       description,
       status = "Draft",
-      course_code,
-      submission_date,
-      interq_score,
-      settings = {},
-    }: CreateProjectInput = req.body;
+      course_id,
+      project_type = "individual",
+      essay_text,
+      member_ids, // JSON string array of user IDs
+    } = req.body;
 
-    const result = await query(
-      `INSERT INTO projects (title, description, owner_id, status, course_code, submission_date, interq_score, settings)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        title,
-        description,
-        req.user.id,
-        status,
-        course_code,
-        submission_date,
-        interq_score,
-        JSON.stringify(settings),
-      ]
-    );
+    // Validate required fields
+    if (!title || !title.trim()) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Title is required" },
+      });
+      return;
+    }
 
-    const project = result.rows[0] as Project;
+    if (!course_id) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Course is required" },
+      });
+      return;
+    }
 
-    res.status(201).json({
-      success: true,
-      data: { project },
-    });
+    // Parse member_ids if provided
+    let memberIds: string[] = [];
+    if (member_ids) {
+      try {
+        memberIds = JSON.parse(member_ids);
+        if (!Array.isArray(memberIds)) {
+          throw new Error("member_ids must be an array");
+        }
+      } catch (error) {
+        res.status(400).json({
+          success: false,
+          error: { message: "Invalid member_ids format" },
+        });
+        return;
+      }
+    }
+
+    // Validate project type
+    if (project_type !== "individual" && project_type !== "group") {
+      res.status(400).json({
+        success: false,
+        error: { message: "Project type must be 'individual' or 'group'" },
+      });
+      return;
+    }
+
+    // For group projects, validate that owner and all members are enrolled in the course
+    if (project_type === "group" && memberIds.length > 0) {
+      const allUserIds = [req.user.id, ...memberIds];
+      const enrollmentCheck = await query(
+        `SELECT user_id FROM course_enrollments 
+         WHERE course_id = $1 AND user_id = ANY($2) AND status = 'active'`,
+        [course_id, allUserIds]
+      );
+
+      if (enrollmentCheck.rows.length !== allUserIds.length) {
+        res.status(400).json({
+          success: false,
+          error: {
+            message: "All team members must be enrolled in the selected course",
+          },
+        });
+        return;
+      }
+    } else if (project_type === "individual") {
+      // Verify owner is enrolled in course
+      const enrollmentCheck = await query(
+        `SELECT user_id FROM course_enrollments 
+         WHERE course_id = $1 AND user_id = $2 AND status = 'active'`,
+        [course_id, req.user.id]
+      );
+
+      if (enrollmentCheck.rows.length === 0) {
+        res.status(403).json({
+          success: false,
+          error: { message: "You must be enrolled in this course" },
+        });
+        return;
+      }
+    }
+
+    // Start transaction
+    await query("BEGIN");
+
+    try {
+      // Create project
+      const projectResult = await query(
+        `INSERT INTO projects (
+          title, description, owner_id, status, course_id, 
+          project_type, essay_text
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *`,
+        [
+          title.trim(),
+          description || null,
+          req.user.id,
+          status,
+          course_id,
+          project_type,
+          essay_text || null,
+        ]
+      );
+
+      const project = projectResult.rows[0] as Project;
+
+      // Add team members for group projects
+      if (project_type === "group" && memberIds.length > 0) {
+        for (const memberId of memberIds) {
+          await query(
+            `INSERT INTO project_members (project_id, user_id, role)
+             VALUES ($1, $2, $3)`,
+            [project.id, memberId, "member"]
+          );
+        }
+      }
+
+      // Handle file uploads if any
+      const files = (req as any).files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        for (const file of files) {
+          await query(
+            `INSERT INTO project_files (
+              project_id, file_name, file_url, file_type, 
+              file_size, uploaded_by
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              project.id,
+              file.originalname,
+              file.filename, // Stored filename on disk
+              file.mimetype,
+              file.size,
+              req.user.id,
+            ]
+          );
+        }
+      }
+
+      await query("COMMIT");
+
+      // Fetch complete project with members
+      const membersResult = await query(
+        `SELECT pm.*, u.email, u.display_name
+         FROM project_members pm
+         LEFT JOIN users u ON pm.user_id = u.id
+         WHERE pm.project_id = $1`,
+        [project.id]
+      );
+
+      const completeProject = {
+        ...project,
+        members: membersResult.rows,
+      };
+
+      res.status(201).json({
+        success: true,
+        data: { project: completeProject },
+      });
+    } catch (error) {
+      await query("ROLLBACK");
+      throw error;
+    }
   } catch (error) {
     console.error("Create project error:", error);
     res.status(500).json({
