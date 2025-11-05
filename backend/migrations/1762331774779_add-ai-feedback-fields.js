@@ -21,7 +21,7 @@ export async function up(pgm) {
     ai_score: {
       type: 'smallint',
       check: 'ai_score >= 1 AND ai_score <= 3',
-      comment: 'AI-generated score (1=Naïve/Novice, 2=Intermediate, 3=Mastery)',
+      comment: 'AI-generated score (1=Naive/Novice, 2=Intermediate, 3=Mastery)',
     },
     
     // AI feedback data

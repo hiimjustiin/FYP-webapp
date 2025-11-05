@@ -13,7 +13,7 @@ class DimensionScore(BaseModel):
     """Score and feedback for a single dimension"""
     
     dimension_id: int = Field(..., ge=1, le=9, description="Dimension ID (1-9)")
-    score: int = Field(..., ge=1, le=3, description="Score: 1=Naïve/Novice, 2=Intermediate, 3=Mastery")
+    score: int = Field(..., ge=1, le=3, description="Score: 1=Naive/Novice, 2=Intermediate, 3=Mastery")
     reasoning: str = Field(..., min_length=50, max_length=500, description="Detailed reasoning for the score")
     strengths: List[str] = Field(..., min_items=1, max_items=3, description="1-3 identified strengths")
     improvements: List[str] = Field(..., min_items=1, max_items=3, description="1-3 specific improvement suggestions")

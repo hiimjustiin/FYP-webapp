@@ -26,7 +26,7 @@ you must provide a score from 1-3 based on the specific criteria defined below:
 
 """ + "\n\n".join([
     f"""DIMENSION {dim_id}: {criteria['label']}
-Level 1 (Naïve/Novice): {criteria['levels'][1]['criteria']}
+Level 1 (Naive/Novice): {criteria['levels'][1]['criteria']}
 Level 2 (Intermediate): {criteria['levels'][2]['criteria']}
 Level 3 (Mastery): {criteria['levels'][3]['criteria']}"""
     for dim_id, criteria in RUBRIC_CRITERIA.items()
@@ -96,7 +96,7 @@ SUBMISSION TEXT:
 {submission_text}
 
 EVALUATION CRITERIA:
-Level 1 (Naïve/Novice): {criteria['levels'][1]['criteria']}
+Level 1 (Naive/Novice): {criteria['levels'][1]['criteria']}
 Level 2 (Intermediate): {criteria['levels'][2]['criteria']}
 Level 3 (Mastery): {criteria['levels'][3]['criteria']}
 

@@ -83,7 +83,7 @@ RUBRIC_CRITERIA = {
         "variant": "red",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "No sense of purpose OR failed to articulate the rationale for conducting the project"
             },
             2: {
@@ -101,7 +101,7 @@ RUBRIC_CRITERIA = {
         "variant": "blue",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "0 to 1 stakeholder considered"
             },
             2: {
@@ -119,7 +119,7 @@ RUBRIC_CRITERIA = {
         "variant": "green",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "0 to 1 disciplinary perspective considered"
             },
             2: {
@@ -137,7 +137,7 @@ RUBRIC_CRITERIA = {
         "variant": "purple",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "No reasoning provided to explain any disciplinary insights"
             },
             2: {
@@ -155,7 +155,7 @@ RUBRIC_CRITERIA = {
         "variant": "orange",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "Unreliable sources used"
             },
             2: {
@@ -173,7 +173,7 @@ RUBRIC_CRITERIA = {
         "variant": "pink",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "No evidence of disciplinary insights that build on one another to create new knowledge"
             },
             2: {
@@ -191,7 +191,7 @@ RUBRIC_CRITERIA = {
         "variant": "teal",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "No explanation of how the disciplinary insights are related to one another OR no visual representation of how the disciplinary insights are related to one another"
             },
             2: {
@@ -209,7 +209,7 @@ RUBRIC_CRITERIA = {
         "variant": "indigo",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "No discussion on potential impacts"
             },
             2: {
@@ -227,7 +227,7 @@ RUBRIC_CRITERIA = {
         "variant": "yellow",
         "levels": {
             1: {
-                "name": "Naïve/Novice",
+                "name": "Naive/Novice",
                 "criteria": "No identification of limitations in the project"
             },
             2: {
