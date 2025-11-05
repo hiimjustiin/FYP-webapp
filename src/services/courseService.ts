@@ -48,8 +48,8 @@ export const courseService = {
     return data.courses;
   },
 
-  async enrollCourse(courseId: string): Promise<EnrollmentResponse> {
-    return api.post<EnrollmentResponse>(`/courses/${courseId}/enroll`);
+  async enrollCourse(courseId: string, passcode: string): Promise<EnrollmentResponse> {
+    return api.post<EnrollmentResponse>(`/courses/${courseId}/enroll`, { passcode });
   },
 
   async unenrollCourse(courseId: string): Promise<MessageResponse> {

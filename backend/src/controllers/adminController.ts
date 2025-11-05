@@ -339,13 +339,13 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { code, title, description, instructor_id, term } = req.body;
+    const { code, title, description, instructor_id, term, passcode } = req.body;
 
     const result = await query(
-      `INSERT INTO courses (code, title, description, instructor_id, term)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO courses (code, title, description, instructor_id, term, passcode)
+       VALUES ($1, $2, $3, $4, $5, COALESCE($6, $1))
        RETURNING *`,
-      [code, title, description, instructor_id, term]
+      [code, title, description, instructor_id, term, passcode]
     );
 
     return res.status(201).json({
@@ -365,7 +365,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 export const updateCourse = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { code, title, description, instructor_id, term } = req.body;
+    const { code, title, description, instructor_id, term, passcode } = req.body;
 
     const updateFields: string[] = [];
     const values: (string | undefined)[] = [];
@@ -399,6 +399,12 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
       paramCount++;
       updateFields.push(`term = $${paramCount}`);
       values.push(term);
+    }
+
+    if (passcode !== undefined) {
+      paramCount++;
+      updateFields.push(`passcode = $${paramCount}`);
+      values.push(passcode);
     }
 
     if (updateFields.length === 0) {

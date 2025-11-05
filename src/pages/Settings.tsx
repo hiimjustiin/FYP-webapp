@@ -88,20 +88,19 @@ const Settings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  const handleEnrollCourse = async (courseId: string) => {
+  const handleEnrollCourse = async (courseId: string, passcode: string) => {
     try {
       setIsLoadingCourses(true);
-      await courseService.enrollCourse(courseId);
+      console.log("Enrolling in course:", courseId);
+      await courseService.enrollCourse(courseId, passcode);
+      console.log("Enrollment successful");
       showAlert("success", "Enrolled", "Successfully enrolled in course");
       // Refresh from backend to get updated enrollment status
       await loadCourses();
     } catch (error) {
       console.error("Failed to enroll:", error);
-      showAlert(
-        "error",
-        "Error",
-        error instanceof Error ? error.message : "Failed to enroll in course"
-      );
+      const errorMessage = error instanceof Error ? error.message : "Failed to enroll in course";
+      showAlert("error", "Error", errorMessage);
     } finally {
       setIsLoadingCourses(false);
     }

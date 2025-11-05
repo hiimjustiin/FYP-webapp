@@ -2,11 +2,12 @@ import { useState } from "react";
 import type { Course } from "../../services/courseService";
 import InputField from "../ui/InputField/InputField";
 import Button from "../ui/Button/Button";
+import EnrollmentModal from "../ui/EnrollmentModal/EnrollmentModal";
 
 interface CourseEnrollmentProps {
   availableCourses: Course[];
   enrolledCourses: Course[];
-  onEnroll: (courseId: string) => Promise<void>;
+  onEnroll: (courseId: string, passcode: string) => Promise<void>;
   onUnenroll: (courseId: string) => Promise<void>;
   isLoading: boolean;
 }
@@ -22,6 +23,9 @@ const CourseEnrollment = ({
   const [loadingCourseIds, setLoadingCourseIds] = useState<Set<string>>(
     new Set()
   );
+  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null);
+  const [enrollmentError, setEnrollmentError] = useState("");
+  const [isEnrolling, setIsEnrolling] = useState(false);
 
   const filteredCourses = availableCourses.filter((course) => {
     if (!searchQuery) return true;
@@ -33,14 +37,36 @@ const CourseEnrollment = ({
     );
   });
 
-  const handleEnroll = async (courseId: string) => {
-    setLoadingCourseIds((prev) => new Set(prev).add(courseId));
+  const handleOpenEnrollmentModal = (course: Course) => {
+    setSelectedCourseForEnrollment(course);
+    setEnrollmentError("");
+  };
+
+  const handleCloseEnrollmentModal = () => {
+    setSelectedCourseForEnrollment(null);
+    setEnrollmentError("");
+  };
+
+  const handleEnrollWithPasscode = async (passcode: string) => {
+    if (!selectedCourseForEnrollment) return;
+
+    setIsEnrolling(true);
+    setEnrollmentError("");
+    setLoadingCourseIds((prev) => new Set(prev).add(selectedCourseForEnrollment.id));
+
     try {
-      await onEnroll(courseId);
+      await onEnroll(selectedCourseForEnrollment.id, passcode);
+      handleCloseEnrollmentModal();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to enroll in course";
+      setEnrollmentError(errorMessage);
     } finally {
+      setIsEnrolling(false);
       setLoadingCourseIds((prev) => {
         const next = new Set(prev);
-        next.delete(courseId);
+        if (selectedCourseForEnrollment) {
+          next.delete(selectedCourseForEnrollment.id);
+        }
         return next;
       });
     }
@@ -156,9 +182,6 @@ const CourseEnrollment = ({
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <span className="font-bold text-lg">
-                              {course.code}
-                            </span>
                             <span className="text-xs text-gray-500">
                               {course.enrollment_count || 0} enrolled
                             </span>
@@ -178,12 +201,12 @@ const CourseEnrollment = ({
                         </div>
                         <Button
                           variant="blue"
-                          onClick={() => handleEnroll(course.id)}
+                          onClick={() => handleOpenEnrollmentModal(course)}
                           disabled={loadingCourseIds.has(course.id)}
                         >
                           {loadingCourseIds.has(course.id)
                             ? "Enrolling..."
-                            : "Enroll"}
+                            : "Enter Passcode"}
                         </Button>
                       </div>
                     </div>
@@ -191,6 +214,16 @@ const CourseEnrollment = ({
               </div>
             )}
           </div>
+
+          {/* Enrollment Modal */}
+          <EnrollmentModal
+            course={selectedCourseForEnrollment}
+            isOpen={selectedCourseForEnrollment !== null}
+            isLoading={isEnrolling}
+            onEnroll={handleEnrollWithPasscode}
+            onClose={handleCloseEnrollmentModal}
+            errorMessage={enrollmentError}
+          />
         </>
       )}
     </div>

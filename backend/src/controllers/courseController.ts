@@ -109,6 +109,16 @@ export const enrollCourse = async (
     }
 
     const { courseId } = req.params;
+    const { passcode } = req.body;
+
+    // Validate passcode is provided
+    if (!passcode) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Passcode is required" },
+      });
+      return;
+    }
 
     // Check if course exists
     const courseResult = await query("SELECT * FROM courses WHERE id = $1", [
@@ -119,6 +129,18 @@ export const enrollCourse = async (
       res.status(404).json({
         success: false,
         error: { message: "Course not found" },
+      });
+      return;
+    }
+
+    const course = courseResult.rows[0];
+
+    // Validate passcode (case-sensitive)
+    if (course.passcode !== passcode) {
+      console.log(`❌ Invalid passcode attempt for course ${courseId}`);
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid passcode" },
       });
       return;
     }
@@ -147,6 +169,7 @@ export const enrollCourse = async (
           [enrollment.id]
         );
 
+        console.log(`✅ User ${req.user.id} re-enrolled in course ${courseId}`);
         res.json({
           success: true,
           data: {
@@ -166,6 +189,7 @@ export const enrollCourse = async (
       [courseId, req.user.id]
     );
 
+    console.log(`✅ User ${req.user.id} enrolled in course ${courseId}`);
     res.status(201).json({
       success: true,
       data: {

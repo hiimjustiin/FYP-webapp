@@ -208,6 +208,7 @@ function CourseModal({
     description: course?.description || "",
     instructor_id: course?.instructor_id || "",
     term: course?.term || "",
+    passcode: course?.passcode || "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -234,6 +235,7 @@ function CourseModal({
           description: formData.description,
           instructor_id: formData.instructor_id || undefined,
           term: formData.term,
+          passcode: formData.passcode || undefined,
         });
       } else {
         // Create new course
@@ -243,6 +245,7 @@ function CourseModal({
           description: formData.description,
           instructor_id: formData.instructor_id || undefined,
           term: formData.term,
+          passcode: formData.passcode || undefined,
         });
       }
       onSave();
@@ -327,6 +330,18 @@ function CourseModal({
             }
             placeholder="e.g., Fall 2025"
           />
+
+          <InputField
+            label="Course Passcode (Optional)"
+            value={formData.passcode}
+            onChange={(value: string) =>
+              setFormData({ ...formData, passcode: value })
+            }
+            placeholder="Leave blank to use course code as passcode"
+          />
+          <p className="text-xs text-gray-500 -mt-2">
+            Case-sensitive. Students must enter this passcode to enroll.
+          </p>
 
           <div className="flex gap-3 pt-4">
             <Button
