@@ -9,14 +9,19 @@
  */
 
 export async function up(pgm) {
-  // Add passcode column to courses table
-  // Default to course code if not provided, allowing instructors to set custom passcodes
+  // Add passcode column to courses table (nullable first)
   pgm.addColumns("courses", {
     passcode: {
       type: "text",
-      notNull: true,
-      default: pgm.raw("code"),
     },
+  });
+
+  // Update all existing courses: set passcode equal to their code
+  pgm.sql(`UPDATE courses SET passcode = code`);
+
+  // Make passcode NOT NULL
+  pgm.alterColumn("courses", "passcode", {
+    notNull: true,
   });
 
   // Add index for better query performance
