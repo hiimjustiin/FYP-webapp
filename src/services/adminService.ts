@@ -98,7 +98,7 @@ export const adminService = {
     const queryString = new URLSearchParams(
       Object.fromEntries(
         Object.entries(params || {})
-          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .filter(([, v]) => v !== undefined && v !== null && v !== "")
           .map(([k, v]) => [k, String(v)])
       )
     ).toString();
@@ -186,7 +186,7 @@ export const adminService = {
     const queryString = new URLSearchParams(
       Object.fromEntries(
         Object.entries(params || {})
-          .filter(([, v]) => v !== undefined && v !== null && v !== '')
+          .filter(([, v]) => v !== undefined && v !== null && v !== "")
           .map(([k, v]) => [k, String(v)])
       )
     ).toString();
