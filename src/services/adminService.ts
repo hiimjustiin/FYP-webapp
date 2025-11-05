@@ -43,6 +43,7 @@ export interface AdminCourse {
   instructor_name: string;
   instructor_email: string;
   term: string;
+  passcode?: string;
   enrollment_count: number;
   submission_count: number;
   created_at: string;
@@ -153,6 +154,7 @@ export const adminService = {
     description?: string;
     instructor_id?: string;
     term?: string;
+    passcode?: string;
   }): Promise<AdminCourse> {
     const data = await api.post<{ course: AdminCourse }>(
       "/admin/courses",

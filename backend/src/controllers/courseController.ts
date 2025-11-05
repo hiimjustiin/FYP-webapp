@@ -71,10 +71,15 @@ export const getEnrolledCourses = async (
        FROM course_enrollments ce
        JOIN courses c ON ce.course_id = c.id
        LEFT JOIN users u ON c.instructor_id = u.id
-       WHERE ce.user_id = $1
+       WHERE ce.user_id = $1 AND ce.status = 'active'
        ORDER BY ce.enrolled_at DESC`,
       [req.user.id]
     );
+
+    console.log(`📚 User ${req.user.id} has ${result.rows.length} active enrollments`);
+    result.rows.forEach((course) => {
+      console.log(`  - ${course.code}: status=${course.enrollment_status}`);
+    });
 
     res.json({
       success: true,
@@ -104,6 +109,16 @@ export const enrollCourse = async (
     }
 
     const { courseId } = req.params;
+    const { passcode } = req.body;
+
+    // Validate passcode is provided
+    if (!passcode) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Passcode is required" },
+      });
+      return;
+    }
 
     // Check if course exists
     const courseResult = await query("SELECT * FROM courses WHERE id = $1", [
@@ -114,6 +129,18 @@ export const enrollCourse = async (
       res.status(404).json({
         success: false,
         error: { message: "Course not found" },
+      });
+      return;
+    }
+
+    const course = courseResult.rows[0];
+
+    // Validate passcode (case-sensitive)
+    if (course.passcode !== passcode) {
+      console.log(`❌ Invalid passcode attempt for course ${courseId}`);
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid passcode" },
       });
       return;
     }
@@ -142,6 +169,7 @@ export const enrollCourse = async (
           [enrollment.id]
         );
 
+        console.log(`✅ User ${req.user.id} re-enrolled in course ${courseId}`);
         res.json({
           success: true,
           data: {
@@ -161,6 +189,7 @@ export const enrollCourse = async (
       [courseId, req.user.id]
     );
 
+    console.log(`✅ User ${req.user.id} enrolled in course ${courseId}`);
     res.status(201).json({
       success: true,
       data: {
@@ -192,6 +221,7 @@ export const unenrollCourse = async (
     }
 
     const { courseId } = req.params;
+    console.log(`🚪 User ${req.user.id} unenrolling from course ${courseId}`);
 
     const result = await query(
       `UPDATE course_enrollments 
@@ -202,12 +232,16 @@ export const unenrollCourse = async (
     );
 
     if (result.rows.length === 0) {
+      console.log(`⚠️  No active enrollment found for course ${courseId}`);
       res.status(404).json({
         success: false,
         error: { message: "Enrollment not found or already inactive" },
       });
       return;
     }
+
+    console.log(`✅ Successfully updated enrollment status to 'dropped'`);
+    console.log(`   Old status: ${result.rows[0].status || 'active'}`);
 
     res.json({
       success: true,

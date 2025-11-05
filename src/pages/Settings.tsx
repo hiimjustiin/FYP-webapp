@@ -67,6 +67,9 @@ const Settings = () => {
         courseService.getCourses(),
         courseService.getEnrolledCourses(),
       ]);
+      console.log("All courses:", all);
+      console.log("Enrolled courses:", enrolled);
+      console.log("Enrolled course IDs:", enrolled.map(c => c.id));
       setAvailableCourses(all);
       setEnrolledCourses(enrolled);
     } catch (error) {
@@ -85,25 +88,32 @@ const Settings = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  const handleEnrollCourse = async (courseId: string) => {
+  const handleEnrollCourse = async (courseId: string, passcode: string) => {
     try {
-      await courseService.enrollCourse(courseId);
+      setIsLoadingCourses(true);
+      console.log("Enrolling in course:", courseId);
+      await courseService.enrollCourse(courseId, passcode);
+      console.log("Enrollment successful");
       showAlert("success", "Enrolled", "Successfully enrolled in course");
+      // Refresh from backend to get updated enrollment status
       await loadCourses();
     } catch (error) {
       console.error("Failed to enroll:", error);
-      showAlert(
-        "error",
-        "Error",
-        error instanceof Error ? error.message : "Failed to enroll in course"
-      );
+      const errorMessage = error instanceof Error ? error.message : "Failed to enroll in course";
+      showAlert("error", "Error", errorMessage);
+    } finally {
+      setIsLoadingCourses(false);
     }
   };
 
   const handleUnenrollCourse = async (courseId: string) => {
     try {
+      setIsLoadingCourses(true);
+      console.log("Unenrolling from course:", courseId);
       await courseService.unenrollCourse(courseId);
+      console.log("Unenroll successful, reloading courses...");
       showAlert("success", "Unenrolled", "Successfully unenrolled from course");
+      // Refresh from backend to get updated enrollment status (should exclude dropped courses)
       await loadCourses();
     } catch (error) {
       console.error("Failed to unenroll:", error);
@@ -114,6 +124,8 @@ const Settings = () => {
           ? error.message
           : "Failed to unenroll from course"
       );
+    } finally {
+      setIsLoadingCourses(false);
     }
   };
 
