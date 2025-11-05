@@ -89,20 +89,8 @@ const Settings = () => {
     try {
       setIsLoadingCourses(true);
       await courseService.enrollCourse(courseId);
-      
-      // Immediately update course lists for better UX
-      const courseToEnroll = availableCourses.find((c) => c.id === courseId);
-      if (courseToEnroll) {
-        setEnrolledCourses((prev) => [...prev, { ...courseToEnroll, enrolled: true }]);
-        setAvailableCourses((prev) =>
-          prev.map((course) =>
-            course.id === courseId ? { ...course, enrolled: true } : course
-          )
-        );
-      }
-      
       showAlert("success", "Enrolled", "Successfully enrolled in course");
-      // Refresh to ensure data is in sync
+      // Refresh from backend to get updated enrollment status
       await loadCourses();
     } catch (error) {
       console.error("Failed to enroll:", error);
@@ -120,19 +108,8 @@ const Settings = () => {
     try {
       setIsLoadingCourses(true);
       await courseService.unenrollCourse(courseId);
-      
-      // Immediately remove from enrolled courses and add to available courses
-      setEnrolledCourses((prev) =>
-        prev.filter((course) => course.id !== courseId)
-      );
-      setAvailableCourses((prev) =>
-        prev.map((course) =>
-          course.id === courseId ? { ...course, enrolled: false } : course
-        )
-      );
-      
       showAlert("success", "Unenrolled", "Successfully unenrolled from course");
-      // Refresh to ensure data is in sync
+      // Refresh from backend to get updated enrollment status (should exclude dropped courses)
       await loadCourses();
     } catch (error) {
       console.error("Failed to unenroll:", error);
