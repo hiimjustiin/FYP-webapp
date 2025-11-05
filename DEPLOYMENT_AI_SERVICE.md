@@ -2,11 +2,82 @@
 
 ## Architecture Overview
 
-The ILA webapp now consists of three main services:
+The ILA webapp now consists of four main services:
 
 1. **Frontend** (React + Vite) - Port 5173 (dev) / 3000 (prod)
 2. **Express Backend** (Node.js + TypeScript) - Port 3001
 3. **Python AI Service** (FastAPI + Pydantic AI) - Port 8000
+4. **PostgreSQL Database** - Port 5432
+
+All services are integrated into Docker Compose for easy deployment.
+
+## Quick Start with Docker Compose
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- OpenAI API key
+- At least 2GB free RAM
+
+### 1. Clone and Configure
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd ila-webapp
+
+# Copy environment template
+cp .env.example .env
+
+# Edit .env and add your OpenAI API key
+nano .env
+```
+
+**Required environment variables:**
+```bash
+# Database
+POSTGRES_PASSWORD=<secure-password>
+
+# Backend
+JWT_SECRET=<32+ character secret>
+
+# AI Service (CRITICAL)
+OPENAI_API_KEY=sk-proj-your-actual-key-here
+```
+
+### 2. Build and Start All Services
+
+```bash
+# Build and start all services
+docker compose up -d --build
+
+# Check status
+docker compose ps
+
+# View logs
+docker compose logs -f backend-ai
+docker compose logs -f backend
+```
+
+### 3. Verify Services
+
+```bash
+# Check AI service health
+curl http://localhost:8000/health
+
+# Check backend
+curl http://localhost:3001/health
+
+# Check frontend
+open http://localhost:3000
+```
+
+### 4. Run Database Migrations
+
+```bash
+# Run migrations (if not already applied)
+docker compose exec backend pnpm db:migrate
+```
 
 ## Deployment Options
 
