@@ -87,6 +87,7 @@ const Settings = () => {
 
   const handleEnrollCourse = async (courseId: string) => {
     try {
+      setIsLoadingCourses(true);
       await courseService.enrollCourse(courseId);
       showAlert("success", "Enrolled", "Successfully enrolled in course");
       await loadCourses();
@@ -97,11 +98,14 @@ const Settings = () => {
         "Error",
         error instanceof Error ? error.message : "Failed to enroll in course"
       );
+    } finally {
+      setIsLoadingCourses(false);
     }
   };
 
   const handleUnenrollCourse = async (courseId: string) => {
     try {
+      setIsLoadingCourses(true);
       await courseService.unenrollCourse(courseId);
       showAlert("success", "Unenrolled", "Successfully unenrolled from course");
       await loadCourses();
@@ -114,6 +118,8 @@ const Settings = () => {
           ? error.message
           : "Failed to unenroll from course"
       );
+    } finally {
+      setIsLoadingCourses(false);
     }
   };
 

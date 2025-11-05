@@ -19,6 +19,9 @@ const CourseEnrollment = ({
   isLoading,
 }: CourseEnrollmentProps) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [loadingCourseIds, setLoadingCourseIds] = useState<Set<string>>(
+    new Set()
+  );
 
   const filteredCourses = availableCourses.filter((course) => {
     if (!searchQuery) return true;
@@ -29,6 +32,32 @@ const CourseEnrollment = ({
       course.instructor_name?.toLowerCase().includes(query)
     );
   });
+
+  const handleEnroll = async (courseId: string) => {
+    setLoadingCourseIds((prev) => new Set(prev).add(courseId));
+    try {
+      await onEnroll(courseId);
+    } finally {
+      setLoadingCourseIds((prev) => {
+        const next = new Set(prev);
+        next.delete(courseId);
+        return next;
+      });
+    }
+  };
+
+  const handleUnenroll = async (courseId: string) => {
+    setLoadingCourseIds((prev) => new Set(prev).add(courseId));
+    try {
+      await onUnenroll(courseId);
+    } finally {
+      setLoadingCourseIds((prev) => {
+        const next = new Set(prev);
+        next.delete(courseId);
+        return next;
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -90,9 +119,12 @@ const CourseEnrollment = ({
                       </div>
                       <Button
                         variant="grey"
-                        onClick={() => onUnenroll(course.id)}
+                        onClick={() => handleUnenroll(course.id)}
+                        disabled={loadingCourseIds.has(course.id)}
                       >
-                        Unenroll
+                        {loadingCourseIds.has(course.id)
+                          ? "Unenrolling..."
+                          : "Unenroll"}
                       </Button>
                     </div>
                   </div>
@@ -146,9 +178,12 @@ const CourseEnrollment = ({
                         </div>
                         <Button
                           variant="blue"
-                          onClick={() => onEnroll(course.id)}
+                          onClick={() => handleEnroll(course.id)}
+                          disabled={loadingCourseIds.has(course.id)}
                         >
-                          Enroll
+                          {loadingCourseIds.has(course.id)
+                            ? "Enrolling..."
+                            : "Enroll"}
                         </Button>
                       </div>
                     </div>
