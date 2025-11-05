@@ -1,7 +1,22 @@
 // API configuration and utilities
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
+// Determine API base URL based on environment
+// This function is used by both api.ts and AuthContext.tsx
+export const getAPIBaseURL = (): string => {
+  const configUrl = import.meta.env.VITE_API_BASE_URL;
+
+  // If VITE_API_BASE_URL is explicitly set, use it
+  if (configUrl) {
+    // If it's a relative path like /api, it will use the current origin's proxy
+    // If it's an absolute URL like http://..., use it directly
+    return configUrl.startsWith("http") ? configUrl : configUrl;
+  }
+
+  // Fallback for when env var is not set
+  return "http://localhost:3001/api";
+};
+
+const API_BASE_URL = getAPIBaseURL();
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -44,10 +59,10 @@ const getRefreshToken = (): string | null => {
 export const saveTokens = (token: string, refreshToken: string): void => {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  
+
   // Decode JWT to get expiry time
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(token.split(".")[1]));
     localStorage.setItem(TOKEN_EXPIRY_KEY, payload.exp.toString());
   } catch (e) {
     console.error("Failed to decode token:", e);
@@ -65,11 +80,11 @@ export const clearTokens = (): void => {
 const isTokenExpiringSoon = (): boolean => {
   const expiry = localStorage.getItem(TOKEN_EXPIRY_KEY);
   if (!expiry) return true;
-  
+
   const expiryTime = parseInt(expiry) * 1000; // Convert to milliseconds
   const now = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
-  
+
   return expiryTime - now < fiveMinutes;
 };
 
@@ -85,7 +100,7 @@ const refreshAccessToken = async (): Promise<boolean> => {
   refreshPromise = (async () => {
     try {
       const refreshToken = getRefreshToken();
-      
+
       if (!refreshToken) {
         clearTokens();
         return false;
@@ -139,12 +154,12 @@ export const apiRequest = async <T = unknown>(
   retryCount = 0
 ): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   // Check if token is expiring soon and refresh proactively
   if (retryCount === 0 && isTokenExpiringSoon()) {
     await refreshAccessToken();
   }
-  
+
   const config: RequestInit = {
     headers: getAuthHeaders(),
     ...options,
@@ -157,7 +172,7 @@ export const apiRequest = async <T = unknown>(
     // Handle 401 Unauthorized - try to refresh token
     if (response.status === 401 && retryCount === 0) {
       const refreshed = await refreshAccessToken();
-      
+
       if (refreshed) {
         // Retry the request with new token
         return apiRequest<T>(endpoint, options, retryCount + 1);
