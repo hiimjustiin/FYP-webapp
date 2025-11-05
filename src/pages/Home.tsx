@@ -54,6 +54,7 @@ const Home = () => {
   const [selectedDimIds, setSelectedDimIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(true);
   const [projectSearchQuery, setProjectSearchQuery] = useState("");
+  const [showAIFeedback, setShowAIFeedback] = useState(false);
 
   // Fetch dimensions on mount
   useEffect(() => {
@@ -329,7 +330,7 @@ const Home = () => {
                   {selectedProject.summary}
                 </p>
                 {currentSubmission && (
-                  <div className="mt-4 flex items-center gap-4">
+                  <div className="mt-4 flex items-center gap-4 flex-wrap">
                     <span className="caption">
                       Viewing: <strong>{currentSubmission.name}</strong>
                     </span>
@@ -337,6 +338,31 @@ const Home = () => {
                       Submitted:{" "}
                       {new Date(currentSubmission.date).toLocaleDateString()}
                     </span>
+                    {/* AI Processing Status Badge */}
+                    {currentSubmission.ai_processing_status && (
+                      <span
+                        className={
+                          currentSubmission.ai_processing_status === "completed"
+                            ? "px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                            : currentSubmission.ai_processing_status ===
+                              "processing"
+                            ? "px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                            : currentSubmission.ai_processing_status ===
+                              "failed"
+                            ? "px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                            : "px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                        }
+                      >
+                        {currentSubmission.ai_processing_status === "completed"
+                          ? "✓ AI Feedback Available"
+                          : currentSubmission.ai_processing_status ===
+                            "processing"
+                          ? "⏳ Processing..."
+                          : currentSubmission.ai_processing_status === "failed"
+                          ? "✗ AI Analysis Failed"
+                          : "○ Pending Analysis"}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -369,7 +395,7 @@ const Home = () => {
                       <RadarChart
                         data={radarData}
                         selectedDimensions={selectedDims.map((d) => d.label)}
-                        maxScore={10}
+                        maxScore={3}
                         height={420}
                       />
                     )}
@@ -437,6 +463,76 @@ const Home = () => {
                       {/* Body: only when expanded */}
 
                       <div className="mt-4 space-y-4">
+                        {/* AI Feedback Section */}
+                        {currentSubmission.ai_processing_status ===
+                          "completed" && (
+                          <div className="border-l-4 border-[var(--color-blue-ntu)] bg-blue-50 p-4 rounded">
+                            <button
+                              onClick={() => setShowAIFeedback(!showAIFeedback)}
+                              className="w-full flex items-center justify-between text-left"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="subtitle-2 text-[var(--color-blue-ntu)]">
+                                  🤖 AI Feedback
+                                </span>
+                                {!showAIFeedback &&
+                                  currentSubmission.ai_overall_summary && (
+                                    <span className="caption text-[var(--color-grey-55)]">
+                                      Click to view detailed feedback
+                                    </span>
+                                  )}
+                              </div>
+                              <img
+                                src={showAIFeedback ? ChevronUp : ChevronDown}
+                                alt="toggle"
+                                className="w-4 h-4"
+                              />
+                            </button>
+                            {showAIFeedback &&
+                              currentSubmission.ai_overall_summary && (
+                                <div className="mt-3 space-y-3">
+                                  <div>
+                                    <h4 className="caption font-semibold text-[var(--color-blue-ntu)] mb-1">
+                                      Overall Summary
+                                    </h4>
+                                    <p className="body-2 text-[var(--color-grey-80)]">
+                                      {currentSubmission.ai_overall_summary}
+                                    </p>
+                                  </div>
+                                  <p className="caption text-[var(--color-grey-55)] italic">
+                                    💡 Review the dimension scores below to see
+                                    AI feedback for each area. Instructors can
+                                    override scores if needed.
+                                  </p>
+                                </div>
+                              )}
+                          </div>
+                        )}
+
+                        {/* Processing Status Messages */}
+                        {currentSubmission.ai_processing_status ===
+                          "processing" && (
+                          <div className="border-l-4 border-blue-400 bg-blue-50 p-4 rounded">
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              <span className="body-2 text-blue-800">
+                                AI analysis in progress... This may take 30-60
+                                seconds.
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {currentSubmission.ai_processing_status ===
+                          "failed" && (
+                          <div className="border-l-4 border-red-400 bg-red-50 p-4 rounded">
+                            <span className="body-2 text-red-800">
+                              ⚠️ AI analysis failed. Please contact your
+                              instructor or try again later.
+                            </span>
+                          </div>
+                        )}
+
                         {/* Scores table */}
                         <div className="overflow-x-auto">
                           <table className="min-w-[100%] w-full border-separate border-spacing-y-2">
@@ -446,10 +542,10 @@ const Home = () => {
                                   Dimension
                                 </th>
                                 <th className="caption text-[var(--color-grey-55)]">
-                                  Personal (0–10)
+                                  Personal (1–3)
                                 </th>
                                 <th className="caption text-[var(--color-grey-55)]">
-                                  Class Avg (0–10)
+                                  Class Avg (1–3)
                                 </th>
                               </tr>
                             </thead>

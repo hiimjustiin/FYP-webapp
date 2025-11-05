@@ -22,6 +22,13 @@ export interface Dimension {
 export interface DimensionScore {
   personal: number;
   classAvg: number;
+  ai_score?: number;
+  ai_reasoning?: string;
+  ai_strengths?: string[];
+  ai_improvements?: string[];
+  ai_examples?: string;
+  instructor_override_score?: number;
+  instructor_comment?: string;
 }
 
 export interface Submission {
@@ -29,6 +36,10 @@ export interface Submission {
   name: string;
   date: string;
   scores: Record<string, DimensionScore>;
+  ai_processing_status?: "pending" | "processing" | "completed" | "failed";
+  ai_overall_summary?: string;
+  ai_overall_strengths?: string[];
+  ai_priority_improvements?: string[];
 }
 
 export interface Project {
@@ -78,11 +89,13 @@ export const dimensionsService = {
   /**
    * Get all submissions with scores for a specific project
    */
-  async getProjectSubmissions(projectId: string): Promise<ProjectWithSubmissions> {
+  async getProjectSubmissions(
+    projectId: string
+  ): Promise<ProjectWithSubmissions> {
     const data = await api.get<ProjectSubmissionsResponse>(
       `/dimensions/projects/${projectId}/submissions`
     );
-    
+
     // Return empty structure if no project found
     if (!data.project) {
       return {
