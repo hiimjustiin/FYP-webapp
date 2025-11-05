@@ -76,7 +76,9 @@ export const getEnrolledCourses = async (
       [req.user.id]
     );
 
-    console.log(`📚 User ${req.user.id} has ${result.rows.length} active enrollments`);
+    console.log(
+      `📚 User ${req.user.id} has ${result.rows.length} active enrollments`
+    );
     result.rows.forEach((course) => {
       console.log(`  - ${course.code}: status=${course.enrollment_status}`);
     });
@@ -241,7 +243,7 @@ export const unenrollCourse = async (
     }
 
     console.log(`✅ Successfully updated enrollment status to 'dropped'`);
-    console.log(`   Old status: ${result.rows[0].status || 'active'}`);
+    console.log(`   Old status: ${result.rows[0].status || "active"}`);
 
     res.json({
       success: true,
@@ -281,7 +283,9 @@ export const getEnrolledStudents = async (
     if (enrollmentCheck.rows.length === 0) {
       res.status(403).json({
         success: false,
-        error: { message: "You must be enrolled in this course to view classmates" },
+        error: {
+          message: "You must be enrolled in this course to view classmates",
+        },
       });
       return;
     }

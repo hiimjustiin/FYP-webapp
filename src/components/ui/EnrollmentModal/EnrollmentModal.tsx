@@ -50,18 +50,16 @@ const EnrollmentModal = ({
       <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Enroll in Course</h3>
-          <p className="text-sm text-gray-600 mt-1">
-            {course.title}
-          </p>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Enroll in Course
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">{course.title}</p>
         </div>
 
         {/* Content */}
         <div className="px-6 py-4">
           {course.description && (
-            <p className="text-sm text-gray-700 mb-4">
-              {course.description}
-            </p>
+            <p className="text-sm text-gray-700 mb-4">{course.description}</p>
           )}
 
           <div className="text-sm text-gray-600 mb-6 space-y-1">
@@ -81,7 +79,10 @@ const EnrollmentModal = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Passcode Input */}
             <div>
-              <label htmlFor="passcode" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="passcode"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Course Passcode
               </label>
               <InputField

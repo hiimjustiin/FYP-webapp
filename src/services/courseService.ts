@@ -60,12 +60,19 @@ export const courseService = {
   },
 
   async getEnrolledStudents(courseId: string): Promise<EnrolledStudent[]> {
-    const data = await api.get<EnrolledStudentsResponse>(`/courses/${courseId}/enrolled-students`);
+    const data = await api.get<EnrolledStudentsResponse>(
+      `/courses/${courseId}/enrolled-students`
+    );
     return data.students;
   },
 
-  async enrollCourse(courseId: string, passcode: string): Promise<EnrollmentResponse> {
-    return api.post<EnrollmentResponse>(`/courses/${courseId}/enroll`, { passcode });
+  async enrollCourse(
+    courseId: string,
+    passcode: string
+  ): Promise<EnrollmentResponse> {
+    return api.post<EnrollmentResponse>(`/courses/${courseId}/enroll`, {
+      passcode,
+    });
   },
 
   async unenrollCourse(courseId: string): Promise<MessageResponse> {

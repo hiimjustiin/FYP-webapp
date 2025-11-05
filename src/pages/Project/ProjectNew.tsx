@@ -31,17 +31,17 @@ const ProjectNew = () => {
       };
 
       console.log("Submitting project:", projectPayload);
-      
+
       const result = await projectService.createProject(projectPayload);
-      
+
       console.log("Project created successfully:", result);
       alert("Project created successfully!");
       navigate("/project");
     } catch (error: unknown) {
       console.error("Failed to create project:", error);
-      const errorMessage = 
-        (error as any)?.response?.data?.error?.message || 
-        (error as Error)?.message || 
+      const errorMessage =
+        (error as any)?.response?.data?.error?.message ||
+        (error as Error)?.message ||
         "Failed to create project. Please try again.";
       alert(errorMessage);
     } finally {

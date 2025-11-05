@@ -76,7 +76,7 @@ export const projectService = {
     formData.append("title", projectData.title);
     formData.append("course_id", projectData.course_id);
     formData.append("project_type", projectData.project_type);
-    
+
     if (projectData.description) {
       formData.append("description", projectData.description);
     }
@@ -95,11 +95,8 @@ export const projectService = {
       });
     }
 
-    const data = await api.post<ProjectResponse>("/projects", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    // Send FormData without custom headers (browser will set Content-Type correctly)
+    const data = await api.post<ProjectResponse>("/projects", formData);
     return data.project;
   },
 

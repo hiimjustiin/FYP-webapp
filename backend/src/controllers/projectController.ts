@@ -1,14 +1,8 @@
 import { Response } from "express";
 import { body, validationResult } from "express-validator";
 import { query } from "../models/database.js";
-import {
-  Project,
-  CreateProjectInput,
-  UpdateProjectInput,
-} from "../models/Project.js";
+import type { Project } from "../models/Project.js";
 import { AuthRequest } from "../middleware/auth.js";
-
-// Validation rules
 export const createProjectValidation = [
   body("title")
     .trim()
@@ -431,7 +425,7 @@ export const updateProject = async (
     }
 
     const { id } = req.params;
-    const updates: UpdateProjectInput = req.body;
+    const updates = req.body as Record<string, unknown>;
 
     // Check if user owns the project
     const existingProject = await query(

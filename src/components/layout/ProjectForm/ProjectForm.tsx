@@ -9,7 +9,7 @@ import {
   AlertDialog,
   type AlertDialogType,
 } from "../../ui/AlertDialog/AlertDialog";
-import { courseService, type Course } from "../../../services/courseService";
+import { courseService } from "../../../services/courseService";
 
 export interface ProjectFormData {
   course: string;
@@ -32,15 +32,6 @@ interface ProjectFormProps {
   ) => void;
   onCancel: () => void;
 }
-
-const courseOptions: DropdownOption[] = [
-  { id: "cs", label: "Computer Science" },
-  { id: "ds", label: "Data Science" },
-  { id: "se", label: "Software Engineering" },
-  { id: "is", label: "Information Systems" },
-  { id: "cyber", label: "Cybersecurity" },
-  { id: "ai", label: "AI & Machine Learning" },
-];
 
 const projectTypeOptions: DropdownOption[] = [
   { id: "group", label: "Group Project" },
@@ -70,11 +61,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     useState<Member[]>(initialTeamMembers);
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialFiles);
 
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
-  const [courseOptions, setCourseOptions] = useState<DropdownOption[]>([]);
   const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
+  const [courseOptions, setCourseOptions] = useState<DropdownOption[]>([]);
 
   const [selectedCourse, setSelectedCourse] = useState<DropdownOption | null>(
     null
@@ -100,18 +91,21 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       try {
         setIsLoadingCourses(true);
         const courses = await courseService.getEnrolledCourses();
-        setEnrolledCourses(courses);
-        
+
         // Convert courses to dropdown options
         const options: DropdownOption[] = courses.map((course) => ({
           id: course.id,
-          label: course.code ? `${course.code} - ${course.title}` : course.title,
+          label: course.code
+            ? `${course.code} - ${course.title}`
+            : course.title,
         }));
         setCourseOptions(options);
 
         // Set initial selected course if editing
         if (initialData && initialData.course) {
-          const initialCourse = options.find((c) => c.id === initialData.course);
+          const initialCourse = options.find(
+            (c) => c.id === initialData.course
+          );
           if (initialCourse) {
             setSelectedCourse(initialCourse);
           }
@@ -120,7 +114,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         console.error("Failed to fetch enrolled courses:", error);
         setAlertType("error");
         setAlertTitle("Error");
-        setAlertMsg("Failed to load your enrolled courses. Please refresh the page.");
+        setAlertMsg(
+          "Failed to load your enrolled courses. Please refresh the page."
+        );
         setIsAlertOpen(true);
       } finally {
         setIsLoadingCourses(false);
@@ -140,8 +136,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
       try {
         setIsLoadingMembers(true);
-        const students = await courseService.getEnrolledStudents(selectedCourse.id);
-        
+        const students = await courseService.getEnrolledStudents(
+          selectedCourse.id
+        );
+
         // Convert students to Member format
         const members: Member[] = students.map((student) => {
           const nameParts = student.display_name.split(" ");
@@ -151,14 +149,22 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             .substring(0, 2);
 
           // Generate consistent color based on student ID
-          const colors = ["blue", "green", "purple", "pink", "teal", "orange"];
-          const colorIndex = parseInt(student.id.substring(0, 8), 16) % colors.length;
+          const colors: (
+            | "blue"
+            | "pink"
+            | "green"
+            | "purple"
+            | "teal"
+            | "yellow"
+          )[] = ["blue", "pink", "green", "purple", "teal", "yellow"];
+          const colorIndex =
+            parseInt(student.id.substring(0, 8), 16) % colors.length;
 
           return {
             id: student.id,
             name: student.display_name,
             initials,
-            backgroundColor: colors[colorIndex] as any,
+            backgroundColor: colors[colorIndex],
           };
         });
 
@@ -291,12 +297,15 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   </label>
                   {isLoadingCourses ? (
                     <div className="p-3 border rounded bg-gray-50">
-                      <p className="text-sm text-gray-500">Loading courses...</p>
+                      <p className="text-sm text-gray-500">
+                        Loading courses...
+                      </p>
                     </div>
                   ) : courseOptions.length === 0 ? (
                     <div className="p-3 border rounded bg-yellow-50">
                       <p className="text-sm text-gray-700">
-                        You are not enrolled in any courses. Please enroll in a course first.
+                        You are not enrolled in any courses. Please enroll in a
+                        course first.
                       </p>
                     </div>
                   ) : (
@@ -363,12 +372,15 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     {!selectedCourse ? (
                       <div className="p-3 border rounded bg-gray-50">
                         <p className="text-sm text-gray-500">
-                          Please select a course first to see available classmates
+                          Please select a course first to see available
+                          classmates
                         </p>
                       </div>
                     ) : isLoadingMembers ? (
                       <div className="p-3 border rounded bg-gray-50">
-                        <p className="text-sm text-gray-500">Loading classmates...</p>
+                        <p className="text-sm text-gray-500">
+                          Loading classmates...
+                        </p>
                       </div>
                     ) : availableMembers.length === 0 ? (
                       <div className="p-3 border rounded bg-yellow-50">
