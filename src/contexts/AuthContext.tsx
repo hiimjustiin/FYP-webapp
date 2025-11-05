@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
-import { saveTokens, clearTokens } from "../lib/api";
+import { saveTokens, clearTokens, getAPIBaseURL } from "../lib/api";
 
 interface User {
   id: string;
@@ -28,8 +28,7 @@ export const useAuth = () => {
   return context;
 };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
+const API_BASE_URL = getAPIBaseURL();
 
 const BYPASS_AUTH =
   (import.meta.env.VITE_BYPASS_AUTH ?? "").toLowerCase() === "true";
