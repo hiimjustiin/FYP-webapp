@@ -37,6 +37,17 @@ interface MessageResponse {
   message: string;
 }
 
+export interface EnrolledStudent {
+  id: string;
+  display_name: string;
+  email: string;
+  student_id?: string;
+}
+
+interface EnrolledStudentsResponse {
+  students: EnrolledStudent[];
+}
+
 export const courseService = {
   async getCourses(): Promise<Course[]> {
     const data = await api.get<CoursesResponse>("/courses");
@@ -48,8 +59,20 @@ export const courseService = {
     return data.courses;
   },
 
-  async enrollCourse(courseId: string, passcode: string): Promise<EnrollmentResponse> {
-    return api.post<EnrollmentResponse>(`/courses/${courseId}/enroll`, { passcode });
+  async getEnrolledStudents(courseId: string): Promise<EnrolledStudent[]> {
+    const data = await api.get<EnrolledStudentsResponse>(
+      `/courses/${courseId}/enrolled-students`
+    );
+    return data.students;
+  },
+
+  async enrollCourse(
+    courseId: string,
+    passcode: string
+  ): Promise<EnrollmentResponse> {
+    return api.post<EnrollmentResponse>(`/courses/${courseId}/enroll`, {
+      passcode,
+    });
   },
 
   async unenrollCourse(courseId: string): Promise<MessageResponse> {

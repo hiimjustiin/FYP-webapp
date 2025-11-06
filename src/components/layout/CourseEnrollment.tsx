@@ -23,7 +23,8 @@ const CourseEnrollment = ({
   const [loadingCourseIds, setLoadingCourseIds] = useState<Set<string>>(
     new Set()
   );
-  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] = useState<Course | null>(null);
+  const [selectedCourseForEnrollment, setSelectedCourseForEnrollment] =
+    useState<Course | null>(null);
   const [enrollmentError, setEnrollmentError] = useState("");
   const [isEnrolling, setIsEnrolling] = useState(false);
 
@@ -52,13 +53,16 @@ const CourseEnrollment = ({
 
     setIsEnrolling(true);
     setEnrollmentError("");
-    setLoadingCourseIds((prev) => new Set(prev).add(selectedCourseForEnrollment.id));
+    setLoadingCourseIds((prev) =>
+      new Set(prev).add(selectedCourseForEnrollment.id)
+    );
 
     try {
       await onEnroll(selectedCourseForEnrollment.id, passcode);
       handleCloseEnrollmentModal();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to enroll in course";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to enroll in course";
       setEnrollmentError(errorMessage);
     } finally {
       setIsEnrolling(false);

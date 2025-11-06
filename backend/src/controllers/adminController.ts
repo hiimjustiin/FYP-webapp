@@ -339,7 +339,8 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { code, title, description, instructor_id, term, passcode } = req.body;
+    const { code, title, description, instructor_id, term, passcode } =
+      req.body;
 
     const result = await query(
       `INSERT INTO courses (code, title, description, instructor_id, term, passcode)
@@ -365,7 +366,8 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 export const updateCourse = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { code, title, description, instructor_id, term, passcode } = req.body;
+    const { code, title, description, instructor_id, term, passcode } =
+      req.body;
 
     const updateFields: string[] = [];
     const values: (string | undefined)[] = [];

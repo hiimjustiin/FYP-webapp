@@ -76,9 +76,7 @@ export default function AdminCourses() {
         {/* Header */}
         <div className="flex justify-between items-center mb-6 mb-6">
           <div>
-            <h1 className="heading-3 mb-2">
-              Course Management
-            </h1>
+            <h1 className="heading-3 mb-2">Course Management</h1>
             <p className="body text-[var(--color-grey-55)]">
               Manage all courses and assign instructors
             </p>
@@ -164,7 +162,7 @@ export default function AdminCourses() {
                     </Button>
                   </div>,
                 ]),
-              ]}  
+              ]}
             />
           )}
         </div>

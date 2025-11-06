@@ -69,7 +69,10 @@ const Settings = () => {
       ]);
       console.log("All courses:", all);
       console.log("Enrolled courses:", enrolled);
-      console.log("Enrolled course IDs:", enrolled.map(c => c.id));
+      console.log(
+        "Enrolled course IDs:",
+        enrolled.map((c) => c.id)
+      );
       setAvailableCourses(all);
       setEnrolledCourses(enrolled);
     } catch (error) {
@@ -99,7 +102,8 @@ const Settings = () => {
       await loadCourses();
     } catch (error) {
       console.error("Failed to enroll:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to enroll in course";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to enroll in course";
       showAlert("error", "Error", errorMessage);
     } finally {
       setIsLoadingCourses(false);

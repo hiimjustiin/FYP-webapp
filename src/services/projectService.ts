@@ -34,10 +34,11 @@ export interface CreateProjectData {
   title: string;
   description?: string;
   status?: "Draft" | "Submitted" | "Completed";
-  course_code?: string;
-  submission_date?: string;
-  interq_score?: string;
-  settings?: Record<string, unknown>;
+  course_id: string;
+  project_type: "individual" | "group";
+  essay_text?: string;
+  member_ids?: string[];
+  files?: File[];
 }
 
 export interface UpdateProjectData {
@@ -70,7 +71,32 @@ export const projectService = {
   },
 
   async createProject(projectData: CreateProjectData): Promise<Project> {
-    const data = await api.post<ProjectResponse>("/projects", projectData);
+    // Build FormData for multipart/form-data request with files
+    const formData = new FormData();
+    formData.append("title", projectData.title);
+    formData.append("course_id", projectData.course_id);
+    formData.append("project_type", projectData.project_type);
+
+    if (projectData.description) {
+      formData.append("description", projectData.description);
+    }
+    if (projectData.status) {
+      formData.append("status", projectData.status);
+    }
+    if (projectData.essay_text) {
+      formData.append("essay_text", projectData.essay_text);
+    }
+    if (projectData.member_ids && projectData.member_ids.length > 0) {
+      formData.append("member_ids", JSON.stringify(projectData.member_ids));
+    }
+    if (projectData.files && projectData.files.length > 0) {
+      projectData.files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
+    // Send FormData without custom headers (browser will set Content-Type correctly)
+    const data = await api.post<ProjectResponse>("/projects", formData);
     return data.project;
   },
 
