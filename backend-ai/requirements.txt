@@ -6,6 +6,8 @@ python-multipart==0.0.12
 # Pydantic AI framework for structured AI outputs
 pydantic-ai==0.0.14
 pydantic==2.10.1
+pydantic-settings==2.6.1
+griffe==1.5.1
 
 # OpenAI API
 openai==1.54.4
