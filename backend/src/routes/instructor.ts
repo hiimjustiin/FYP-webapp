@@ -13,6 +13,15 @@ router.use(authorize("instructor", "admin"));
 // GET /api/instructor/courses - Get courses taught by instructor
 router.get("/courses", instructorController.getInstructorCourses);
 
+// POST /api/instructor/courses - Create new course
+router.post("/courses", instructorController.createCourse);
+
+// PUT /api/instructor/courses/:courseId - Update course
+router.put("/courses/:courseId", instructorController.updateCourse);
+
+// DELETE /api/instructor/courses/:courseId - Delete course
+router.delete("/courses/:courseId", instructorController.deleteCourse);
+
 // GET /api/instructor/courses/:courseId/students - Get enrolled students
 router.get(
   "/courses/:courseId/students",

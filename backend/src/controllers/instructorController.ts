@@ -9,7 +9,7 @@ export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
   try {
     const result = await query(
       `SELECT 
-        c.id, c.code, c.title, c.description, c.term,
+        c.id, c.code, c.title, c.description, c.term, c.passcode,
         COUNT(DISTINCT ce.user_id) as enrolled_count,
         COUNT(DISTINCT ps.id) as submission_count,
         COUNT(DISTINCT CASE WHEN ps.status = 'submitted' THEN ps.id END) as pending_count
@@ -28,6 +28,167 @@ export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
     res
       .status(500)
       .json({ success: false, error: { message: "Failed to fetch courses" } });
+  }
+};
+
+// POST /api/instructor/courses - Create new course
+export const createCourse = async (req: AuthRequest, res: Response) => {
+  try {
+    const { code, title, description, term, passcode } = req.body;
+
+    if (!code || !title) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Course code and title are required" },
+      });
+    }
+
+    const result = await query(
+      `INSERT INTO courses (code, title, description, instructor_id, term, passcode)
+       VALUES ($1, $2, $3, $4, $5, COALESCE($6, $1))
+       RETURNING *`,
+      [code, title, description, req.user?.id, term, passcode]
+    );
+
+    return res.status(201).json({
+      success: true,
+      data: { course: result.rows[0] },
+    });
+  } catch (error) {
+    console.error("Error creating course:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to create course" },
+    });
+  }
+};
+
+// PUT /api/instructor/courses/:courseId - Update course
+export const updateCourse = async (req: AuthRequest, res: Response) => {
+  try {
+    const { courseId } = req.params;
+    const { code, title, description, term, passcode } = req.body;
+
+    // Verify instructor owns this course
+    const courseCheck = await query(
+      "SELECT 1 FROM courses WHERE id = $1 AND instructor_id = $2",
+      [courseId, req.user?.id]
+    );
+    if (courseCheck.rows.length === 0) {
+      return res
+        .status(403)
+        .json({ success: false, error: { message: "Access denied" } });
+    }
+
+    const updateFields: string[] = [];
+    const values: (string | undefined)[] = [];
+    let paramCount = 0;
+
+    if (code !== undefined) {
+      paramCount++;
+      updateFields.push(`code = $${paramCount}`);
+      values.push(code);
+    }
+
+    if (title !== undefined) {
+      paramCount++;
+      updateFields.push(`title = $${paramCount}`);
+      values.push(title);
+    }
+
+    if (description !== undefined) {
+      paramCount++;
+      updateFields.push(`description = $${paramCount}`);
+      values.push(description);
+    }
+
+    if (term !== undefined) {
+      paramCount++;
+      updateFields.push(`term = $${paramCount}`);
+      values.push(term);
+    }
+
+    if (passcode !== undefined) {
+      paramCount++;
+      updateFields.push(`passcode = $${paramCount}`);
+      values.push(passcode);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "No fields to update" },
+      });
+    }
+
+    updateFields.push("updated_at = NOW()");
+    paramCount++;
+    values.push(courseId as string);
+
+    const result = await query(
+      `UPDATE courses SET ${updateFields.join(", ")} WHERE id = $${paramCount}
+       RETURNING *`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Course not found" },
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: { course: result.rows[0] },
+    });
+  } catch (error) {
+    console.error("Error updating course:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to update course" },
+    });
+  }
+};
+
+// DELETE /api/instructor/courses/:courseId - Delete course
+export const deleteCourse = async (req: AuthRequest, res: Response) => {
+  try {
+    const { courseId } = req.params;
+
+    // Verify instructor owns this course
+    const courseCheck = await query(
+      "SELECT 1 FROM courses WHERE id = $1 AND instructor_id = $2",
+      [courseId, req.user?.id]
+    );
+    if (courseCheck.rows.length === 0) {
+      return res
+        .status(403)
+        .json({ success: false, error: { message: "Access denied" } });
+    }
+
+    const result = await query(
+      "DELETE FROM courses WHERE id = $1 RETURNING id",
+      [courseId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Course not found" },
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Course deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting course:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to delete course" },
+    });
   }
 };
 
@@ -110,12 +271,10 @@ export const getCourseSubmissions = async (req: AuthRequest, res: Response) => {
     return res.json({ success: true, data: { submissions: result.rows } });
   } catch (error) {
     console.error("Error fetching course submissions:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error: { message: "Failed to fetch submissions" },
-      });
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to fetch submissions" },
+    });
   }
 };
 
@@ -151,12 +310,10 @@ export const triggerScoring = async (req: AuthRequest, res: Response) => {
     }
 
     if (!submission.file_url) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          error: { message: "No file attached to this submission" },
-        });
+      return res.status(400).json({
+        success: false,
+        error: { message: "No file attached to this submission" },
+      });
     }
 
     // Update status to 'scoring'
@@ -353,11 +510,9 @@ export const uploadSubmission = async (req: AuthRequest, res: Response) => {
     return res.json({ success: true, data: { submission } });
   } catch (error) {
     console.error("Error uploading submission:", error);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        error: { message: "Failed to upload submission" },
-      });
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to upload submission" },
+    });
   }
 };
