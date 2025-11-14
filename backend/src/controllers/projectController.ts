@@ -194,9 +194,29 @@ export const getProject = async (
     const project = result.rows[0];
     project.members = membersResult.rows;
 
+    // Include latest submission id for feedback lookups
+    let latestSubmissionId: string | null = null;
+    if (project.status === "Submitted" || project.status === "Completed") {
+      const submissionResult = await query(
+        `SELECT id FROM project_submissions
+         WHERE project_id = $1 AND user_id = $2
+         ORDER BY submitted_at DESC
+         LIMIT 1`,
+        [id, req.user.id]
+      );
+      if (submissionResult.rows.length > 0) {
+        latestSubmissionId = submissionResult.rows[0].id;
+      }
+    }
+
     res.json({
       success: true,
-      data: { project },
+      data: {
+        project: {
+          ...project,
+          latest_submission_id: latestSubmissionId,
+        },
+      },
     });
   } catch (error) {
     console.error("Get project error:", error);
@@ -232,8 +252,21 @@ export const createProject = async (
       member_ids, // JSON string array of user IDs
     } = req.body;
 
+    const uploadedFiles = Array.isArray(req.files)
+      ? (req.files as Express.Multer.File[])
+      : [];
+
+    console.log("📝 Project creation request received:", {
+      title,
+      course_id,
+      project_type,
+      essay_text: essay_text ? `[${essay_text.length} chars]` : "none",
+      has_files: uploadedFiles.length > 0,
+    });
+
     // Validate required fields
     if (!title || !title.trim()) {
+      console.error("❌ Validation error: Title is required");
       res.status(400).json({
         success: false,
         error: { message: "Title is required" },
@@ -242,6 +275,7 @@ export const createProject = async (
     }
 
     if (!course_id) {
+      console.error("❌ Validation error: Course is required");
       res.status(400).json({
         success: false,
         error: { message: "Course is required" },
@@ -257,7 +291,7 @@ export const createProject = async (
         if (!Array.isArray(memberIds)) {
           throw new Error("member_ids must be an array");
         }
-      } catch (error) {
+      } catch {
         res.status(400).json({
           success: false,
           error: { message: "Invalid member_ids format" },
@@ -347,9 +381,8 @@ export const createProject = async (
       }
 
       // Handle file uploads if any
-      const files = (req as any).files as Express.Multer.File[];
-      if (files && files.length > 0) {
-        for (const file of files) {
+      if (uploadedFiles.length > 0) {
+        for (const file of uploadedFiles) {
           await query(
             `INSERT INTO project_files (
               project_id, file_name, file_url, file_type, 
@@ -393,10 +426,24 @@ export const createProject = async (
       throw error;
     }
   } catch (error) {
-    console.error("Create project error:", error);
+    interface DatabaseError extends Error {
+      detail?: string;
+    }
+    const typedError = error as DatabaseError;
+    console.error("Create project error:", {
+      message: typedError?.message,
+      detail: typedError?.detail,
+      errorObj: error,
+    });
     res.status(500).json({
       success: false,
-      error: { message: "Internal server error" },
+      error: {
+        message: "Internal server error",
+        debug:
+          process.env.NODE_ENV === "development"
+            ? (error as Error).message
+            : undefined,
+      },
     });
   }
 };
@@ -563,6 +610,300 @@ export const deleteProject = async (
     });
   } catch (error) {
     console.error("Delete project error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+// Submit project for AI evaluation
+export const submitProject = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Check if user has access to project
+    const projectResult = await query(
+      `SELECT p.*, u.display_name as owner_name
+       FROM projects p
+       LEFT JOIN users u ON p.owner_id = u.id
+       WHERE p.id = $1 AND (
+         p.owner_id = $2 OR p.id IN (
+           SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
+         )
+       )`,
+      [id, req.user.id]
+    );
+
+    if (projectResult.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Project not found or access denied" },
+      });
+      return;
+    }
+
+    const project = projectResult.rows[0];
+
+    // Only allow submission if project is in Draft status
+    if (project.status !== "Draft") {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: `Project cannot be submitted. Current status: ${project.status}`,
+        },
+      });
+      return;
+    }
+
+    // Check if project has content (essay_text or files)
+    const filesResult = await query(
+      `SELECT COUNT(*) as file_count FROM project_files WHERE project_id = $1`,
+      [id]
+    );
+
+    const fileCount = parseInt(filesResult.rows[0].file_count);
+    const hasEssayText =
+      project.essay_text && project.essay_text.trim().length > 0;
+
+    if (!hasEssayText && fileCount === 0) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message:
+            "Project must have essay text or uploaded files to be submitted",
+        },
+      });
+      return;
+    }
+
+    // Start transaction
+    await query("BEGIN");
+
+    let submissionId: string;
+
+    try {
+      console.log(`[Submit] Starting submission for project ${id}`);
+
+      // Update project status to Submitted
+      await query(
+        `UPDATE projects SET status = 'Submitted', updated_at = NOW() WHERE id = $1`,
+        [id]
+      );
+      console.log(`[Submit] Project status updated to Submitted`);
+
+      // Get project files for AI analysis
+      const filesData = await query(
+        `SELECT file_name, file_url, file_type FROM project_files WHERE project_id = $1`,
+        [id]
+      );
+      const fileUrls = filesData.rows.map(
+        (fileRow: { file_url: string }) => fileRow.file_url
+      );
+      console.log(`[Submit] Found ${fileUrls.length} files`);
+
+      // Create project_submissions record
+      console.log(`[Submit] Creating submission record...`);
+      const submissionResult = await query(
+        `INSERT INTO project_submissions (
+          project_id, course_id, user_id, name, submitted_at
+        )
+        VALUES ($1, $2, $3, $4, NOW())
+        RETURNING id`,
+        [id, project.course_id, req.user.id, "Draft 1"]
+      );
+
+      submissionId = submissionResult.rows[0].id;
+      console.log(`[Submit] Submission created with ID: ${submissionId}`);
+
+      // Update with AI-specific fields
+      const crypto = await import("crypto");
+      const contentForHash = JSON.stringify({
+        essay: project.essay_text || "",
+        files: [...fileUrls].sort(),
+      });
+      const contentHash = crypto
+        .createHash("sha256")
+        .update(contentForHash)
+        .digest("hex");
+
+      console.log(`[Submit] Updating AI-specific fields...`);
+      await query(
+        `UPDATE project_submissions 
+         SET essay_text = $1, 
+             file_urls = $2, 
+             content_hash = $3,
+             ai_processing_status = 'pending'
+         WHERE id = $4`,
+        [
+          project.essay_text || null,
+          JSON.stringify(fileUrls),
+          contentHash,
+          submissionId,
+        ]
+      );
+      console.log(`[Submit] AI fields updated successfully`);
+
+      await query("COMMIT");
+      console.log(`[Submit] Transaction committed successfully`);
+
+      // Trigger AI evaluation asynchronously (don't wait for response)
+      const AI_SERVICE_URL =
+        process.env.AI_SERVICE_URL || "http://backend-ai:8000";
+
+      // Prepare essay text - use placeholder if empty to meet AI service expectations
+      const essayText =
+        project.essay_text && project.essay_text.trim().length > 0
+          ? project.essay_text
+          : "[No essay text provided. Analysis based on uploaded files.]";
+
+      fetch(`${AI_SERVICE_URL}/api/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submission_id: submissionId,
+          project_id: id,
+          course_id: project.course_id,
+          user_id: req.user.id,
+          essay_text: essayText,
+          file_urls: fileUrls,
+          reanalyze: false,
+        }),
+      }).catch((error) => {
+        console.error("Failed to trigger AI evaluation:", error);
+        // Try to update submission status to failed
+        query(
+          `UPDATE project_submissions 
+           SET ai_processing_status = 'failed', 
+               ai_processing_error = $1 
+           WHERE id = $2`,
+          ["Failed to connect to AI service", submissionId]
+        ).catch((err) =>
+          console.error("Failed to update submission status:", err)
+        );
+      });
+
+      res.json({
+        success: true,
+        data: {
+          project: {
+            ...project,
+            status: "Submitted",
+          },
+          submission_id: submissionId,
+          message:
+            "Project submitted successfully. AI evaluation is in progress.",
+        },
+      });
+    } catch (error) {
+      console.error(`[Submit] Transaction error - rolling back:`, error);
+      await query("ROLLBACK");
+      throw error;
+    }
+  } catch (error) {
+    console.error("Submit project error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+/**
+ * Get AI feedback for a submission
+ */
+export const getSubmissionFeedback = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { submissionId } = req.params;
+
+    // Verify user has access to this submission
+    const submissionCheck = await query(
+      `SELECT ps.*, p.owner_id, p.course_id
+       FROM project_submissions ps
+       JOIN projects p ON ps.project_id = p.id
+       WHERE ps.id = $1 AND (
+         p.owner_id = $2 OR p.id IN (
+           SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
+         )
+       )`,
+      [submissionId, req.user.id]
+    );
+
+    if (submissionCheck.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Submission not found or access denied" },
+      });
+      return;
+    }
+
+    const submission = submissionCheck.rows[0];
+
+    // Get dimension scores with variant info
+    const scoresResult = await query(
+      `SELECT 
+        sds.*,
+        d.label as dimension_label,
+        d.variant as dimension_variant
+       FROM submission_dimension_scores sds
+       JOIN dimensions d ON sds.dimension_id = d.id
+       WHERE sds.submission_id = $1
+       ORDER BY d.id`,
+      [submissionId]
+    );
+
+    // Get project info for submission
+    const projectResult = await query(
+      `SELECT title FROM projects WHERE id = $1`,
+      [submission.project_id]
+    );
+
+    // Format response to match frontend expectations
+    res.json({
+      success: true,
+      data: {
+        submission: {
+          id: submission.id,
+          project_id: submission.project_id,
+          project_title: projectResult.rows[0]?.title || "",
+          name: submission.name,
+          submitted_at: submission.submitted_at,
+          ai_processing_status: submission.ai_processing_status,
+          ai_processing_error: submission.ai_processing_error,
+          ai_overall_summary: submission.ai_overall_summary,
+          ai_overall_strengths: submission.ai_overall_strengths,
+          ai_priority_improvements: submission.ai_priority_improvements,
+          ai_estimated_level: submission.ai_estimated_level,
+        },
+        dimensions: scoresResult.rows,
+      },
+    });
+  } catch (error) {
+    console.error("Get submission feedback error:", error);
     res.status(500).json({
       success: false,
       error: { message: "Internal server error" },

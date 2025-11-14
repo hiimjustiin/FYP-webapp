@@ -84,6 +84,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [alertTitle, setAlertTitle] = useState("Review your submission");
   const [primaryButtonText, setPrimaryButtonText] = useState("Confirm");
   const [alertMsg, setAlertMsg] = useState("");
+  const [enrolledStudentsFetchError, setEnrolledStudentsFetchError] =
+    useState(false);
 
   // Fetch enrolled courses on mount
   useEffect(() => {
@@ -131,11 +133,13 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     const fetchEnrolledStudents = async () => {
       if (!selectedCourse) {
         setAvailableMembers([]);
+        setEnrolledStudentsFetchError(false);
         return;
       }
 
       try {
         setIsLoadingMembers(true);
+        setEnrolledStudentsFetchError(false);
         const students = await courseService.getEnrolledStudents(
           selectedCourse.id
         );
@@ -171,10 +175,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         setAvailableMembers(members);
       } catch (error) {
         console.error("Failed to fetch enrolled students:", error);
-        setAlertType("error");
-        setAlertTitle("Error");
-        setAlertMsg("Failed to load classmates for this course.");
-        setIsAlertOpen(true);
+        // Set flag instead of showing error - we'll handle this gracefully
+        setAvailableMembers([]);
+        setEnrolledStudentsFetchError(true);
       } finally {
         setIsLoadingMembers(false);
       }
@@ -337,12 +340,43 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <label className="caption text-[var(--color-grey-55)] mb-2 block">
                     Project Type
                   </label>
-                  <Dropdown
-                    options={projectTypeOptions}
-                    selectedOption={selectedProjectType}
-                    onSelect={setSelectedProjectType}
-                    placeholder="Select project type"
-                  />
+                  {!selectedCourse ? (
+                    <div className="p-3 border rounded bg-gray-50">
+                      <p className="text-sm text-gray-500">
+                        Please select a course first
+                      </p>
+                    </div>
+                  ) : availableMembers.length < 1 && !isLoadingMembers ? (
+                    <div className="space-y-2">
+                      <Dropdown
+                        options={[
+                          { id: "individual", label: "Individual Project" },
+                        ]}
+                        selectedOption={
+                          selectedProjectType?.id === "individual"
+                            ? selectedProjectType
+                            : null
+                        }
+                        onSelect={(option) => {
+                          if (option) {
+                            setSelectedProjectType(option);
+                          }
+                        }}
+                        placeholder="Select project type"
+                      />
+                      <p className="text-xs text-amber-600 mt-1">
+                        Only individual projects are available as there are no
+                        other students in this course.
+                      </p>
+                    </div>
+                  ) : (
+                    <Dropdown
+                      options={projectTypeOptions}
+                      selectedOption={selectedProjectType}
+                      onSelect={setSelectedProjectType}
+                      placeholder="Select project type"
+                    />
+                  )}
                 </div>
 
                 {/* Description */}
@@ -380,6 +414,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                       <div className="p-3 border rounded bg-gray-50">
                         <p className="text-sm text-gray-500">
                           Loading classmates...
+                        </p>
+                      </div>
+                    ) : enrolledStudentsFetchError ? (
+                      <div className="p-3 border rounded bg-yellow-50">
+                        <p className="text-sm text-gray-700">
+                          Unable to load classmates. There may be no other
+                          students enrolled in this course yet, or please try
+                          again.
                         </p>
                       </div>
                     ) : availableMembers.length === 0 ? (
@@ -437,63 +479,65 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   </div>
                 )}
 
-                {/* Additional Notes and File Upload */}
+                {/* Essay Body - Text or File Upload */}
                 {selectedProjectType && (
                   <div>
                     <label className="caption text-[var(--color-grey-55)] mb-2 block">
-                      Additional Notes
+                      Essay Body{" "}
+                      <span className="text-xs text-gray-400">(Optional)</span>
                     </label>
-                    <TextArea
-                      value={formData.text}
-                      onChange={handleTextChange}
-                      placeholder="Text"
-                      rows={4}
-                      maxLength={500}
-                      showCharCount={true}
-                      className="w-full"
-                    >
-                      {/* FileDrop integrated within TextArea */}
-                      {formData.text.trim() === "" && (
-                        <div className="mt-2">
-                          <FileDrop
-                            onFilesSelected={handleFilesSelected}
-                            accept=".pdf,.doc,.docx,.txt,.jpg,.png,.pptx,.xlsx"
-                            multiple={true}
-                            maxSize={10 * 1024 * 1024}
-                          />
-                        </div>
-                      )}
-                    </TextArea>
+                    <p className="text-xs text-gray-600 mb-3">
+                      You can either write your essay directly below OR upload a
+                      PDF/document file. Choose whichever works best for you.
+                    </p>
 
-                    {/* Separate FileDrop when text has content */}
-                    {formData.text.trim() !== "" && (
-                      <div className="mt-4">
-                        <label className="block caption mb-2">
-                          Attach Files
-                        </label>
-                        <FileDrop
-                          onFilesSelected={handleFilesSelected}
-                          accept=".pdf,.doc,.docx,.txt,.jpg,.png,.pptx,.xlsx"
-                          multiple={true}
-                          maxSize={10 * 1024 * 1024}
-                        />
-                      </div>
-                    )}
+                    {/* Text Essay Input */}
+                    <div className="mb-4">
+                      <label className="text-sm text-gray-700 mb-2 block font-medium">
+                        Write Essay Text
+                      </label>
+                      <TextArea
+                        value={formData.text}
+                        onChange={handleTextChange}
+                        placeholder="Type your essay here... (or leave empty and upload a file instead)"
+                        rows={6}
+                        maxLength={5000}
+                        showCharCount={true}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* File Upload Section */}
+                    <div className="mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <label className="text-sm text-gray-700 mb-2 block font-medium">
+                        OR Upload Essay Files
+                      </label>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Upload PDF, Word documents, or other supported files.
+                        You can select multiple files.
+                      </p>
+                      <FileDrop
+                        onFilesSelected={handleFilesSelected}
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.pptx,.xlsx"
+                        multiple={true}
+                        maxSize={10 * 1024 * 1024}
+                      />
+                    </div>
 
                     {/* Selected Files Display */}
                     {selectedFiles.length > 0 && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                        <p className="caption mb-2">
-                          Selected Files ({selectedFiles.length}):
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="caption mb-3 text-blue-900">
+                          📎 Selected Files ({selectedFiles.length}):
                         </p>
                         <div className="space-y-2">
                           {selectedFiles.map((file, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between bg-white p-2 rounded border"
+                              className="flex items-center justify-between bg-white p-3 rounded border border-blue-100"
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">
+                              <div className="flex items-center gap-2 flex-1">
+                                <span className="text-sm font-medium text-gray-800">
                                   {file.name}
                                 </span>
                                 <span className="text-xs text-gray-500">
@@ -503,15 +547,26 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveFile(index)}
-                                className="text-red-600 hover:text-red-800 text-sm font-bold"
+                                className="ml-2 text-red-600 hover:text-red-800 text-sm font-bold px-2"
                               >
-                                ×
+                                Remove
                               </button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
+
+                    {/* Help text */}
+                    {formData.text.trim() === "" &&
+                      selectedFiles.length === 0 && (
+                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                          <p className="text-xs text-yellow-800">
+                            💡 Tip: You don't need to add both text and files.
+                            Just add whichever you prefer!
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

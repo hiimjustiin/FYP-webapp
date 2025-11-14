@@ -139,8 +139,15 @@ const refreshAccessToken = async (): Promise<boolean> => {
 };
 
 // Create authenticated request headers
-const getAuthHeaders = (): HeadersInit => {
+const getAuthHeaders = (isFormData: boolean = false): HeadersInit => {
   const token = getAuthToken();
+  if (isFormData) {
+    // FormData - don't set Content-Type, browser will set it with boundary
+    return {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    };
+  }
+  // JSON request
   return {
     "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -154,6 +161,7 @@ export const apiRequest = async <T = unknown>(
   retryCount = 0
 ): Promise<T> => {
   const url = `${API_BASE_URL}${endpoint}`;
+  const isFormData = options.body instanceof FormData;
 
   // Check if token is expiring soon and refresh proactively
   if (retryCount === 0 && isTokenExpiringSoon()) {
@@ -161,7 +169,7 @@ export const apiRequest = async <T = unknown>(
   }
 
   const config: RequestInit = {
-    headers: getAuthHeaders(),
+    headers: getAuthHeaders(isFormData),
     ...options,
   };
 
@@ -219,7 +227,12 @@ export const api = {
   post: <T = unknown>(endpoint: string, data?: unknown): Promise<T> =>
     apiRequest<T>(endpoint, {
       method: "POST",
-      body: data ? JSON.stringify(data) : undefined,
+      body:
+        data instanceof FormData
+          ? data
+          : data
+          ? JSON.stringify(data)
+          : undefined,
     }),
 
   put: <T = unknown>(endpoint: string, data?: unknown): Promise<T> =>

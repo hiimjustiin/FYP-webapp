@@ -30,18 +30,22 @@ const PORT = process.env.PORT || 3001;
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
+// Rate limiting - much higher limit in development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === "production" ? 100 : 1000, // 1000 in dev, 100 in prod
   message: "Too many requests from this IP, please try again later.",
+  skip: (req) => {
+    // Skip rate limiting for health checks
+    return req.path === "/health";
+  },
 });
 app.use(limiter);
 
 // CORS configuration - Support multiple origins from environment
 // CORS_ORIGIN can be a single origin or comma-separated list
 const corsOriginEnv = process.env.CORS_ORIGIN || "http://localhost:5173";
-const allowedOrigins = corsOriginEnv.split(',').map(origin => origin.trim());
+const allowedOrigins = corsOriginEnv.split(",").map((origin) => origin.trim());
 
 // Always include common development origins
 const devOrigins = [
@@ -51,9 +55,11 @@ const devOrigins = [
 ];
 
 // Combine env origins with dev origins (remove duplicates)
-const allAllowedOrigins = Array.from(new Set([...allowedOrigins, ...devOrigins]));
+const allAllowedOrigins = Array.from(
+  new Set([...allowedOrigins, ...devOrigins])
+);
 
-console.log('🔒 CORS allowed origins:', allAllowedOrigins);
+console.log("🔒 CORS allowed origins:", allAllowedOrigins);
 
 app.use(
   cors({
@@ -62,29 +68,42 @@ app.use(
       if (!origin) {
         return callback(null, true);
       }
-      
+
       // Check if origin is in allowed list
       if (allAllowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      
+
       // In development, allow any localhost origin
-      if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+      if (
+        process.env.NODE_ENV === "development" &&
+        origin.startsWith("http://localhost:")
+      ) {
         return callback(null, true);
       }
-      
+
       // Reject other origins
-      console.warn('⚠️  CORS rejected origin:', origin);
+      console.warn("⚠️  CORS rejected origin:", origin);
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Body parsing middleware
-app.use(express.json({ limit: "10mb" }));
+// Body parsing middleware - exclude multipart/form-data (handled by multer)
+app.use(
+  express.json({
+    limit: "10mb",
+    type: (req) => {
+      if (req.headers["content-type"]?.startsWith("multipart/form-data")) {
+        return false;
+      }
+      return true;
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true }));
 
 // Logging

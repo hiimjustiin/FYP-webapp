@@ -4,6 +4,7 @@ import Button from "../../components/ui/Button/Button";
 import MemberGroup from "../../components/ui/MemberIcon/MemberGroup";
 import { type Member } from "../../components/ui/SearchBar/SearchBar";
 import { projectService, type Project } from "../../services/projectService";
+import { feedbackService } from "../../services/feedbackService";
 
 /** ------------------------------- Helpers ------------------------------- */
 const formatDate = (iso: string) =>
@@ -32,99 +33,6 @@ interface AIFeedback {
   generatedAt: string;
 }
 
-// ILA Dimensions based on the app's actual dimensions
-const ILA_DIMENSIONS = [
-  {
-    label: "Frame the problem with an integrative approach",
-    variant: "lime",
-    feedback: "Strong problem framing that considers multiple perspectives. The interdisciplinary approach is evident and well-articulated.",
-    score: 8,
-  },
-  {
-    label: "Stakeholder consideration",
-    variant: "yellow",
-    feedback: "Good identification of key stakeholders. Consider expanding analysis to include indirect stakeholders and their potential impacts.",
-    score: 7,
-  },
-  {
-    label: "Range of disciplinary perspectives",
-    variant: "purple",
-    feedback: "Excellent integration of diverse disciplinary viewpoints. The breadth of perspectives demonstrates comprehensive understanding.",
-    score: 9,
-  },
-  {
-    label: "Disciplinary reasoning",
-    variant: "teal",
-    feedback: "Solid application of discipline-specific methodologies. The reasoning follows established frameworks appropriately.",
-    score: 8,
-  },
-  {
-    label: "Credibility of disciplinary knowledge",
-    variant: "blue",
-    feedback: "Sources are credible and well-cited. Consider incorporating more recent studies to strengthen the knowledge base.",
-    score: 7,
-  },
-  {
-    label: "Number of disciplinary integration",
-    variant: "grey",
-    feedback: "Good integration across multiple disciplines. The connections between fields are clear and purposeful.",
-    score: 8,
-  },
-  {
-    label: "Depth of disciplinary integration",
-    variant: "green",
-    feedback: "Integration goes beyond surface level. Shows understanding of how disciplines complement each other in addressing the problem.",
-    score: 9,
-  },
-  {
-    label: "Social (society) impact",
-    variant: "navy",
-    feedback: "Strong consideration of societal implications. The analysis demonstrates awareness of broader social contexts and potential impacts.",
-    score: 8,
-  },
-  {
-    label: "Limitations",
-    variant: "pink",
-    feedback: "Good acknowledgment of study limitations. Consider discussing methodological constraints and potential biases more explicitly.",
-    score: 7,
-  },
-];
-
-const generateMockAIFeedback = (): AIFeedback => {
-  const dimensions: DimensionFeedback[] = ILA_DIMENSIONS.map((dim) => ({
-    name: dim.label,
-    score: dim.score,
-    maxScore: 10,
-    feedback: dim.feedback,
-    variant: dim.variant,
-  }));
-
-  const totalScore = dimensions.reduce((sum, dim) => sum + dim.score, 0);
-  const maxTotalScore = dimensions.length * 10;
-
-  return {
-    overallScore: totalScore,
-    maxScore: maxTotalScore,
-    dimensions,
-    summary:
-      "This project demonstrates strong interdisciplinary learning and integration. The work shows comprehensive understanding of multiple perspectives and their integration. The problem is well-framed with clear stakeholder consideration. Areas for enhancement include expanding stakeholder analysis and incorporating more recent scholarly sources.",
-    strengths: [
-      "Exceptional depth of disciplinary integration across multiple fields",
-      "Clear and comprehensive problem framing with integrative approach",
-      "Strong demonstration of disciplinary reasoning and methodologies",
-      "Thoughtful consideration of societal impact and broader implications",
-      "Effective synthesis of diverse disciplinary perspectives",
-    ],
-    improvements: [
-      "Expand stakeholder analysis to include indirect stakeholders",
-      "Incorporate more recent studies to strengthen credibility of knowledge",
-      "Provide more explicit discussion of methodological limitations",
-      "Consider additional ethical implications in the social impact section",
-    ],
-    generatedAt: new Date().toISOString(),
-  };
-};
-
 /** ------------------------------- Component ------------------------------- */
 const ProjectDetail = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -133,6 +41,9 @@ const ProjectDetail = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [aiFeedback, setAIFeedback] = useState<AIFeedback | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -145,10 +56,13 @@ const ProjectDetail = () => {
         const data = await projectService.getProject(projectId);
         setProject(data);
 
-        // Generate AI feedback if project is submitted or completed
-        if (data.status === "Submitted" || data.status === "Completed") {
-          const feedback = generateMockAIFeedback();
-          setAIFeedback(feedback);
+        // If project has a submission, load its feedback
+        if (data.latest_submission_id) {
+          console.log(
+            "[ProjectDetail] Found submission:",
+            data.latest_submission_id
+          );
+          setSubmissionId(data.latest_submission_id);
         }
       } catch (err) {
         console.error("Failed to load project:", err);
@@ -160,6 +74,205 @@ const ProjectDetail = () => {
 
     loadProject();
   }, [projectId]);
+
+  // Load AI feedback when available - single unified effect
+  useEffect(() => {
+    const loadFeedback = async () => {
+      if (!submissionId) return;
+
+      try {
+        console.log(
+          "[ProjectDetail] Loading feedback for submission:",
+          submissionId
+        );
+        const feedbackData = await feedbackService.getFeedback(submissionId);
+        console.log("[ProjectDetail] Got feedback:", feedbackData);
+
+        if (!feedbackData?.submission) {
+          console.error("[ProjectDetail] No submission data in response");
+          return;
+        }
+
+        const sub = feedbackData.submission;
+        const dims = feedbackData.dimensions || [];
+
+        if (sub.ai_processing_status === "completed" && dims.length > 0) {
+          // Convert real AI feedback to display format
+          const feedback: AIFeedback = {
+            overallScore:
+              Math.round(
+                (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
+                  (dims.length || 1)) *
+                  10
+              ) / 10,
+            maxScore: 3,
+            dimensions: dims.map((d) => ({
+              name: d.dimension_label,
+              score: d.ai_score || 0,
+              maxScore: 3,
+              feedback: d.ai_reasoning || "Analysis in progress...",
+              variant: d.dimension_variant,
+            })),
+            summary: sub.ai_overall_summary || "Analysis complete",
+            strengths: sub.ai_overall_strengths || [],
+            improvements: sub.ai_priority_improvements || [],
+            generatedAt: sub.submitted_at,
+          };
+          setAIFeedback(feedback);
+          setProcessingStatus("Analysis complete!");
+        } else if (
+          sub.ai_processing_status === "processing" ||
+          sub.ai_processing_status === "pending"
+        ) {
+          // Status is still processing/pending, start polling
+          setProcessingStatus(
+            sub.ai_processing_status === "processing"
+              ? "AI is analyzing your submission..."
+              : "Queued for analysis..."
+          );
+          // Will be handled by polling effect below
+        } else if (sub.ai_processing_status === "failed") {
+          setError(
+            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`
+          );
+          setProcessingStatus("Analysis failed.");
+        }
+      } catch (err) {
+        console.error("[ProjectDetail] Error loading feedback:", err);
+      }
+    };
+
+    loadFeedback();
+  }, [submissionId]);
+
+  // Poll for AI feedback when submission is processing/pending
+  useEffect(() => {
+    // Only poll if we have a submission ID, no feedback yet, and not failed/completed
+    if (
+      !submissionId ||
+      aiFeedback ||
+      processingStatus.includes("failed") ||
+      processingStatus.includes("complete")
+    )
+      return;
+
+    let isActive = true;
+    let pollInterval: NodeJS.Timeout;
+
+    const checkFeedback = async () => {
+      if (!isActive) return;
+
+      try {
+        const feedbackData = await feedbackService.getFeedback(submissionId);
+
+        if (!isActive) return;
+
+        const sub = feedbackData.submission;
+        const dims = feedbackData.dimensions || [];
+
+        if (sub.ai_processing_status === "completed" && dims.length > 0) {
+          // Feedback is ready
+          const feedback: AIFeedback = {
+            overallScore:
+              Math.round(
+                (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
+                  (dims.length || 1)) *
+                  10
+              ) / 10,
+            maxScore: 3,
+            dimensions: dims.map((d) => ({
+              name: d.dimension_label,
+              score: d.ai_score || 0,
+              maxScore: 3,
+              feedback: d.ai_reasoning || "Analysis in progress...",
+              variant: d.dimension_variant,
+            })),
+            summary: sub.ai_overall_summary || "Analysis complete",
+            strengths: sub.ai_overall_strengths || [],
+            improvements: sub.ai_priority_improvements || [],
+            generatedAt: sub.submitted_at,
+          };
+          setAIFeedback(feedback);
+          setProcessingStatus("Analysis complete!");
+          console.log("[ProjectDetail] AI feedback loaded successfully");
+        } else if (sub.ai_processing_status === "failed") {
+          setProcessingStatus("Analysis failed.");
+          setError(
+            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`
+          );
+        } else if (sub.ai_processing_status === "processing") {
+          setProcessingStatus("AI is analyzing your submission...");
+          // Continue polling
+          pollInterval = setTimeout(checkFeedback, 3000);
+        } else if (sub.ai_processing_status === "pending") {
+          setProcessingStatus("Queued for analysis...");
+          // Continue polling
+          pollInterval = setTimeout(checkFeedback, 5000);
+        }
+      } catch (err) {
+        console.error("[ProjectDetail] Error polling feedback:", err);
+        if (isActive) {
+          // Retry after delay
+          pollInterval = setTimeout(checkFeedback, 5000);
+        }
+      }
+    };
+
+    // Start polling
+    checkFeedback();
+
+    return () => {
+      isActive = false;
+      if (pollInterval) clearTimeout(pollInterval);
+    };
+  }, [submissionId, aiFeedback, processingStatus]);
+
+  // Handle project submission for AI evaluation
+  const handleSubmitProject = async () => {
+    if (!project || !projectId) return;
+
+    // Confirm submission
+    const confirmed = window.confirm(
+      "Are you sure you want to submit this project for AI evaluation? This will change the status from Draft to Submitted. You'll be redirected to the project list."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+
+      const result = await projectService.submitProject(projectId);
+
+      console.log("Submission result:", result);
+
+      // Show success message and redirect
+      alert(
+        `${result.message}\n\nYou can check the feedback status from the project list.`
+      );
+
+      // Redirect to project list
+      navigate("/project");
+    } catch (err) {
+      console.error("Failed to submit project:", err);
+      let errorMessage = "Failed to submit project. Please try again.";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "response" in err) {
+        const errResponse = err as {
+          response?: { data?: { error?: { message?: string } } };
+        };
+        errorMessage =
+          errResponse.response?.data?.error?.message || errorMessage;
+      }
+
+      setError(errorMessage);
+      alert(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Convert project members to Member format for MemberGroup
   const projectMembers: Member[] =
@@ -222,13 +335,27 @@ const ProjectDetail = () => {
             <div>
               <h4 className="heading-4 mb-2">Project Details</h4>
               <p className="subtitle-2 text-grey-80">
-                Submitted on {project.submission_date ? formatDate(project.submission_date) : "Not yet submitted"}
+                Submitted on{" "}
+                {project.submission_date
+                  ? formatDate(project.submission_date)
+                  : "Not yet submitted"}
               </p>
             </div>
             <div className="flex gap-2">
+              {/* Show Submit button only for Draft projects */}
+              {project.status === "Draft" && (
+                <Button
+                  variant="blue"
+                  onClick={handleSubmitProject}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
+                </Button>
+              )}
               <Button
                 variant="grey"
                 onClick={() => navigate(`/project/${project.id}/edit`)}
+                disabled={isSubmitting}
               >
                 Edit
               </Button>
@@ -254,8 +381,8 @@ const ProjectDetail = () => {
                     project.status === "Completed"
                       ? "bg-green-100 text-green-800"
                       : project.status === "Submitted"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-grey-100 text-grey-800"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-grey-100 text-grey-800"
                   }`}
                 >
                   {project.status}
@@ -308,7 +435,9 @@ const ProjectDetail = () => {
               <label className="subtitle-2 text-grey-80 block mb-2">
                 Description
               </label>
-              <p className="body-1 whitespace-pre-wrap">{project.description}</p>
+              <p className="body-1 whitespace-pre-wrap">
+                {project.description}
+              </p>
             </div>
           )}
         </div>
@@ -338,7 +467,9 @@ const ProjectDetail = () => {
                 <div
                   className="bg-[#181C62] h-3 rounded-full transition-all"
                   style={{
-                    width: `${(aiFeedback.overallScore / aiFeedback.maxScore) * 100}%`,
+                    width: `${
+                      (aiFeedback.overallScore / aiFeedback.maxScore) * 100
+                    }%`,
                   }}
                 />
               </div>
@@ -349,7 +480,10 @@ const ProjectDetail = () => {
               <h5 className="subtitle-1 mb-4">ILA Dimensions Assessment</h5>
               <div className="space-y-4">
                 {aiFeedback.dimensions.map((dimension, idx) => (
-                  <div key={idx} className="border-b border-grey-10 pb-4 last:border-0 last:pb-0">
+                  <div
+                    key={idx}
+                    className="border-b border-grey-10 pb-4 last:border-0 last:pb-0"
+                  >
                     <div className="flex items-start justify-between mb-2 gap-4">
                       <div className="flex items-center gap-2 flex-1">
                         <span
@@ -361,7 +495,9 @@ const ProjectDetail = () => {
                         >
                           {dimension.variant}
                         </span>
-                        <span className="subtitle-2 flex-1">{dimension.name}</span>
+                        <span className="subtitle-2 flex-1">
+                          {dimension.name}
+                        </span>
                       </div>
                       <span className="body-2 font-medium whitespace-nowrap">
                         {dimension.score}/{dimension.maxScore}
@@ -371,7 +507,9 @@ const ProjectDetail = () => {
                       <div
                         className="bg-[#D71440] h-2 rounded-full transition-all"
                         style={{
-                          width: `${(dimension.score / dimension.maxScore) * 100}%`,
+                          width: `${
+                            (dimension.score / dimension.maxScore) * 100
+                          }%`,
                         }}
                       />
                     </div>
@@ -394,7 +532,10 @@ const ProjectDetail = () => {
                 <h5 className="subtitle-1 mb-3 text-green-700">✓ Strengths</h5>
                 <ul className="space-y-2">
                   {aiFeedback.strengths.map((strength, idx) => (
-                    <li key={idx} className="body-2 text-grey-80 flex items-start gap-2">
+                    <li
+                      key={idx}
+                      className="body-2 text-grey-80 flex items-start gap-2"
+                    >
                       <span className="text-green-600 mt-1">•</span>
                       <span>{strength}</span>
                     </li>
@@ -409,7 +550,10 @@ const ProjectDetail = () => {
                 </h5>
                 <ul className="space-y-2">
                   {aiFeedback.improvements.map((improvement, idx) => (
-                    <li key={idx} className="body-2 text-grey-80 flex items-start gap-2">
+                    <li
+                      key={idx}
+                      className="body-2 text-grey-80 flex items-start gap-2"
+                    >
                       <span className="text-orange-600 mt-1">•</span>
                       <span>{improvement}</span>
                     </li>
@@ -420,14 +564,45 @@ const ProjectDetail = () => {
           </div>
         )}
 
-        {/* Placeholder if not submitted */}
-        {!aiFeedback && (
+        {/* Placeholder if not submitted and Draft */}
+        {!aiFeedback && project.status === "Draft" && (
           <div className="dashboard-card p-6 text-center">
             <div className="text-5xl mb-3">📋</div>
-            <h5 className="subtitle-1 mb-2">No AI Feedback Yet</h5>
-            <p className="body-2 text-grey-80">
-              Submit your project to receive detailed AI feedback and assessment based on the 9 ILA dimensions for interdisciplinary learning.
+            <h5 className="subtitle-1 mb-2">Ready to Submit?</h5>
+            <p className="body-2 text-grey-80 mb-4">
+              Submit your project to receive detailed AI feedback and assessment
+              based on the 9 ILA dimensions for interdisciplinary learning.
             </p>
+            <Button
+              variant="blue"
+              onClick={handleSubmitProject}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
+            </Button>
+          </div>
+        )}
+
+        {/* Processing state - show after submission */}
+        {!aiFeedback && project.status === "Submitted" && (
+          <div className="dashboard-card p-6 text-center">
+            <div className="text-5xl mb-3">⏳</div>
+            <h5 className="subtitle-1 mb-2">AI Evaluation in Progress</h5>
+            <p className="body-2 text-grey-80 mb-2">
+              {processingStatus ||
+                "Your project is being analyzed by our AI system. This typically takes 30-60 seconds."}
+            </p>
+            {processingStatus.includes("longer than expected") && (
+              <p className="caption text-orange-600 mb-4">
+                The analysis is taking longer than usual. You can safely leave
+                this page and return later.
+              </p>
+            )}
+            <div className="flex justify-center gap-3 mt-4">
+              <Button variant="grey" onClick={() => window.location.reload()}>
+                Refresh Page
+              </Button>
+            </div>
           </div>
         )}
       </div>

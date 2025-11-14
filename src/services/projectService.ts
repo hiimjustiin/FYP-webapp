@@ -28,6 +28,7 @@ export interface Project {
   updated_at: string;
   owner_name?: string;
   members: ProjectMember[];
+  latest_submission_id?: string | null;
 }
 
 export interface CreateProjectData {
@@ -57,6 +58,12 @@ interface ProjectsResponse {
 
 interface ProjectResponse {
   project: Project;
+}
+
+interface SubmitProjectResponse {
+  project: Project;
+  submission_id: string;
+  message: string;
 }
 
 export const projectService = {
@@ -110,5 +117,77 @@ export const projectService = {
 
   async deleteProject(id: string): Promise<void> {
     await api.delete(`/projects/${id}`);
+  },
+
+  async submitProject(
+    id: string
+  ): Promise<{ project: Project; submission_id: string; message: string }> {
+    const data = await api.post<SubmitProjectResponse>(
+      `/projects/${id}/submit`,
+      {}
+    );
+    return data;
+  },
+
+  async getSubmissionFeedback(submissionId: string): Promise<{
+    submission: {
+      id: string;
+      project_id: string;
+      project_title: string;
+      name: string;
+      submitted_at: string;
+      ai_processing_status: string;
+      ai_processing_error?: string;
+      ai_overall_summary?: string;
+      ai_overall_strengths?: string[];
+      ai_priority_improvements?: string[];
+      ai_estimated_level?: string;
+    };
+    dimensions: Array<{
+      dimension_id: number;
+      dimension_label: string;
+      dimension_variant: string;
+      ai_score?: number;
+      ai_reasoning?: string;
+      ai_strengths?: string[];
+      ai_improvements?: string[];
+      ai_examples?: string;
+      ai_processing_status: string;
+      personal_score: number;
+    }>;
+  }> {
+    interface SubmissionData {
+      id: string;
+      project_id: string;
+      project_title: string;
+      name: string;
+      submitted_at: string;
+      ai_processing_status: string;
+      ai_processing_error?: string;
+      ai_overall_summary?: string;
+      ai_overall_strengths?: string[];
+      ai_priority_improvements?: string[];
+      ai_estimated_level?: string;
+    }
+    interface DimensionData {
+      dimension_id: number;
+      dimension_label: string;
+      dimension_variant: string;
+      ai_score?: number;
+      ai_reasoning?: string;
+      ai_strengths?: string[];
+      ai_improvements?: string[];
+      ai_examples?: string;
+      ai_processing_status: string;
+      personal_score: number;
+    }
+    const data = await api.get<{
+      success: boolean;
+      data: {
+        submission: SubmissionData;
+        dimensions: DimensionData[];
+      };
+    }>(`/projects/submissions/${submissionId}/feedback`);
+    return data.data;
   },
 };

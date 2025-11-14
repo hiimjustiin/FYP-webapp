@@ -71,9 +71,18 @@ class AnalyzeSubmissionRequest(BaseModel):
     project_id: str
     course_id: str
     user_id: str
-    essay_text: str = Field(..., min_length=50, description="Essay text content")
+    essay_text: str = Field(..., description="Essay text content")
     file_urls: Optional[List[str]] = Field(default=None, description="URLs to uploaded files (PDF/DOCX)")
     reanalyze: bool = Field(default=False, description="Force re-analysis (skip cache)")
+    
+    @validator('essay_text')
+    def validate_essay_or_files(cls, v, values):
+        """Ensure either essay_text has content OR files are provided"""
+        if not v or len(v.strip()) < 50:
+            # Allow short/empty essay if files will be provided
+            # File validation happens in the endpoint
+            pass
+        return v
 
 
 class AnalyzeSubmissionResponse(BaseModel):

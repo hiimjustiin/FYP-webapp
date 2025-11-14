@@ -39,8 +39,11 @@ const ProjectNew = () => {
       navigate("/project");
     } catch (error: unknown) {
       console.error("Failed to create project:", error);
+      interface ErrorResponse {
+        response?: { data?: { error?: { message?: string } } };
+      }
       const errorMessage =
-        (error as any)?.response?.data?.error?.message ||
+        (error as ErrorResponse)?.response?.data?.error?.message ||
         (error as Error)?.message ||
         "Failed to create project. Please try again.";
       alert(errorMessage);
