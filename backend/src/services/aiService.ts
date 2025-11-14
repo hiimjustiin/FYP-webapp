@@ -1,14 +1,15 @@
-import OpenAI from "openai";
 import fs from "fs";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
-});
+// Python AI service configuration
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:8000";
 
 export interface DimensionScore {
   dimension_id: number;
-  score: number; // 0-10
+  score: number; // 1-3 scale (Pydantic AI)
   reasoning: string;
+  strengths: string[];
+  improvements: string[];
+  examples: string;
 }
 
 export interface AIAnalysisResult {
@@ -21,6 +22,7 @@ export interface AIAnalysisResult {
 
 /**
  * Extract text content from various file types
+ * Note: Python service also handles this, but we keep for backward compatibility
  */
 async function extractTextFromFile(
   filePath: string,
@@ -52,51 +54,12 @@ async function extractTextFromFile(
   }
 }
 
-/**
- * Build ILA-specific prompt for OpenAI
- */
-function buildILAPrompt(
-  content: string,
-  projectDescription: string,
-  dimensions: Array<{ id: number; label: string }>
-): string {
-  return `You are an expert educational assessor for the Interdisciplinary Learning Analytics (ILA) program. Your task is to analyze a student project submission and provide comprehensive feedback across multiple dimensions.
-
-**Project Description:**
-${projectDescription}
-
-**Submission Content:**
-${content.substring(0, 8000)} ${
-    content.length > 8000 ? "... [truncated for length]" : ""
-  }
-
-**ILA Dimensions to Evaluate (Rate each on a scale of 0-10):**
-${dimensions.map((d) => `${d.id}. ${d.label}`).join("\n")}
-
-**Instructions:**
-1. Carefully analyze the submission content
-2. For each dimension, provide:
-   - A score from 0-10 (0=poor, 5=average, 10=excellent)
-   - Clear reasoning for the score
-3. Identify 3-5 key strengths
-4. Identify 3-5 areas for improvement
-5. Provide overall constructive feedback
-
-**IMPORTANT:** Return your response as a valid JSON object with this exact structure:
-{
-  "overall_feedback": "comprehensive feedback paragraph",
-  "dimension_scores": [
-    {"dimension_id": 1, "score": 7, "reasoning": "explanation for this score"},
-    ...
-  ],
-  "strengths": ["strength 1", "strength 2", ...],
-  "areas_for_improvement": ["area 1", "area 2", ...]
-}`;
-}
-
 export const aiService = {
   /**
-   * Analyze a submission file and generate ILA dimension scores
+   * Analyze a submission using the Python Pydantic AI service
+   *
+   * This triggers async processing on the Python service. The response will be
+   * "processing" status, and the client should poll for results.
    */
   async analyzeSubmission(
     filePath: string,
@@ -105,11 +68,6 @@ export const aiService = {
     dimensions: Array<{ id: number; label: string }>
   ): Promise<AIAnalysisResult> {
     try {
-      // Validate OpenAI API key
-      if (!process.env.OPENAI_API_KEY) {
-        throw new Error("OPENAI_API_KEY not configured");
-      }
-
       // Extract text from file
       console.log("Extracting text from file...");
       const fileContent = await extractTextFromFile(filePath, fileType);
@@ -118,47 +76,57 @@ export const aiService = {
         throw new Error("No content extracted from file");
       }
 
-      // Build prompt
-      const prompt = buildILAPrompt(
-        fileContent,
-        projectDescription,
-        dimensions
-      );
+      // Call Python AI service (synchronous for backward compatibility)
+      // In production, this should be async with polling
+      console.log("Calling Python AI service for analysis...");
 
-      // Call OpenAI API
-      console.log("Calling OpenAI API for analysis...");
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-turbo-preview",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert educational assessor specializing in interdisciplinary learning evaluation. Always respond with valid JSON.",
-          },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.3,
-        response_format: { type: "json_object" },
+      const response = await fetch(`${AI_SERVICE_URL}/api/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submission_id: "temp-id", // Will be replaced with actual submission ID
+          project_id: "temp-project",
+          course_id: "temp-course",
+          user_id: "temp-user",
+          essay_text: `${projectDescription}\n\n${fileContent}`,
+          file_urls: [], // File already extracted
+          reanalyze: false,
+        }),
       });
 
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("No content in OpenAI response");
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`AI service error: ${error}`);
       }
 
-      const result = JSON.parse(content);
+      const result = await response.json();
 
-      // Validate response structure
-      if (!result.dimension_scores || !Array.isArray(result.dimension_scores)) {
-        throw new Error("Invalid response structure from OpenAI");
+      if (!result.success) {
+        throw new Error(result.error || "AI service returned failure");
       }
 
+      // Poll for results (simplified - in production use proper async handling)
+      console.log("Waiting for AI processing to complete...");
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds
+
+      // For now, return a placeholder response structure
+      // In production, this should poll the /api/feedback endpoint
       return {
-        overall_feedback: result.overall_feedback || "No feedback provided",
-        dimension_scores: result.dimension_scores,
-        strengths: result.strengths || [],
-        areas_for_improvement: result.areas_for_improvement || [],
-        raw_response: response,
+        overall_feedback:
+          "AI analysis in progress. Results will be available shortly.",
+        dimension_scores: dimensions.map((dim) => ({
+          dimension_id: dim.id,
+          score: 2, // Placeholder
+          reasoning: "Analysis in progress...",
+          strengths: ["Processing..."],
+          improvements: ["Processing..."],
+          examples: "Processing...",
+        })),
+        strengths: ["Analysis in progress"],
+        areas_for_improvement: ["Analysis in progress"],
+        raw_response: result,
       };
     } catch (error) {
       console.error("AI analysis error:", error);
@@ -166,6 +134,114 @@ export const aiService = {
         throw new Error(`Failed to analyze submission: ${error.message}`);
       }
       throw new Error("Failed to analyze submission");
+    }
+  },
+
+  /**
+   * Trigger AI analysis for a submission (new async method)
+   *
+   * @param submissionId - UUID of the submission
+   * @param projectId - UUID of the project
+   * @param courseId - UUID of the course
+   * @param userId - UUID of the user
+   * @param essayText - Essay text content
+   * @param fileUrls - Array of file URLs to analyze
+   * @returns Promise with processing status
+   */
+  async triggerAsyncAnalysis(
+    submissionId: string,
+    projectId: string,
+    courseId: string,
+    userId: string,
+    essayText: string,
+    fileUrls: string[] = []
+  ): Promise<{ success: boolean; status: string; message: string }> {
+    try {
+      const response = await fetch(`${AI_SERVICE_URL}/api/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submission_id: submissionId,
+          project_id: projectId,
+          course_id: courseId,
+          user_id: userId,
+          essay_text: essayText,
+          file_urls: fileUrls,
+          reanalyze: false,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`AI service error: ${error}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Failed to trigger AI analysis:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get AI feedback results for a submission
+   *
+   * @param submissionId - UUID of the submission
+   * @returns Promise with feedback data
+   */
+  async getFeedback(submissionId: string): Promise<{
+    success: boolean;
+    submission_id: string;
+    processing_status: string;
+    dimension_scores?: Array<Record<string, unknown>>;
+    overall_feedback?: Record<string, unknown>;
+    error?: string;
+  }> {
+    try {
+      const response = await fetch(
+        `${AI_SERVICE_URL}/api/feedback/${submissionId}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch feedback: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Failed to fetch AI feedback:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Re-trigger AI analysis for a submission
+   *
+   * @param submissionId - UUID of the submission
+   * @returns Promise with processing status
+   */
+  async reanalyzeSubmission(submissionId: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const response = await fetch(
+        `${AI_SERVICE_URL}/api/reanalyze/${submissionId}`,
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to reanalyze: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("Failed to reanalyze submission:", error);
+      throw error;
     }
   },
 };

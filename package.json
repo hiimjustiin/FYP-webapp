@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dev:backend": "docker-compose up -d backend postgres",
-    "dev:full": "docker-compose up -d backend postgres && pnpm dev",
+    "dev:full": "docker-compose up -d backend postgres backend-ai && pnpm dev",
     "dev:stop": "docker-compose stop",
     "dev:logs": "docker-compose logs -f backend",
     "dev:restart-backend": "docker-compose restart backend"

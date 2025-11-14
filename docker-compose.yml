@@ -27,6 +27,62 @@ services:
       timeout: 5s
       retries: 5
 
+  # Python AI Service (FastAPI)
+  backend-ai:
+    build:
+      context: ./backend-ai
+      dockerfile: Dockerfile
+    container_name: ila-backend-ai
+    restart: unless-stopped
+    environment:
+      # Service Configuration
+      SERVICE_NAME: ila-ai-feedback
+      ENVIRONMENT: ${NODE_ENV:-development}
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      API_WORKERS: ${AI_WORKERS:-4}
+      # OpenAI Configuration
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.3}
+      OPENAI_MAX_TOKENS: ${OPENAI_MAX_TOKENS:-2000}
+      OPENAI_TIMEOUT: ${OPENAI_TIMEOUT:-60}
+      # Token Limits
+      MAX_INPUT_TOKENS: ${MAX_INPUT_TOKENS:-10000}
+      # Database Configuration
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ila_user}:${POSTGRES_PASSWORD:-ila_password}@postgres:5432/${POSTGRES_DB:-ila_db}
+      DB_POOL_MIN: ${DB_POOL_MIN:-2}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      # Express Backend Integration
+      EXPRESS_BACKEND_URL: http://backend:3001
+      EXPRESS_API_TIMEOUT: ${EXPRESS_API_TIMEOUT:-30}
+      # Redis Cache Configuration (optional)
+      REDIS_URL: ${REDIS_URL}
+      CACHE_TTL: ${CACHE_TTL:-86400}
+      CACHE_ENABLED: ${CACHE_ENABLED:-false}
+      # AI Processing Configuration
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      RETRY_DELAY: ${RETRY_DELAY:-5}
+      PROCESSING_TIMEOUT: ${PROCESSING_TIMEOUT:-300}
+      # Cost Tracking
+      COST_PER_1K_INPUT_TOKENS: ${COST_PER_1K_INPUT_TOKENS:-0.0025}
+      COST_PER_1K_OUTPUT_TOKENS: ${COST_PER_1K_OUTPUT_TOKENS:-0.01}
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+    ports:
+      - "${AI_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ila-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Backend API (Node.js/Express)
   backend:
     build:
@@ -39,6 +95,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ila_user}:${POSTGRES_PASSWORD:-ila_password}@postgres:5432/${POSTGRES_DB:-ila_db}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
       PORT: 3001
+      # AI Service URL (connect to backend-ai container)
+      AI_SERVICE_URL: http://backend-ai:8000
       # Support multiple origins for development and production
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5173}
       # SMTP Configuration for Email
@@ -51,6 +109,8 @@ services:
       - "${BACKEND_PORT:-3001}:3001"
     depends_on:
       postgres:
+        condition: service_healthy
+      backend-ai:
         condition: service_healthy
     networks:
       - ila-network

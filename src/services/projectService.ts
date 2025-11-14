@@ -28,16 +28,18 @@ export interface Project {
   updated_at: string;
   owner_name?: string;
   members: ProjectMember[];
+  latest_submission_id?: string | null;
 }
 
 export interface CreateProjectData {
   title: string;
   description?: string;
   status?: "Draft" | "Submitted" | "Completed";
-  course_code?: string;
-  submission_date?: string;
-  interq_score?: string;
-  settings?: Record<string, unknown>;
+  course_id: string;
+  project_type: "individual" | "group";
+  essay_text?: string;
+  member_ids?: string[];
+  files?: File[];
 }
 
 export interface UpdateProjectData {
@@ -58,6 +60,12 @@ interface ProjectResponse {
   project: Project;
 }
 
+interface SubmitProjectResponse {
+  project: Project;
+  submission_id: string;
+  message: string;
+}
+
 export const projectService = {
   async getProjects(): Promise<Project[]> {
     const data = await api.get<ProjectsResponse>("/projects");
@@ -70,7 +78,32 @@ export const projectService = {
   },
 
   async createProject(projectData: CreateProjectData): Promise<Project> {
-    const data = await api.post<ProjectResponse>("/projects", projectData);
+    // Build FormData for multipart/form-data request with files
+    const formData = new FormData();
+    formData.append("title", projectData.title);
+    formData.append("course_id", projectData.course_id);
+    formData.append("project_type", projectData.project_type);
+
+    if (projectData.description) {
+      formData.append("description", projectData.description);
+    }
+    if (projectData.status) {
+      formData.append("status", projectData.status);
+    }
+    if (projectData.essay_text) {
+      formData.append("essay_text", projectData.essay_text);
+    }
+    if (projectData.member_ids && projectData.member_ids.length > 0) {
+      formData.append("member_ids", JSON.stringify(projectData.member_ids));
+    }
+    if (projectData.files && projectData.files.length > 0) {
+      projectData.files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
+    // Send FormData without custom headers (browser will set Content-Type correctly)
+    const data = await api.post<ProjectResponse>("/projects", formData);
     return data.project;
   },
 
@@ -84,5 +117,77 @@ export const projectService = {
 
   async deleteProject(id: string): Promise<void> {
     await api.delete(`/projects/${id}`);
+  },
+
+  async submitProject(
+    id: string
+  ): Promise<{ project: Project; submission_id: string; message: string }> {
+    const data = await api.post<SubmitProjectResponse>(
+      `/projects/${id}/submit`,
+      {}
+    );
+    return data;
+  },
+
+  async getSubmissionFeedback(submissionId: string): Promise<{
+    submission: {
+      id: string;
+      project_id: string;
+      project_title: string;
+      name: string;
+      submitted_at: string;
+      ai_processing_status: string;
+      ai_processing_error?: string;
+      ai_overall_summary?: string;
+      ai_overall_strengths?: string[];
+      ai_priority_improvements?: string[];
+      ai_estimated_level?: string;
+    };
+    dimensions: Array<{
+      dimension_id: number;
+      dimension_label: string;
+      dimension_variant: string;
+      ai_score?: number;
+      ai_reasoning?: string;
+      ai_strengths?: string[];
+      ai_improvements?: string[];
+      ai_examples?: string;
+      ai_processing_status: string;
+      personal_score: number;
+    }>;
+  }> {
+    interface SubmissionData {
+      id: string;
+      project_id: string;
+      project_title: string;
+      name: string;
+      submitted_at: string;
+      ai_processing_status: string;
+      ai_processing_error?: string;
+      ai_overall_summary?: string;
+      ai_overall_strengths?: string[];
+      ai_priority_improvements?: string[];
+      ai_estimated_level?: string;
+    }
+    interface DimensionData {
+      dimension_id: number;
+      dimension_label: string;
+      dimension_variant: string;
+      ai_score?: number;
+      ai_reasoning?: string;
+      ai_strengths?: string[];
+      ai_improvements?: string[];
+      ai_examples?: string;
+      ai_processing_status: string;
+      personal_score: number;
+    }
+    const data = await api.get<{
+      success: boolean;
+      data: {
+        submission: SubmissionData;
+        dimensions: DimensionData[];
+      };
+    }>(`/projects/submissions/${submissionId}/feedback`);
+    return data.data;
   },
 };

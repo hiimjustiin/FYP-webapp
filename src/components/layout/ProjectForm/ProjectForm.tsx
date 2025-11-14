@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from "../../ui/Button/Button";
 import SearchBar, { type Member } from "../../ui/SearchBar/SearchBar";
 import Dropdown, { type DropdownOption } from "../../ui/Dropdown/Dropdown";
@@ -9,6 +9,7 @@ import {
   AlertDialog,
   type AlertDialogType,
 } from "../../ui/AlertDialog/AlertDialog";
+import { courseService } from "../../../services/courseService";
 
 export interface ProjectFormData {
   course: string;
@@ -32,52 +33,9 @@ interface ProjectFormProps {
   onCancel: () => void;
 }
 
-const courseOptions: DropdownOption[] = [
-  { id: "cs", label: "Computer Science" },
-  { id: "ds", label: "Data Science" },
-  { id: "se", label: "Software Engineering" },
-  { id: "is", label: "Information Systems" },
-  { id: "cyber", label: "Cybersecurity" },
-  { id: "ai", label: "AI & Machine Learning" },
-];
-
 const projectTypeOptions: DropdownOption[] = [
   { id: "group", label: "Group Project" },
   { id: "individual", label: "Individual Project" },
-];
-
-// Sample members data
-const sampleMembers: Member[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    initials: "JD",
-    backgroundColor: "blue",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    initials: "JS",
-    backgroundColor: "green",
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    initials: "MJ",
-    backgroundColor: "purple",
-  },
-  {
-    id: "4",
-    name: "Sarah Wilson",
-    initials: "SW",
-    backgroundColor: "pink",
-  },
-  {
-    id: "5",
-    name: "David Chen",
-    initials: "DC",
-    backgroundColor: "teal",
-  },
 ];
 
 const ProjectForm: React.FC<ProjectFormProps> = ({
@@ -103,10 +61,14 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     useState<Member[]>(initialTeamMembers);
   const [selectedFiles, setSelectedFiles] = useState<File[]>(initialFiles);
 
+  const [availableMembers, setAvailableMembers] = useState<Member[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+
+  const [courseOptions, setCourseOptions] = useState<DropdownOption[]>([]);
+
   const [selectedCourse, setSelectedCourse] = useState<DropdownOption | null>(
-    initialData && initialData.course
-      ? courseOptions.find((c) => c.id === initialData.course) || null
-      : null
+    null
   );
 
   const [selectedProjectType, setSelectedProjectType] =
@@ -122,6 +84,107 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [alertTitle, setAlertTitle] = useState("Review your submission");
   const [primaryButtonText, setPrimaryButtonText] = useState("Confirm");
   const [alertMsg, setAlertMsg] = useState("");
+  const [enrolledStudentsFetchError, setEnrolledStudentsFetchError] =
+    useState(false);
+
+  // Fetch enrolled courses on mount
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      try {
+        setIsLoadingCourses(true);
+        const courses = await courseService.getEnrolledCourses();
+
+        // Convert courses to dropdown options
+        const options: DropdownOption[] = courses.map((course) => ({
+          id: course.id,
+          label: course.code
+            ? `${course.code} - ${course.title}`
+            : course.title,
+        }));
+        setCourseOptions(options);
+
+        // Set initial selected course if editing
+        if (initialData && initialData.course) {
+          const initialCourse = options.find(
+            (c) => c.id === initialData.course
+          );
+          if (initialCourse) {
+            setSelectedCourse(initialCourse);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch enrolled courses:", error);
+        setAlertType("error");
+        setAlertTitle("Error");
+        setAlertMsg(
+          "Failed to load your enrolled courses. Please refresh the page."
+        );
+        setIsAlertOpen(true);
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    };
+
+    fetchEnrolledCourses();
+  }, [initialData]);
+
+  // Fetch enrolled students when course is selected
+  useEffect(() => {
+    const fetchEnrolledStudents = async () => {
+      if (!selectedCourse) {
+        setAvailableMembers([]);
+        setEnrolledStudentsFetchError(false);
+        return;
+      }
+
+      try {
+        setIsLoadingMembers(true);
+        setEnrolledStudentsFetchError(false);
+        const students = await courseService.getEnrolledStudents(
+          selectedCourse.id
+        );
+
+        // Convert students to Member format
+        const members: Member[] = students.map((student) => {
+          const nameParts = student.display_name.split(" ");
+          const initials = nameParts
+            .map((part) => part.charAt(0).toUpperCase())
+            .join("")
+            .substring(0, 2);
+
+          // Generate consistent color based on student ID
+          const colors: (
+            | "blue"
+            | "pink"
+            | "green"
+            | "purple"
+            | "teal"
+            | "yellow"
+          )[] = ["blue", "pink", "green", "purple", "teal", "yellow"];
+          const colorIndex =
+            parseInt(student.id.substring(0, 8), 16) % colors.length;
+
+          return {
+            id: student.id,
+            name: student.display_name,
+            initials,
+            backgroundColor: colors[colorIndex],
+          };
+        });
+
+        setAvailableMembers(members);
+      } catch (error) {
+        console.error("Failed to fetch enrolled students:", error);
+        // Set flag instead of showing error - we'll handle this gracefully
+        setAvailableMembers([]);
+        setEnrolledStudentsFetchError(true);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+
+    fetchEnrolledStudents();
+  }, [selectedCourse]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -235,12 +298,27 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <label className="caption text-[var(--color-grey-55)] mb-2 block">
                     Course
                   </label>
-                  <Dropdown
-                    options={courseOptions}
-                    selectedOption={selectedCourse}
-                    onSelect={setSelectedCourse}
-                    placeholder="Select course"
-                  />
+                  {isLoadingCourses ? (
+                    <div className="p-3 border rounded bg-gray-50">
+                      <p className="text-sm text-gray-500">
+                        Loading courses...
+                      </p>
+                    </div>
+                  ) : courseOptions.length === 0 ? (
+                    <div className="p-3 border rounded bg-yellow-50">
+                      <p className="text-sm text-gray-700">
+                        You are not enrolled in any courses. Please enroll in a
+                        course first.
+                      </p>
+                    </div>
+                  ) : (
+                    <Dropdown
+                      options={courseOptions}
+                      selectedOption={selectedCourse}
+                      onSelect={setSelectedCourse}
+                      placeholder="Select course"
+                    />
+                  )}
                 </div>
 
                 {/* Project Name */}
@@ -262,12 +340,43 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <label className="caption text-[var(--color-grey-55)] mb-2 block">
                     Project Type
                   </label>
-                  <Dropdown
-                    options={projectTypeOptions}
-                    selectedOption={selectedProjectType}
-                    onSelect={setSelectedProjectType}
-                    placeholder="Select project type"
-                  />
+                  {!selectedCourse ? (
+                    <div className="p-3 border rounded bg-gray-50">
+                      <p className="text-sm text-gray-500">
+                        Please select a course first
+                      </p>
+                    </div>
+                  ) : availableMembers.length < 1 && !isLoadingMembers ? (
+                    <div className="space-y-2">
+                      <Dropdown
+                        options={[
+                          { id: "individual", label: "Individual Project" },
+                        ]}
+                        selectedOption={
+                          selectedProjectType?.id === "individual"
+                            ? selectedProjectType
+                            : null
+                        }
+                        onSelect={(option) => {
+                          if (option) {
+                            setSelectedProjectType(option);
+                          }
+                        }}
+                        placeholder="Select project type"
+                      />
+                      <p className="text-xs text-amber-600 mt-1">
+                        Only individual projects are available as there are no
+                        other students in this course.
+                      </p>
+                    </div>
+                  ) : (
+                    <Dropdown
+                      options={projectTypeOptions}
+                      selectedOption={selectedProjectType}
+                      onSelect={setSelectedProjectType}
+                      placeholder="Select project type"
+                    />
+                  )}
                 </div>
 
                 {/* Description */}
@@ -294,18 +403,47 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     <label className="caption text-[var(--color-grey-55)] mb-2 block">
                       Team Members
                     </label>
-                    <SearchBar
-                      placeholder="Search and select team members"
-                      members={sampleMembers}
-                      onSelect={(member) => {
-                        if (
-                          !selectedTeamMembers.find((m) => m.id === member.id)
-                        ) {
-                          setSelectedTeamMembers((prev) => [...prev, member]);
-                        }
-                      }}
-                      maxResults={6}
-                    />
+                    {!selectedCourse ? (
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm text-gray-500">
+                          Please select a course first to see available
+                          classmates
+                        </p>
+                      </div>
+                    ) : isLoadingMembers ? (
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm text-gray-500">
+                          Loading classmates...
+                        </p>
+                      </div>
+                    ) : enrolledStudentsFetchError ? (
+                      <div className="p-3 border rounded bg-yellow-50">
+                        <p className="text-sm text-gray-700">
+                          Unable to load classmates. There may be no other
+                          students enrolled in this course yet, or please try
+                          again.
+                        </p>
+                      </div>
+                    ) : availableMembers.length === 0 ? (
+                      <div className="p-3 border rounded bg-yellow-50">
+                        <p className="text-sm text-gray-700">
+                          No other students are enrolled in this course yet.
+                        </p>
+                      </div>
+                    ) : (
+                      <SearchBar
+                        placeholder="Search and select team members"
+                        members={availableMembers}
+                        onSelect={(member) => {
+                          if (
+                            !selectedTeamMembers.find((m) => m.id === member.id)
+                          ) {
+                            setSelectedTeamMembers((prev) => [...prev, member]);
+                          }
+                        }}
+                        maxResults={6}
+                      />
+                    )}
 
                     {/* Selected Team Members Display */}
                     {selectedTeamMembers.length > 0 && (
@@ -341,63 +479,65 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   </div>
                 )}
 
-                {/* Additional Notes and File Upload */}
+                {/* Essay Body - Text or File Upload */}
                 {selectedProjectType && (
                   <div>
                     <label className="caption text-[var(--color-grey-55)] mb-2 block">
-                      Additional Notes
+                      Essay Body{" "}
+                      <span className="text-xs text-gray-400">(Optional)</span>
                     </label>
-                    <TextArea
-                      value={formData.text}
-                      onChange={handleTextChange}
-                      placeholder="Text"
-                      rows={4}
-                      maxLength={500}
-                      showCharCount={true}
-                      className="w-full"
-                    >
-                      {/* FileDrop integrated within TextArea */}
-                      {formData.text.trim() === "" && (
-                        <div className="mt-2">
-                          <FileDrop
-                            onFilesSelected={handleFilesSelected}
-                            accept=".pdf,.doc,.docx,.txt,.jpg,.png,.pptx,.xlsx"
-                            multiple={true}
-                            maxSize={10 * 1024 * 1024}
-                          />
-                        </div>
-                      )}
-                    </TextArea>
+                    <p className="text-xs text-gray-600 mb-3">
+                      You can either write your essay directly below OR upload a
+                      PDF/document file. Choose whichever works best for you.
+                    </p>
 
-                    {/* Separate FileDrop when text has content */}
-                    {formData.text.trim() !== "" && (
-                      <div className="mt-4">
-                        <label className="block caption mb-2">
-                          Attach Files
-                        </label>
-                        <FileDrop
-                          onFilesSelected={handleFilesSelected}
-                          accept=".pdf,.doc,.docx,.txt,.jpg,.png,.pptx,.xlsx"
-                          multiple={true}
-                          maxSize={10 * 1024 * 1024}
-                        />
-                      </div>
-                    )}
+                    {/* Text Essay Input */}
+                    <div className="mb-4">
+                      <label className="text-sm text-gray-700 mb-2 block font-medium">
+                        Write Essay Text
+                      </label>
+                      <TextArea
+                        value={formData.text}
+                        onChange={handleTextChange}
+                        placeholder="Type your essay here... (or leave empty and upload a file instead)"
+                        rows={6}
+                        maxLength={5000}
+                        showCharCount={true}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* File Upload Section */}
+                    <div className="mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <label className="text-sm text-gray-700 mb-2 block font-medium">
+                        OR Upload Essay Files
+                      </label>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Upload PDF, Word documents, or other supported files.
+                        You can select multiple files.
+                      </p>
+                      <FileDrop
+                        onFilesSelected={handleFilesSelected}
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.pptx,.xlsx"
+                        multiple={true}
+                        maxSize={10 * 1024 * 1024}
+                      />
+                    </div>
 
                     {/* Selected Files Display */}
                     {selectedFiles.length > 0 && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
-                        <p className="caption mb-2">
-                          Selected Files ({selectedFiles.length}):
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="caption mb-3 text-blue-900">
+                          📎 Selected Files ({selectedFiles.length}):
                         </p>
                         <div className="space-y-2">
                           {selectedFiles.map((file, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between bg-white p-2 rounded border"
+                              className="flex items-center justify-between bg-white p-3 rounded border border-blue-100"
                             >
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">
+                              <div className="flex items-center gap-2 flex-1">
+                                <span className="text-sm font-medium text-gray-800">
                                   {file.name}
                                 </span>
                                 <span className="text-xs text-gray-500">
@@ -407,15 +547,26 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveFile(index)}
-                                className="text-red-600 hover:text-red-800 text-sm font-bold"
+                                className="ml-2 text-red-600 hover:text-red-800 text-sm font-bold px-2"
                               >
-                                ×
+                                Remove
                               </button>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
+
+                    {/* Help text */}
+                    {formData.text.trim() === "" &&
+                      selectedFiles.length === 0 && (
+                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                          <p className="text-xs text-yellow-800">
+                            💡 Tip: You don't need to add both text and files.
+                            Just add whichever you prefer!
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import ProjectForm, {
   type ProjectFormData,
 } from "../../components/layout/ProjectForm/ProjectForm";
 import type { Member } from "../../components/ui/SearchBar/SearchBar";
+import { projectService } from "../../services/projectService";
 
 const ProjectNew = () => {
   const navigate = useNavigate();
@@ -16,26 +17,36 @@ const ProjectNew = () => {
   ) => {
     try {
       setIsSubmitting(true);
-      // TODO: Replace with actual API call to projectService
+
+      // Map form data to API payload
       const projectPayload = {
-        course: data.course,
         title: data.projectName,
-        type: data.projectType,
-        description: data.description,
-        notes: data.text,
-        members: teamMembers,
-        files: files,
+        description: data.description || undefined,
+        course_id: data.course,
+        project_type: data.projectType as "individual" | "group",
+        essay_text: data.text || undefined,
+        member_ids: teamMembers.map((m) => m.id),
+        files: files.length > 0 ? files : undefined,
+        status: "Draft" as const,
       };
 
       console.log("Submitting project:", projectPayload);
-      // const result = await projectService.createProject(projectPayload);
 
-      // Show success message
+      const result = await projectService.createProject(projectPayload);
+
+      console.log("Project created successfully:", result);
       alert("Project created successfully!");
       navigate("/project");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to create project:", error);
-      alert("Failed to create project. Please try again.");
+      interface ErrorResponse {
+        response?: { data?: { error?: { message?: string } } };
+      }
+      const errorMessage =
+        (error as ErrorResponse)?.response?.data?.error?.message ||
+        (error as Error)?.message ||
+        "Failed to create project. Please try again.";
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

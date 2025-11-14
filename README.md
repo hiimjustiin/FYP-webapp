@@ -1,48 +1,98 @@
 # Interdisciplinary Learning Analytics Webapp
 
-> This project is a modern web application for interdisciplinary learning analytics, built with Vite, React, TypeScript, TailwindCSS v4, shadcn/ui, and pnpm.
+> A modern full-stack web application for interdisciplinary learning analytics with AI-powered project feedback.
 
 ## Tech Stack
 
+### Frontend
 - [Vite](https://vitejs.dev/) (build tool)
-- [React](https://react.dev/) (UI library)
+- [React 19](https://react.dev/) (UI library)
 - [TypeScript](https://www.typescriptlang.org/) (type safety)
 - [TailwindCSS v4](https://tailwindcss.com/) (utility-first CSS)
 - [shadcn/ui](https://ui.shadcn.com/) (UI components, Radix UI, class-variance-authority, tailwind-merge, lucide-react)
 - [pnpm](https://pnpm.io/) (fast package manager)
 
+### Backend
+- [Express.js](https://expressjs.com/) with TypeScript
+- [PostgreSQL 15](https://www.postgresql.org/) (database)
+- [node-pg-migrate](https://github.com/salsita/node-pg-migrate) (database migrations)
+- JWT authentication
+
+### AI Service
+- [FastAPI](https://fastapi.tiangolo.com/) (Python web framework)
+- [Pydantic AI](https://ai.pydantic.dev/) (AI agent framework)
+- [OpenAI GPT-4o](https://openai.com/) (AI model)
+- Document parsing (PDF, DOCX)
+
 ## Getting Started
 
-### Prerequisites
+### Quick Start with Docker (Recommended)
 
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- [pnpm](https://pnpm.io/)
+```sh
+# Copy environment template
+cp .env.example .env
 
-### Installation
+# Edit .env and add your OpenAI API key
+# OPENAI_API_KEY=sk-proj-your-key-here
+
+# Start all services
+docker compose up -d --build
+
+# Run database migrations
+docker compose exec backend pnpm db:migrate
+
+# View logs
+docker compose logs -f
+```
+
+Services will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- AI Service: http://localhost:8000
+- PostgreSQL: localhost:5432
+
+### Development Setup
+
+#### Frontend Only
 
 ```sh
 pnpm install
-```
-
-### Development
-
-```sh
 pnpm dev
 ```
 
 Visit [http://localhost:5173](http://localhost:5173) in your browser.
 
-### Build
+#### Full Stack Development
 
 ```sh
-pnpm build
+# Terminal 1 - Database
+docker compose up postgres -d
+
+# Terminal 2 - Backend + Database
+cd backend
+pnpm install
+pnpm db:migrate
+pnpm dev
+
+# Terminal 3 - AI Service
+cd backend-ai
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env and add OPENAI_API_KEY
+python main.py
+
+# Terminal 4 - Frontend
+pnpm install
+pnpm dev
 ```
 
-### Lint
+### Prerequisites
 
-```sh
-pnpm lint
-```
+- [Node.js](https://nodejs.org/) (v18+ recommended)
+- [pnpm](https://pnpm.io/)
+- [Docker & Docker Compose](https://www.docker.com/) (for containerized deployment)
+- [Python 3.11+](https://www.python.org/) (for AI service development)
+- OpenAI API Key (required for AI feedback features)
 
 ## TailwindCSS v4 Notes
 

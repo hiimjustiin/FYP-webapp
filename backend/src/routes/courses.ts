@@ -5,6 +5,7 @@ import {
   getEnrolledCourses,
   enrollCourse,
   unenrollCourse,
+  getEnrolledStudents,
 } from "../controllers/courseController.js";
 import { authenticate } from "../middleware/auth.js";
 
@@ -16,6 +17,7 @@ router.use(authenticate);
 // Course routes
 router.get("/", getCourses);
 router.get("/enrolled", getEnrolledCourses);
+router.get("/:courseId/enrolled-students", getEnrolledStudents);
 router.post("/:courseId/enroll", enrollCourse);
 router.delete("/:courseId/enroll", unenrollCourse);
 
