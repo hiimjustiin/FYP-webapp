@@ -23,6 +23,7 @@ import LoginPage from "./pages/LoginPage.js";
 import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import InstructorDashboard from "./pages/InstructorDashboard";
+import InstructorCourses from "./pages/InstructorCourses";
 import CourseStudents from "./pages/CourseStudents";
 import CourseSubmissions from "./pages/CourseSubmissions";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -61,6 +62,16 @@ const AppContent = () => {
           <ProtectedRoute requiredRole="instructor">
             <DashboardLayout key="instructor-dashboard">
               <InstructorDashboard />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/courses"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout key="instructor-courses">
+              <InstructorCourses />
             </DashboardLayout>
           </ProtectedRoute>
         }
