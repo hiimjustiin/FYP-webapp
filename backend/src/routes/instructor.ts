@@ -34,6 +34,12 @@ router.get(
   instructorController.getCourseSubmissions
 );
 
+// GET /api/instructor/submissions/:submissionId - Get submission details
+router.get(
+  "/submissions/:submissionId",
+  instructorController.getSubmissionDetails
+);
+
 // POST /api/instructor/submissions/:submissionId/score - Trigger AI scoring
 router.post(
   "/submissions/:submissionId/score",

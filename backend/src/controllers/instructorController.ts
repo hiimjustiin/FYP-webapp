@@ -10,19 +10,24 @@ export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
     const result = await query(
       `SELECT 
         c.id, c.code, c.title, c.description, c.term, c.passcode,
-        COUNT(DISTINCT ce.user_id) as enrolled_count,
-        COUNT(DISTINCT ps.id) as submission_count,
-        COUNT(DISTINCT CASE WHEN ps.status = 'submitted' THEN ps.id END) as pending_count
+        COALESCE((SELECT COUNT(DISTINCT user_id)::integer FROM course_enrollments WHERE course_id = c.id AND status = 'active'), 0) as enrolled_count,
+        COALESCE((SELECT COUNT(*)::integer FROM project_submissions WHERE course_id = c.id), 0) as submission_count,
+        COALESCE((SELECT COUNT(*)::integer FROM project_submissions WHERE course_id = c.id AND status = 'submitted'), 0) as pending_count
       FROM courses c
-      LEFT JOIN course_enrollments ce ON c.id = ce.course_id AND ce.status = 'active'
-      LEFT JOIN project_submissions ps ON ps.course_id = c.id
       WHERE c.instructor_id = $1
-      GROUP BY c.id
       ORDER BY c.created_at DESC`,
       [req.user?.id]
     );
 
-    res.json({ success: true, data: { courses: result.rows } });
+    // Ensure all count fields are numbers
+    const coursesWithNumbers = result.rows.map((row) => ({
+      ...row,
+      enrolled_count: parseInt(row.enrolled_count, 10),
+      submission_count: parseInt(row.submission_count, 10),
+      pending_count: parseInt(row.pending_count, 10),
+    }));
+
+    res.json({ success: true, data: { courses: coursesWithNumbers } });
   } catch (error) {
     console.error("Error fetching instructor courses:", error);
     res
@@ -278,6 +283,122 @@ export const getCourseSubmissions = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// GET /api/instructor/submissions/:submissionId - Get submission details with scores
+export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const { submissionId } = req.params;
+
+    // Get submission details including overall AI feedback
+    const submissionResult = await query(
+      `SELECT 
+        ps.id, ps.name, ps.submitted_at, ps.status, ps.file_url, ps.file_type,
+        ps.ai_overall_summary, ps.ai_overall_strengths, ps.ai_priority_improvements,
+        u.display_name as student_name, u.email as student_email, u.student_id,
+        p.title as project_title, p.description as project_description,
+        c.code as course_code, c.title as course_title, c.instructor_id
+      FROM project_submissions ps
+      JOIN users u ON ps.user_id = u.id
+      JOIN projects p ON ps.project_id = p.id
+      JOIN courses c ON ps.course_id = c.id
+      WHERE ps.id = $1`,
+      [submissionId]
+    );
+
+    if (submissionResult.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, error: { message: "Submission not found" } });
+    }
+
+    const submission = submissionResult.rows[0];
+
+    // Verify instructor owns this course (or is admin)
+    if (
+      req.user?.role !== "admin" &&
+      submission.instructor_id !== req.user?.id
+    ) {
+      return res
+        .status(403)
+        .json({ success: false, error: { message: "Access denied" } });
+    }
+
+    // Get dimension scores if they exist
+    const scoresResult = await query(
+      `SELECT 
+        sds.dimension_id,
+        d.label as dimension_label,
+        sds.personal_score as score,
+        sds.ai_score_original,
+        sds.ai_feedback_raw,
+        sds.instructor_override,
+        sds.instructor_comments
+      FROM submission_dimension_scores sds
+      JOIN dimensions d ON sds.dimension_id = d.id
+      WHERE sds.submission_id = $1
+      ORDER BY d.display_order ASC`,
+      [submissionId]
+    );
+
+    // Parse AI feedback to extract reasoning and full analysis
+    const scores = scoresResult.rows.map((row) => {
+      let reasoning = null;
+      if (row.ai_feedback_raw) {
+        try {
+          const feedback = JSON.parse(row.ai_feedback_raw);
+          reasoning = feedback.reasoning;
+        } catch {
+          // Ignore parse errors
+        }
+      }
+      return {
+        dimension_id: row.dimension_id,
+        dimension_label: row.dimension_label,
+        score: parseFloat(row.score),
+        reasoning,
+        ai_feedback_raw: row.ai_feedback_raw
+          ? JSON.parse(row.ai_feedback_raw)
+          : null,
+        ai_score_original: row.ai_score_original
+          ? parseFloat(row.ai_score_original)
+          : null,
+        instructor_override: row.instructor_override || false,
+        instructor_comments: row.instructor_comments,
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        submission: {
+          id: submission.id,
+          name: submission.name,
+          submitted_at: submission.submitted_at,
+          status: submission.status,
+          file_url: submission.file_url,
+          file_type: submission.file_type,
+          student_name: submission.student_name,
+          student_email: submission.student_email,
+          student_id: submission.student_id,
+          project_title: submission.project_title,
+          project_description: submission.project_description,
+          course_code: submission.course_code,
+          course_title: submission.course_title,
+          ai_overall_summary: submission.ai_overall_summary,
+          ai_overall_strengths: submission.ai_overall_strengths || null,
+          ai_priority_improvements: submission.ai_priority_improvements || null,
+        },
+        scores,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching submission details:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to fetch submission details" },
+    });
+  }
+};
+
 // POST /api/instructor/submissions/:submissionId/score
 export const triggerScoring = async (req: AuthRequest, res: Response) => {
   try {
@@ -292,6 +413,12 @@ export const triggerScoring = async (req: AuthRequest, res: Response) => {
       WHERE ps.id = $1`,
       [submissionId]
     );
+
+    if (submissionResult.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, error: { message: "Submission not found" } });
+    }
 
     if (submissionResult.rows.length === 0) {
       return res
@@ -361,11 +488,23 @@ export const triggerScoring = async (req: AuthRequest, res: Response) => {
       );
     }
 
-    // Update submission status to 'scored'
-    await query("UPDATE project_submissions SET status = $1 WHERE id = $2", [
-      "scored",
-      submissionId,
-    ]);
+    // Update submission status to 'scored' and store overall AI feedback
+    await query(
+      `UPDATE project_submissions 
+       SET status = $1, 
+           ai_overall_summary = $2,
+           ai_overall_strengths = $3,
+           ai_priority_improvements = $4,
+           ai_processing_completed_at = now()
+       WHERE id = $5`,
+      [
+        "scored",
+        analysis.overall_feedback,
+        JSON.stringify(analysis.strengths),
+        JSON.stringify(analysis.areas_for_improvement),
+        submissionId,
+      ]
+    );
 
     // Send notification to student
     await notificationService.notifyScoringComplete(submissionId as string);

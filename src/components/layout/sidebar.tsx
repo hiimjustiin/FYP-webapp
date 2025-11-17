@@ -49,41 +49,99 @@ const Sidebar: React.FC = () => {
 
   // Instructor navigation items
   const instructorNavItems = [
-    { name: "Dashboard", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/instructor" },
+    {
+      name: "Dashboard",
+      icon: HomeIcon,
+      iconFilled: HomeIconFilled,
+      path: "/instructor",
+    },
+    {
+      name: "Students",
+      icon: TeamIcon,
+      iconFilled: TeamIconFilled,
+      path: "/instructor/students",
+    },
+    {
+      name: "Submissions",
+      icon: ReportIcon,
+      iconFilled: ReportIconFilled,
+      path: "/instructor/submissions",
+    },
   ];
 
   // Admin navigation items
   const adminNavItems = [
-    { name: "Dashboard", icon: HomeIcon, iconFilled: HomeIconFilled, path: "/admin" },
-    { name: "Users", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/admin/users" },
-    { name: "Courses", icon: ProjectIcon, iconFilled: ProjectIconFilled, path: "/admin/courses" },
-    { name: "Submissions", icon: ReportIcon, iconFilled: ReportIconFilled, path: "/admin/submissions" },
+    {
+      name: "Dashboard",
+      icon: HomeIcon,
+      iconFilled: HomeIconFilled,
+      path: "/admin",
+    },
+    {
+      name: "Users",
+      icon: TeamIcon,
+      iconFilled: TeamIconFilled,
+      path: "/admin/users",
+    },
+    {
+      name: "Courses",
+      icon: ProjectIcon,
+      iconFilled: ProjectIconFilled,
+      path: "/admin/courses",
+    },
+    {
+      name: "Submissions",
+      icon: ReportIcon,
+      iconFilled: ReportIconFilled,
+      path: "/admin/submissions",
+    },
   ];
 
   // Determine which navigation items to show based on user role
-  const navigationItems = 
-    user?.role === "admin" 
-      ? adminNavItems 
+  const navigationItems =
+    user?.role === "admin"
+      ? adminNavItems
       : user?.role === "instructor"
-      ? instructorNavItems 
+      ? instructorNavItems
       : studentNavItems;
 
   const isActive = (path: string) => {
     // exact match for home so it doesn't light up everywhere
     if (path === "/") return location.pathname === "/";
 
-    // For instructor dashboard, match exact or child routes
+    // For instructor dashboard, match exact path only (not child routes)
     if (path === "/instructor") {
-      return location.pathname === "/instructor" || location.pathname.startsWith("/instructor/");
+      return location.pathname === "/instructor";
+    }
+
+    // For instructor students, match exact or child routes
+    if (path === "/instructor/students") {
+      return (
+        location.pathname === "/instructor/students" ||
+        location.pathname.startsWith("/instructor/students/")
+      );
+    }
+
+    // For instructor submissions, match exact or child routes
+    if (path === "/instructor/submissions") {
+      return (
+        location.pathname === "/instructor/submissions" ||
+        location.pathname.startsWith("/instructor/submissions/")
+      );
     }
 
     // For admin routes, match exact or child routes
     if (path === "/admin") {
-      return location.pathname === "/admin" && !location.pathname.startsWith("/admin/");
+      return (
+        location.pathname === "/admin" &&
+        !location.pathname.startsWith("/admin/")
+      );
     }
 
     // active if exact match OR any child route (e.g. /project/new)
-    return location.pathname === path || location.pathname.startsWith(path + "/");
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
   };
 
   return (
@@ -128,16 +186,18 @@ const Sidebar: React.FC = () => {
                                     px-2 sm:px-6 
                                     py-3 sm:py-4 
                                     rounded-lg 
-                                    ${isActive(item.path)
-                        ? "subtitle-2 text-highlight-blue bg-tab-selected"
-                        : "subtitle-2 hover:bg-gray-100"
-                      }`}
+                                    ${
+                                      isActive(item.path)
+                                        ? "subtitle-2 text-highlight-blue bg-tab-selected"
+                                        : "subtitle-2 hover:bg-gray-100"
+                                    }`}
                   >
                     <img
                       src={isActive(item.path) ? item.iconFilled : item.icon}
                       alt={item.name}
-                      className={`w-6 sm:w-10 h-6 sm:h-10 ${isActive(item.path) ? "icon-blue-tint" : ""
-                        }`}
+                      className={`w-6 sm:w-10 h-6 sm:h-10 ${
+                        isActive(item.path) ? "icon-blue-tint" : ""
+                      }`}
                     />
                     <span className="hidden sm:inline sm:ml-4">
                       {item.name}
@@ -162,16 +222,18 @@ const Sidebar: React.FC = () => {
                         px-2 sm:px-6 
                         py-3 sm:py-4 
                         rounded-lg subtitle-2 
-                        ${isActive("/settings")
-                  ? "text-highlight-blue bg-tab-selected"
-                  : "hover:bg-gray-100"
-                }`}
+                        ${
+                          isActive("/settings")
+                            ? "text-highlight-blue bg-tab-selected"
+                            : "hover:bg-gray-100"
+                        }`}
             >
               <img
                 src={isActive("/settings") ? SettingsIconFilled : SettingsIcon}
                 alt="Settings"
-                className={`w-6 sm:w-10 h-6 sm:h-10 ${isActive("/settings") ? "icon-blue-tint" : ""
-                  }`}
+                className={`w-6 sm:w-10 h-6 sm:h-10 ${
+                  isActive("/settings") ? "icon-blue-tint" : ""
+                }`}
               />
               <span className="hidden sm:inline sm:ml-4">Settings</span>
             </Link>

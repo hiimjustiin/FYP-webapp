@@ -68,6 +68,36 @@ export interface AIAnalysisResult {
   areas_for_improvement: string[];
 }
 
+export interface SubmissionDetails {
+  submission: {
+    id: string;
+    name: string;
+    submitted_at: string;
+    status: string;
+    file_url: string;
+    file_type: string;
+    student_name: string;
+    student_email: string;
+    student_id: string;
+    project_title: string;
+    project_description: string;
+    course_code: string;
+    course_title: string;
+    ai_overall_summary?: string | null;
+    ai_overall_strengths?: string[] | null;
+    ai_priority_improvements?: string[] | null;
+  };
+  scores: {
+    dimension_id: number;
+    dimension_label: string;
+    score: number;
+    reasoning?: string;
+    ai_score_original?: number;
+    instructor_override?: boolean;
+    instructor_comments?: string;
+  }[];
+}
+
 export const instructorService = {
   async getCourses(): Promise<InstructorCourse[]> {
     const data = await api.get<{ courses: InstructorCourse[] }>(
@@ -111,6 +141,13 @@ export const instructorService = {
       `/instructor/courses/${courseId}/submissions`
     );
     return data.submissions;
+  },
+
+  async getSubmissionDetails(submissionId: string): Promise<SubmissionDetails> {
+    const data = await api.get<SubmissionDetails>(
+      `/instructor/submissions/${submissionId}`
+    );
+    return data;
   },
 
   async triggerScoring(submissionId: string): Promise<AIAnalysisResult> {
