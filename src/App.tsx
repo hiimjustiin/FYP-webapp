@@ -24,8 +24,11 @@ import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
 import InstructorDashboard from "./pages/InstructorDashboard";
 import InstructorCourses from "./pages/InstructorCourses";
+import InstructorStudents from "./pages/InstructorStudents";
+import InstructorSubmissions from "./pages/InstructorSubmissions";
 import CourseStudents from "./pages/CourseStudents";
 import CourseSubmissions from "./pages/CourseSubmissions";
+import SubmissionDetail from "./pages/SubmissionDetail";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminCourses from "./pages/AdminCourses";
@@ -77,6 +80,26 @@ const AppContent = () => {
         }
       />
       <Route
+        path="/instructor/students"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout key="all-students">
+              <InstructorStudents />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/submissions"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout key="all-submissions">
+              <InstructorSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/instructor/courses/:courseId/students"
         element={
           <ProtectedRoute requiredRole="instructor">
@@ -92,6 +115,16 @@ const AppContent = () => {
           <ProtectedRoute requiredRole="instructor">
             <DashboardLayout key="instructor-submissions">
               <CourseSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/submissions/:submissionId"
+        element={
+          <ProtectedRoute requiredRole="instructor">
+            <DashboardLayout key="submission-detail">
+              <SubmissionDetail />
             </DashboardLayout>
           </ProtectedRoute>
         }
