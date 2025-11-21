@@ -53,12 +53,72 @@ router.get(
         return;
       }
 
-      // Fetch feedback from Python AI service
-      const feedback = await aiService.getFeedback(submissionId!);
+      // Note: Python AI service stores results in database
+      // We fetch directly from our database tables below
+
+      // Transform database data to frontend format
+      // The AI service returns: { processing_status, dimension_scores, overall_feedback }
+      // But we need to merge submission data from our query with AI results
+
+      // Fetch dimension labels from dimensions table
+      const dimensionsResult = await query(
+        `SELECT d.id as dimension_id, d.label as dimension_label, d.variant as dimension_variant
+         FROM dimensions d
+         ORDER BY d.id`
+      );
+
+      const dimensionMap = new Map(
+        dimensionsResult.rows.map((d) => [d.dimension_id, d])
+      );
+
+      // Get dimension scores from submission_dimension_scores table
+      const scoresResult = await query(
+        `SELECT 
+          sds.dimension_id,
+          sds.ai_score,
+          sds.ai_reasoning,
+          sds.ai_strengths,
+          sds.ai_improvements,
+          sds.ai_examples,
+          sds.ai_processing_status,
+          sds.personal_score
+         FROM submission_dimension_scores sds
+         WHERE sds.submission_id = $1
+         ORDER BY sds.dimension_id`,
+        [submissionId]
+      );
+
+      // Combine dimension metadata with scores
+      const dimensions = scoresResult.rows.map((score) => {
+        const dimInfo = dimensionMap.get(score.dimension_id);
+        return {
+          ...score,
+          dimension_label:
+            dimInfo?.dimension_label || `Dimension ${score.dimension_id}`,
+          dimension_variant: dimInfo?.dimension_variant || "grey",
+        };
+      });
 
       res.json({
         success: true,
-        data: feedback,
+        data: {
+          submission: {
+            id: submission.id,
+            project_id: submission.project_id,
+            project_title: submission.name, // Using name as project_title
+            name: submission.name,
+            submitted_at: submission.submitted_at,
+            ai_processing_status: submission.ai_processing_status,
+            ai_processing_error: submission.ai_processing_error,
+            ai_overall_summary: submission.ai_overall_summary,
+            ai_overall_strengths: submission.ai_overall_strengths,
+            ai_priority_improvements: submission.ai_priority_improvements,
+            ai_estimated_level: submission.ai_estimated_level,
+            essay_text: submission.essay_text,
+            file_urls: submission.file_urls,
+          },
+          dimensions,
+        },
       });
     } catch (error) {
       console.error("Error fetching feedback:", error);

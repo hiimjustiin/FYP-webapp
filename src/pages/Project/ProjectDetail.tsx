@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button/Button";
-import MemberGroup from "../../components/ui/MemberIcon/MemberGroup";
-import { type Member } from "../../components/ui/SearchBar/SearchBar";
+import RadarChart, {
+  type RadarDataPoint,
+} from "../../components/ui/Charts/RadarChart/RadarChart";
+import DimensionFeedbackCard from "../../components/ui/DimensionFeedbackCard/DimensionFeedbackCard";
+import DimensionLabel from "../../components/ui/DimensionLabel/DimensionLabel";
+import ChatInterface, {
+  type ChatMessage,
+} from "../../components/ui/ChatInterface/ChatInterface";
+import ComparisonSelector from "../../components/layout/ComparisonSelector/ComparisonSelector";
+import type { DropdownOption } from "../../components/ui/Dropdown/Dropdown";
+import type { Variant } from "../../services/dimensionsService";
 import { projectService, type Project } from "../../services/projectService";
 import { feedbackService } from "../../services/feedbackService";
-
-/** ------------------------------- Helpers ------------------------------- */
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("en-UK", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+import "./ProjectDetail.css";
 
 /** ------------------------------- Mock AI Feedback ------------------------------- */
 interface DimensionFeedback {
@@ -45,6 +47,22 @@ const ProjectDetail = () => {
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+
+  // Comparison state
+  const [leftSubmission, setLeftSubmission] = useState<string>("draft");
+  const [rightSubmission, setRightSubmission] = useState<string>("submit-1");
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+
+  // Submission content
+  const [submissionContent, setSubmissionContent] = useState<string>("");
+
+  // Selected dimension for feedback display
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const loadProject = async () => {
@@ -96,6 +114,36 @@ const ProjectDetail = () => {
         const sub = feedbackData.submission;
         const dims = feedbackData.dimensions || [];
 
+        console.log("[ProjectDetail] Submission data:", {
+          essay_text: sub.essay_text?.substring(0, 100),
+          file_urls: sub.file_urls,
+          dimensions_count: dims.length,
+          has_essay: !!sub.essay_text,
+          has_files: !!(sub.file_urls && sub.file_urls.length > 0),
+        });
+
+        // Load submission content (essay_text or file_urls)
+        if (sub.essay_text) {
+          console.log(
+            "[ProjectDetail] Setting essay_text as submission content, length:",
+            sub.essay_text.length
+          );
+          setSubmissionContent(sub.essay_text);
+        } else if (sub.file_urls && sub.file_urls.length > 0) {
+          console.log(
+            "[ProjectDetail] Setting file_urls as submission content"
+          );
+          setSubmissionContent(
+            `[File submission: ${
+              sub.file_urls.length
+            } file(s)]\n${sub.file_urls.join("\n")}`
+          );
+        } else {
+          console.warn(
+            "[ProjectDetail] No essay_text or file_urls found in submission"
+          );
+        }
+
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
           // Convert real AI feedback to display format
           const feedback: AIFeedback = {
@@ -118,6 +166,12 @@ const ProjectDetail = () => {
             improvements: sub.ai_priority_improvements || [],
             generatedAt: sub.submitted_at,
           };
+          console.log("[ProjectDetail] Setting AI feedback:", {
+            dimensions: feedback.dimensions.length,
+            first5: feedback.dimensions
+              .slice(0, 5)
+              .map((d) => ({ name: d.name, score: d.score })),
+          });
           setAIFeedback(feedback);
           setProcessingStatus("Analysis complete!");
         } else if (
@@ -169,6 +223,17 @@ const ProjectDetail = () => {
 
         const sub = feedbackData.submission;
         const dims = feedbackData.dimensions || [];
+
+        // Load submission content
+        if (sub.essay_text) {
+          setSubmissionContent(sub.essay_text);
+        } else if (sub.file_urls && sub.file_urls.length > 0) {
+          setSubmissionContent(
+            `[File submission: ${
+              sub.file_urls.length
+            } file(s)]\n${sub.file_urls.join("\n")}`
+          );
+        }
 
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
           // Feedback is ready
@@ -274,27 +339,137 @@ const ProjectDetail = () => {
     }
   };
 
-  // Convert project members to Member format for MemberGroup
-  const projectMembers: Member[] =
-    project?.members.map((m) => {
-      const names = (m.display_name || m.email).split(" ");
-      const initials =
-        names.length > 1
-          ? names[0][0] + names[names.length - 1][0]
-          : names[0].substring(0, 2);
+  // Mock submissions for comparison
+  const MOCK_SUBMISSIONS: DropdownOption[] = [
+    { id: "draft", label: "Draft" },
+    { id: "submit-1", label: "Submit (e)" },
+  ];
 
-      return {
-        id: m.user_id,
-        name: m.display_name || m.email,
-        initials: initials.toUpperCase(),
-        backgroundColor: "auto",
+  // Prepare radar data from feedback (all dimensions)
+  const radarData: RadarDataPoint[] = aiFeedback
+    ? aiFeedback.dimensions.map((dim) => {
+        console.log(
+          "[ProjectDetail] Radar dimension:",
+          dim.name,
+          "score:",
+          dim.score,
+          "variant:",
+          dim.variant
+        );
+        return {
+          dimension: dim.name,
+          userScore: dim.score,
+          classAverage: 2.0, // Mock class average
+        };
+      })
+    : [];
+
+  console.log("[ProjectDetail] Radar data:", radarData.length, "points");
+  console.log("[ProjectDetail] aiFeedback exists:", !!aiFeedback);
+  console.log(
+    "[ProjectDetail] aiFeedback dimensions:",
+    aiFeedback?.dimensions.length
+  );
+
+  // Generate improvement suggestion based on score (1-3 scale)
+  const getImprovementSuggestion = (
+    dimensionName: string,
+    score: number
+  ): string => {
+    const suggestions: Record<string, Record<number, string>> = {
+      "Frame the problem with an integrative approach": {
+        1: "To reach level 2, start by clearly identifying the problem and acknowledging multiple perspectives. Begin exploring how different disciplines might view the issue differently.",
+        2: "To get level 3, you need to demonstrate sophisticated integration of multiple disciplinary perspectives. Show how these perspectives interact and complement each other to frame a more complete understanding of the problem.",
+      },
+      "Stakeholder consideration": {
+        1: "To reach level 2, identify the key stakeholders affected by the issue. Consider their diverse interests and how they might be impacted differently.",
+        2: "To get level 3, conduct deeper analysis of stakeholder relationships and power dynamics. Consider both direct and indirect stakeholders, and analyze potential conflicts of interest and ethical implications.",
+      },
+      "Range of disciplinary perspectives": {
+        1: "To reach level 2, incorporate perspectives from at least 2-3 different disciplines. Show awareness that multiple fields can contribute to understanding the issue.",
+        2: "To get level 3, integrate 4 or more distinct disciplinary perspectives. Demonstrate deep understanding of how each discipline uniquely contributes to analyzing the problem.",
+      },
+      "Disciplinary reasoning": {
+        1: "To reach level 2, begin using concepts and methods specific to different disciplines. Show basic understanding of how each discipline approaches problems.",
+        2: "To get level 3, demonstrate sophisticated use of disciplinary reasoning. Apply discipline-specific methodologies accurately and explain the rationale behind choosing particular analytical approaches.",
+      },
+      "Credibility of disciplinary knowledge": {
+        1: "To reach level 2, start citing credible sources from different disciplines. Include peer-reviewed research, expert opinions, or authoritative references.",
+        2: "To get level 3, critically evaluate the quality and relevance of disciplinary sources. Discuss the strengths and limitations of different knowledge claims and explain why certain sources are more credible in specific contexts.",
+      },
+      "Number of disciplinary integration": {
+        1: "To reach level 2, make explicit connections between at least two disciplines. Show how insights from one field relate to or inform another.",
+        2: "To get level 3, create sophisticated integrations across multiple disciplines. Demonstrate how combining insights generates new understanding that wouldn't emerge from any single discipline alone.",
+      },
+      "Depth of disciplinary integration": {
+        1: "To reach level 2, move beyond simply listing different perspectives. Begin synthesizing ideas by identifying common themes or complementary insights across disciplines.",
+        2: "To get level 3, achieve deep integration where disciplinary insights are woven together seamlessly. Create new frameworks or solutions that transform understanding by combining disciplinary knowledge in novel ways.",
+      },
+      "Social (society) impact": {
+        1: "To reach level 2, identify specific societal impacts of the issue. Consider effects on communities, institutions, or social structures.",
+        2: "To get level 3, analyze societal impacts with nuance and depth. Consider short-term and long-term effects, intended and unintended consequences, and differential impacts on various social groups. Discuss ethical implications and potential solutions.",
+      },
+      Limitations: {
+        1: "To reach level 2, acknowledge that your analysis has limitations. Identify gaps in your research or areas where more information would be valuable.",
+        2: "To get level 3, provide thoughtful, specific discussion of limitations. Address methodological constraints, scope limitations, potential biases, and areas requiring further investigation. Show how these limitations might affect your conclusions.",
+      },
+    };
+
+    // Generic suggestion if specific dimension not found
+    const genericSuggestions: Record<number, string> = {
+      1: "To reach level 2, you need to enhance the depth of your explanations. Add more detailed examples and dive deeper into the mechanisms and relationships within this dimension. Use more detailed reasoning to strengthen your arguments.",
+      2: "To get level 3, demonstrate mastery by providing comprehensive analysis with sophisticated integration. Include concrete examples, consider multiple perspectives, and show how different elements interact. Back up your arguments with credible evidence and explain the implications of your analysis.",
+    };
+
+    if (score >= 3) return ""; // No suggestion needed for level 3
+
+    return (
+      suggestions[dimensionName]?.[score] || genericSuggestions[score] || ""
+    );
+  };
+
+  // Handle dimension click from radar chart
+  const handleDimensionClick = (dimension: string) => {
+    console.log("[ProjectDetail] Dimension clicked:", dimension);
+    console.log(
+      "[ProjectDetail] Available dimensions:",
+      aiFeedback?.dimensions.map((d) => d.name)
+    );
+    setSelectedDimension(dimension);
+  };
+
+  // Handle chat message send
+  const handleSendMessage = (message: string) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      sender: "user",
+      message,
+      timestamp: new Date(),
+    };
+
+    setChatMessages([...chatMessages, newMessage]);
+    setIsChatLoading(true);
+
+    // Simulate LLM response (replace with actual API call)
+    setTimeout(() => {
+      const llmResponse: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        sender: "llm",
+        message:
+          "Thank you for your question. This is a mock response. In production, this would connect to the LLM API to provide contextual feedback about your submission.",
+        timestamp: new Date(),
       };
-    }) || [];
+      setChatMessages((prev) => [...prev, llmResponse]);
+      setIsChatLoading(false);
+    }, 1000);
+  };
+
+  // Submission content is now loaded directly in loadFeedback effect
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-3 sm:p-4 lg:p-6 h-screen flex items-center justify-center">
+      <div className="project-detail-loading">
         <div className="text-center">
           <p className="subtitle-2 text-grey-80">Loading project...</p>
         </div>
@@ -305,8 +480,8 @@ const ProjectDetail = () => {
   // Error state
   if (error || !project) {
     return (
-      <div className="p-3 sm:p-4 lg:p-6 h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="project-detail-error">
+        <div className="project-detail-error-content">
           <p className="subtitle-2 text-red-500 mb-3">
             {error || "Project not found"}
           </p>
@@ -319,293 +494,217 @@ const ProjectDetail = () => {
   }
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 min-h-screen">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header with Back Button */}
-        <div className="flex items-center gap-4">
-          <Button variant="grey" onClick={() => navigate("/project")}>
-            ← Back
+    <div className="project-detail">
+      {/* Header Section */}
+      <div className="project-detail-header">
+        <div className="project-detail-welcome">
+          <h3 className="heading-5">Hi, User!</h3>
+          <p className="subtitle-2 text-grey-80">
+            Let's begin a new project with ILA!
+          </p>
+        </div>
+
+        <div className="project-detail-actions">
+          <Button variant="blue" onClick={() => navigate("/project/new")}>
+            + Add New Project
           </Button>
-          <h3 className="heading-3">{project.title}</h3>
         </div>
+      </div>
 
-        {/* Project Details Card */}
-        <div className="dashboard-card p-6">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h4 className="heading-4 mb-2">Project Details</h4>
-              <p className="subtitle-2 text-grey-80">
-                Submitted on{" "}
-                {project.submission_date
-                  ? formatDate(project.submission_date)
-                  : "Not yet submitted"}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {/* Show Submit button only for Draft projects */}
-              {project.status === "Draft" && (
-                <Button
-                  variant="blue"
-                  onClick={handleSubmitProject}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
-                </Button>
-              )}
-              <Button
-                variant="grey"
-                onClick={() => navigate(`/project/${project.id}/edit`)}
-                disabled={isSubmitting}
-              >
-                Edit
-              </Button>
-            </div>
-          </div>
+      {/* Comparison Selector */}
+      <div className="project-detail-comparison">
+        <ComparisonSelector
+          submissions={MOCK_SUBMISSIONS}
+          leftSubmission={leftSubmission}
+          rightSubmission={rightSubmission}
+          onLeftChange={setLeftSubmission}
+          onRightChange={setRightSubmission}
+        />
+      </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column */}
-            <div className="space-y-4">
-              <div>
-                <label className="subtitle-2 text-grey-80 block mb-1">
-                  Course Code
-                </label>
-                <p className="body-1">{project.course_code || "—"}</p>
+      {/* Main Content - Three Column Layout */}
+      {aiFeedback ? (
+        <div className="project-detail-content">
+          {/* Column 1: Radar + Feedback Cards */}
+          <div className="project-detail-col-1">
+            {/* Radar Chart */}
+            <div className="detail-card radar-section">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="subtitle-1">Radar Chart</h4>
+                {selectedDimension && (
+                  <span className="caption text-grey-55">
+                    Selected: {selectedDimension}
+                  </span>
+                )}
               </div>
-
-              <div>
-                <label className="subtitle-2 text-grey-80 block mb-1">
-                  Status
-                </label>
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                    project.status === "Completed"
-                      ? "bg-green-100 text-green-800"
-                      : project.status === "Submitted"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-grey-100 text-grey-800"
-                  }`}
-                >
-                  {project.status}
-                </span>
-              </div>
-
-              <div>
-                <label className="subtitle-2 text-grey-80 block mb-1">
-                  InterQ Score
-                </label>
-                <p className="body-1">{project.interq_score || "—"}</p>
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-4">
-              <div>
-                <label className="subtitle-2 text-grey-80 block mb-1">
-                  Team Members
-                </label>
-                <div className="mt-2">
-                  <MemberGroup
-                    members={projectMembers}
-                    size="medium"
-                    maxVisible={10}
-                    layout="horizontal"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="subtitle-2 text-grey-80 block mb-1">
-                  Created At
-                </label>
-                <p className="body-1">{formatDate(project.created_at)}</p>
-              </div>
-
-              <div>
-                <label className="subtitle-2 text-grey-80 block mb-1">
-                  Last Updated
-                </label>
-                <p className="body-1">{formatDate(project.updated_at)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          {project.description && (
-            <div className="mt-6 pt-6 border-t border-grey-20">
-              <label className="subtitle-2 text-grey-80 block mb-2">
-                Description
-              </label>
-              <p className="body-1 whitespace-pre-wrap">
-                {project.description}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* AI Feedback Card - Only show if project is submitted/completed */}
-        {aiFeedback && (
-          <div className="dashboard-card p-6 bg-gradient-to-br from-blue-50 to-purple-50">
-            <div className="flex items-start gap-3 mb-6">
-              <div className="text-3xl">🤖</div>
-              <div>
-                <h4 className="heading-4 mb-1">AI Feedback & Assessment</h4>
-                <p className="subtitle-2 text-grey-80">
-                  Generated on {formatDate(aiFeedback.generatedAt)}
-                </p>
-              </div>
-            </div>
-
-            {/* Overall Score */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="subtitle-1">Overall Score</span>
-                <span className="heading-3 text-[#181C62]">
-                  {aiFeedback.overallScore}/{aiFeedback.maxScore}
-                </span>
-              </div>
-              <div className="w-full bg-grey-20 rounded-full h-3">
-                <div
-                  className="bg-[#181C62] h-3 rounded-full transition-all"
-                  style={{
-                    width: `${
-                      (aiFeedback.overallScore / aiFeedback.maxScore) * 100
-                    }%`,
-                  }}
+              {radarData.length > 0 ? (
+                <RadarChart
+                  data={radarData}
+                  selectedDimensions={radarData.map((d) => d.dimension)}
+                  maxScore={3}
+                  height={450}
+                  onDimensionClick={handleDimensionClick}
                 />
-              </div>
+              ) : (
+                <div className="text-center text-grey-55 caption py-8">
+                  No dimension data available
+                </div>
+              )}
             </div>
 
-            {/* ILA Dimensions Assessment */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-              <h5 className="subtitle-1 mb-4">ILA Dimensions Assessment</h5>
-              <div className="space-y-4">
-                {aiFeedback.dimensions.map((dimension, idx) => (
-                  <div
-                    key={idx}
-                    className="border-b border-grey-10 pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-start justify-between mb-2 gap-4">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span
-                          className={`inline-block px-2 py-1 rounded text-xs font-medium bg-${dimension.variant}-100 text-${dimension.variant}-800`}
-                          style={{
-                            backgroundColor: `var(--color-${dimension.variant}-10, #f0f0f0)`,
-                            color: `var(--color-${dimension.variant}-70, #333)`,
-                          }}
-                        >
-                          {dimension.variant}
-                        </span>
-                        <span className="subtitle-2 flex-1">
-                          {dimension.name}
-                        </span>
+            {/* Feedback Cards */}
+            <div className="feedback-cards-section">
+              {selectedDimension ? (
+                aiFeedback.dimensions
+                  .filter((dim) => dim.name === selectedDimension)
+                  .map((dim, idx) => {
+                    const improvementSuggestion = getImprovementSuggestion(
+                      dim.name,
+                      dim.score
+                    );
+
+                    return (
+                      <div key={idx} className="feedback-with-suggestion">
+                        <DimensionFeedbackCard
+                          dimensionLabel={dim.name}
+                          dimensionVariant={dim.variant as Variant}
+                          level={dim.score}
+                          feedbackText={dim.feedback}
+                        />
+
+                        {improvementSuggestion && (
+                          <>
+                            <div className="suggestion-arrow">
+                              <svg
+                                width="32"
+                                height="32"
+                                viewBox="0 0 32 32"
+                                fill="none"
+                              >
+                                <path
+                                  d="M16 4L16 28M16 28L8 20M16 28L24 20"
+                                  stroke="#000000"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                            <div className="improvement-suggestion-card">
+                              <div className="suggestion-header">
+                                <DimensionLabel
+                                  text={dim.name}
+                                  variant={dim.variant as Variant}
+                                  size="medium"
+                                />
+                                <span className="body-2">:</span>
+                              </div>
+                              <p className="suggestion-body caption">
+                                {improvementSuggestion}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <span className="body-2 font-medium whitespace-nowrap">
-                        {dimension.score}/{dimension.maxScore}
-                      </span>
-                    </div>
-                    <div className="w-full bg-grey-20 rounded-full h-2 mb-2">
-                      <div
-                        className="bg-[#D71440] h-2 rounded-full transition-all"
-                        style={{
-                          width: `${
-                            (dimension.score / dimension.maxScore) * 100
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <p className="caption text-grey-80">{dimension.feedback}</p>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })
+              ) : (
+                <div className="feedback-instruction">
+                  <p className="subtitle-2 text-grey-80">
+                    👆 Click a dimension on the radar chart
+                  </p>
+                  <p className="caption text-grey-55">
+                    Select any dimension to view detailed feedback
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Summary */}
-            <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
-              <h5 className="subtitle-1 mb-2">Summary</h5>
-              <p className="body-2 text-grey-80">{aiFeedback.summary}</p>
-            </div>
-
-            {/* Strengths and Improvements */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Strengths */}
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h5 className="subtitle-1 mb-3 text-green-700">✓ Strengths</h5>
-                <ul className="space-y-2">
-                  {aiFeedback.strengths.map((strength, idx) => (
-                    <li
-                      key={idx}
-                      className="body-2 text-grey-80 flex items-start gap-2"
-                    >
-                      <span className="text-green-600 mt-1">•</span>
-                      <span>{strength}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Improvements */}
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <h5 className="subtitle-1 mb-3 text-orange-700">
-                  ⚠ Areas for Improvement
-                </h5>
-                <ul className="space-y-2">
-                  {aiFeedback.improvements.map((improvement, idx) => (
-                    <li
-                      key={idx}
-                      className="body-2 text-grey-80 flex items-start gap-2"
-                    >
-                      <span className="text-orange-600 mt-1">•</span>
-                      <span>{improvement}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Placeholder if not submitted and Draft */}
-        {!aiFeedback && project.status === "Draft" && (
-          <div className="dashboard-card p-6 text-center">
-            <div className="text-5xl mb-3">📋</div>
-            <h5 className="subtitle-1 mb-2">Ready to Submit?</h5>
-            <p className="body-2 text-grey-80 mb-4">
-              Submit your project to receive detailed AI feedback and assessment
-              based on the 9 ILA dimensions for interdisciplinary learning.
-            </p>
+            {/* View Full Report Button */}
             <Button
               variant="blue"
-              onClick={handleSubmitProject}
-              disabled={isSubmitting}
+              onClick={() => navigate(`/report/${projectId}`)}
+              className="w-full"
             >
-              {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
+              Full Report
             </Button>
           </div>
-        )}
 
-        {/* Processing state - show after submission */}
-        {!aiFeedback && project.status === "Submitted" && (
-          <div className="dashboard-card p-6 text-center">
-            <div className="text-5xl mb-3">⏳</div>
-            <h5 className="subtitle-1 mb-2">AI Evaluation in Progress</h5>
-            <p className="body-2 text-grey-80 mb-2">
-              {processingStatus ||
-                "Your project is being analyzed by our AI system. This typically takes 30-60 seconds."}
-            </p>
-            {processingStatus.includes("longer than expected") && (
-              <p className="caption text-orange-600 mb-4">
-                The analysis is taking longer than usual. You can safely leave
-                this page and return later.
-              </p>
-            )}
-            <div className="flex justify-center gap-3 mt-4">
-              <Button variant="grey" onClick={() => window.location.reload()}>
-                Refresh Page
-              </Button>
+          {/* Column 2: Submission Content */}
+          <div className="project-detail-col-2">
+            <div className="submission-content-card">
+              <h4 className="subtitle-1">Student Submission</h4>
+              {submissionContent ? (
+                <>
+                  <p className="submission-text body-2">{submissionContent}</p>
+                  <div className="submission-actions">
+                    <Button
+                      variant="red"
+                      onClick={handleSubmitProject}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="submission-empty">
+                  <p className="subtitle-2">No submission content available</p>
+                  <p className="caption">
+                    Submit your project to view content here
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Column 3: Chat Interface */}
+          <div className="project-detail-col-3">
+            <ChatInterface
+              messages={chatMessages}
+              onSendMessage={handleSendMessage}
+              isLoading={isChatLoading}
+              placeholder="Ask about your feedback..."
+            />
+          </div>
+        </div>
+      ) : project.status === "Draft" ? (
+        <div className="processing-state">
+          <div className="processing-state-icon">📋</div>
+          <h5 className="subtitle-1 mb-2">Ready to Submit?</h5>
+          <p className="body-2 text-grey-80 mb-4">
+            Submit your project to receive detailed AI feedback and assessment
+            based on the 9 ILA dimensions for interdisciplinary learning.
+          </p>
+          <Button
+            variant="blue"
+            onClick={handleSubmitProject}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
+          </Button>
+        </div>
+      ) : (
+        <div className="processing-state">
+          <div className="processing-state-icon">⏳</div>
+          <h5 className="subtitle-1 mb-2">AI Evaluation in Progress</h5>
+          <p className="body-2 text-grey-80 mb-2">
+            {processingStatus ||
+              "Your project is being analyzed by our AI system. This typically takes 30-60 seconds."}
+          </p>
+          {processingStatus.includes("longer than expected") && (
+            <p className="caption text-orange-600 mb-4">
+              The analysis is taking longer than usual. You can safely leave
+              this page and return later.
+            </p>
+          )}
+          <div className="flex justify-center gap-3 mt-4">
+            <Button variant="grey" onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

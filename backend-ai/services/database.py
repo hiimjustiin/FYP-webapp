@@ -246,6 +246,10 @@ class DatabaseService:
                 # Get submission-level data
                 cur.execute("""
                     SELECT 
+                        id,
+                        project_id,
+                        name,
+                        submitted_at,
                         ai_processing_status,
                         ai_overall_summary,
                         ai_overall_strengths,
@@ -253,7 +257,9 @@ class DatabaseService:
                         ai_estimated_level,
                         ai_processing_error,
                         ai_total_tokens_used,
-                        ai_estimated_cost
+                        ai_estimated_cost,
+                        essay_text,
+                        file_urls
                     FROM project_submissions
                     WHERE id = %s
                 """, (submission_id,))

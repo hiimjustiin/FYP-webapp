@@ -1,0 +1,367 @@
+.project-detail {
+  padding: 24px 48px;
+  max-width: 1920px;
+  margin: 0 auto;
+  font-family: 'PF Din Text Universal', Arial, sans-serif;
+}
+
+/* Header Section */
+.project-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.project-detail-welcome {
+  flex: 1;
+}
+
+.project-detail-welcome h3 {
+  margin: 0 0 8px 0;
+  color: var(--color-black);
+}
+
+.project-detail-welcome p {
+  margin: 0;
+}
+
+.project-detail-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Comparison Section */
+.project-detail-comparison {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Main Content - Three Column Layout */
+.project-detail-content {
+  display: grid;
+  grid-template-columns: 520px 1fr 520px;
+  gap: 36px;
+  align-items: start;
+}
+
+/* Column 1 - Radar and Feedback */
+.project-detail-col-1 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-card {
+  background: var(--color-white);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.08);
+}
+
+.radar-section {
+  min-height: 500px;
+}
+
+.feedback-cards-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feedback-with-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggestion-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.suggestion-arrow svg {
+  width: 32px;
+  height: 32px;
+}
+
+.improvement-suggestion-card {
+  background: var(--color-white);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.improvement-suggestion-card:hover {
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.12);
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.suggestion-body {
+  color: var(--color-grey-80);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.feedback-instruction {
+  background: var(--color-grey-10);
+  border: 1px dashed var(--color-grey-25);
+  border-radius: 8px;
+  padding: 32px 24px;
+  text-align: center;
+  margin: 16px 0;
+}
+
+/* Column 2 - Submission Content */
+.project-detail-col-2 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.submission-content-card {
+  background: var(--color-white);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.08);
+  min-height: 600px;
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+.submission-content-card h4 {
+  margin: 0 0 16px 0;
+  color: var(--color-black);
+}
+
+.submission-text {
+  line-height: 1.8;
+  color: var(--color-grey-80);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.submission-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  color: var(--color-grey-55);
+}
+
+.submission-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+/* Column 3 - Chat Interface */
+.project-detail-col-3 {
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  max-height: 800px;
+  position: sticky;
+  top: 24px;
+}
+
+/* Loading and Error States */
+.project-detail-loading,
+.project-detail-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.project-detail-error-content {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Processing State */
+.processing-state {
+  background: var(--color-white);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.processing-state-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+/* Responsive Layouts */
+@media (max-width: 1600px) {
+  .project-detail {
+    padding: 24px 32px;
+  }
+
+  .project-detail-content {
+    grid-template-columns: 460px 1fr 460px;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 1440px) {
+  .project-detail-content {
+    grid-template-columns: 400px 1fr 400px;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .project-detail-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .project-detail-col-1 {
+    grid-column: 1 / 2;
+  }
+
+  .project-detail-col-2 {
+    grid-column: 2 / 3;
+  }
+
+  .project-detail-col-3 {
+    grid-column: 1 / 3;
+    max-height: 500px;
+    position: relative;
+    top: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .project-detail {
+    padding: 20px 24px;
+  }
+
+  .project-detail-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .project-detail-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .project-detail-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .project-detail-col-1,
+  .project-detail-col-2,
+  .project-detail-col-3 {
+    grid-column: 1 / 2;
+  }
+
+  .project-detail-col-2 {
+    order: 1;
+  }
+
+  .project-detail-col-1 {
+    order: 2;
+  }
+
+  .project-detail-col-3 {
+    order: 3;
+    position: relative;
+    max-height: 600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .project-detail {
+    padding: 16px 20px;
+  }
+
+  .project-detail-header {
+    gap: 12px;
+  }
+
+  .project-detail-comparison {
+    padding: 16px;
+  }
+
+  .project-detail-content {
+    gap: 20px;
+  }
+
+  .detail-card {
+    padding: 16px;
+  }
+
+  .submission-content-card {
+    padding: 16px;
+    min-height: 400px;
+  }
+
+  .project-detail-col-3 {
+    max-height: 500px;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-detail {
+    padding: 12px 16px;
+  }
+
+  .detail-card,
+  .submission-content-card {
+    padding: 12px;
+  }
+
+  .project-detail-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .project-detail-actions button {
+    width: 100%;
+  }
+}
+
+/* Scrollbar styling for submission content */
+.submission-content-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.submission-content-card::-webkit-scrollbar-track {
+  background: var(--color-grey-05);
+  border-radius: 3px;
+}
+
+.submission-content-card::-webkit-scrollbar-thumb {
+  background: var(--color-grey-25);
+  border-radius: 3px;
+}
+
+.submission-content-card::-webkit-scrollbar-thumb:hover {
+  background: var(--color-grey-55);
+}

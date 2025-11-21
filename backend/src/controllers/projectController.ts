@@ -898,6 +898,8 @@ export const getSubmissionFeedback = async (
           ai_overall_strengths: submission.ai_overall_strengths,
           ai_priority_improvements: submission.ai_priority_improvements,
           ai_estimated_level: submission.ai_estimated_level,
+          essay_text: submission.essay_text,
+          file_urls: submission.file_urls,
         },
         dimensions: scoresResult.rows,
       },

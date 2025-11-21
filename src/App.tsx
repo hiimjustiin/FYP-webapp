@@ -16,6 +16,7 @@ import ProjectLanding from "./pages/Project/ProjectLanding.js";
 import ProjectNew from "./pages/Project/ProjectNew.js";
 import ProjectEdit from "./pages/Project/ProjectEdit.js";
 import ProjectDetail from "./pages/Project/ProjectDetail.js";
+import ProjectReport from "./pages/Report/ProjectReport";
 import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
@@ -238,6 +239,16 @@ const AppContent = () => {
           <ProtectedRoute>
             <DashboardLayout key="report">
               <Report />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/report/:projectId"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout key="project-report">
+              <ProjectReport />
             </DashboardLayout>
           </ProtectedRoute>
         }
