@@ -304,11 +304,12 @@ export default function AdminSubmissions() {
                 ? `${error}\n\nPlease try again.`
                 : `Are you sure you want to delete the submission from ${selectedSubmission.student_name} for ${selectedSubmission.project_title}? This action cannot be undone.`
             }
-            primaryButtonText={error ? "Try Again" : "Delete"}
+            primaryButtonText={error ? "Try Again" : deleting ? "Deleting..." : "Delete"}
             secondaryButtonText="Cancel"
             onPrimaryAction={handleConfirmDelete}
             onSecondaryAction={handleCancelDelete}
             closeOnOverlayClick={false}
+            primaryButtonDisabled={deleting}
           />
         )}
       </div>
