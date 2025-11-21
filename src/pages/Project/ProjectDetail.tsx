@@ -447,12 +447,18 @@ const ProjectDetail = () => {
           <div className="dashboard-card p-6 bg-gradient-to-br from-blue-50 to-purple-50">
             <div className="flex items-start gap-3 mb-6">
               <div className="text-3xl">🤖</div>
-              <div>
+              <div className="flex-1">
                 <h4 className="heading-4 mb-1">AI Feedback & Assessment</h4>
                 <p className="subtitle-2 text-grey-80">
                   Generated on {formatDate(aiFeedback.generatedAt)}
                 </p>
               </div>
+              <Button
+                variant="blue"
+                onClick={() => navigate(`/report/${projectId}`)}
+              >
+                View Full Report
+              </Button>
             </div>
 
             {/* Overall Score */}

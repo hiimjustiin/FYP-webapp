@@ -1,0 +1,211 @@
+.project-report {
+  padding: 24px 48px;
+  max-width: 1920px;
+  margin: 0 auto;
+  font-family: 'PF Din Text Universal', Arial, sans-serif;
+}
+
+/* Header Section */
+.project-report-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.project-report-welcome {
+  flex: 1;
+}
+
+.project-report-welcome h3 {
+  margin: 0 0 8px 0;
+  color: var(--color-black);
+}
+
+.project-report-welcome p {
+  margin: 0;
+}
+
+.project-report-search {
+  flex: 0 0 auto;
+  max-width: 600px;
+  width: 100%;
+}
+
+/* Comparison Section */
+.project-report-comparison {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Main Content */
+.project-report-content {
+  display: grid;
+  grid-template-columns: 520px 1fr;
+  gap: 36px;
+  align-items: start;
+}
+
+/* Column 1 */
+.project-report-col-1 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.report-card {
+  background: var(--color-white);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.08);
+}
+
+.radar-card {
+  min-height: 320px;
+}
+
+.breakdown-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.breakdown-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-grey-20);
+}
+
+.breakdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.line-chart-card {
+  min-height: 300px;
+}
+
+.full-report-button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Column 2 */
+.project-report-col-2 {
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-cards-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Responsive Layouts */
+@media (max-width: 1440px) {
+  .project-report {
+    padding: 24px 32px;
+  }
+
+  .project-report-content {
+    grid-template-columns: 460px 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .project-report-content {
+    grid-template-columns: 400px 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .project-report {
+    padding: 20px 24px;
+  }
+
+  .project-report-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .project-report-search {
+    max-width: 100%;
+  }
+
+  .project-report-content {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .project-report-col-1 {
+    order: 2;
+  }
+
+  .project-report-col-2 {
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .project-report {
+    padding: 16px 20px;
+  }
+
+  .project-report-header {
+    gap: 12px;
+  }
+
+  .project-report-comparison {
+    padding: 16px;
+  }
+
+  .project-report-content {
+    gap: 20px;
+  }
+
+  .report-card {
+    padding: 16px;
+  }
+
+  .breakdown-buttons {
+    flex-wrap: wrap;
+  }
+
+  .breakdown-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-report {
+    padding: 12px 16px;
+  }
+
+  .report-card {
+    padding: 12px;
+  }
+
+  .feedback-cards-container {
+    gap: 16px;
+  }
+}
