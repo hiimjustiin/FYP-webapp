@@ -68,7 +68,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
   }
 
   // Handle click on radar chart - called when clicking the chart background
-  const handleChartClick = (data: any) => {
+  const handleChartClick = (data: { activeLabel?: string; label?: string }): void => {
     console.log("[RadarChart] Chart click:", data);
     if (data && data.activeLabel && onDimensionClick) {
       console.log(
@@ -80,7 +80,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
   };
 
   // Handle click on specific radar data point
-  const handleRadarClick = (data: any) => {
+  const handleRadarClick = (data: { label?: string }): void => {
     console.log("[RadarChart] Radar data click:", data);
     if (data && data.label && onDimensionClick) {
       console.log("[RadarChart] Calling onDimensionClick with:", data.label);
