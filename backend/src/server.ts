@@ -16,6 +16,7 @@ import instructorRoutes from "./routes/instructor.js";
 import notificationRoutes from "./routes/notifications.js";
 import adminRoutes from "./routes/admin.js";
 import feedbackRoutes from "./routes/feedback.js";
+import reportsRoutes from "./routes/reports.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -128,6 +129,7 @@ app.use("/api/instructor", instructorRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/feedback", feedbackRoutes);
+app.use("/api/reports", reportsRoutes);
 
 // Error handling middleware
 app.use(notFound);

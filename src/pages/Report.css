@@ -1,0 +1,225 @@
+.report-page {
+  padding: 24px 48px;
+  max-width: 1920px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--color-grey-05);
+}
+
+/* Loading and Error States */
+.report-loading,
+.report-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+}
+
+/* Header */
+.report-header {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Metrics Grid */
+.report-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.metric-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.metric-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.metric-content {
+  flex: 1;
+}
+
+.metric-label {
+  font-size: 14px;
+  color: var(--color-grey-55);
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-black);
+}
+
+/* Main Content Grid */
+.report-content-grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.report-column-left,
+.report-column-right {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Insights */
+.insight-item {
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.insight-item.strength {
+  background: rgba(34, 197, 94, 0.1);
+  border-left: 4px solid rgb(34, 197, 94);
+}
+
+.insight-item.weakness {
+  background: rgba(251, 146, 60, 0.1);
+  border-left: 4px solid rgb(251, 146, 60);
+}
+
+.insight-item.improvement {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid rgb(59, 130, 246);
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.insight-icon {
+  font-size: 20px;
+}
+
+/* Recent Submissions */
+.recent-submissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recent-submission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--color-grey-05);
+  transition: background 0.2s;
+}
+
+.recent-submission-item:hover {
+  background: var(--color-grey-10);
+}
+
+
+
+/* Projects Summary */
+.projects-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--color-grey-05);
+  transition: background 0.2s;
+}
+
+.project-summary-item:hover {
+  background: var(--color-grey-10);
+}
+
+/* Responsive */
+@media (max-width: 1440px) {
+  .report-page {
+    padding: 24px 32px;
+  }
+
+  .report-content-grid {
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .report-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .report-content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-column-left {
+    order: 2;
+  }
+
+  .report-column-right {
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .report-page {
+    padding: 16px 20px;
+  }
+
+  .report-metrics-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .metric-card {
+    padding: 16px;
+  }
+
+  .metric-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+
+  .metric-value {
+    font-size: 24px;
+  }
+
+
+}
