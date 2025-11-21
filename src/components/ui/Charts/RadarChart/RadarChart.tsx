@@ -68,23 +68,17 @@ const RadarChart: React.FC<RadarChartProps> = ({
   }
 
   // Handle click on radar chart - called when clicking the chart background
-  const handleChartClick = (data: { activeLabel?: string; label?: string }): void => {
+  const handleChartClick = (data: unknown): void => {
     console.log("[RadarChart] Chart click:", data);
-    if (data && data.activeLabel && onDimensionClick) {
-      console.log(
-        "[RadarChart] Calling onDimensionClick with:",
-        data.activeLabel
-      );
-      onDimensionClick(data.activeLabel);
-    }
-  };
-
-  // Handle click on specific radar data point
-  const handleRadarClick = (data: { label?: string }): void => {
-    console.log("[RadarChart] Radar data click:", data);
-    if (data && data.label && onDimensionClick) {
-      console.log("[RadarChart] Calling onDimensionClick with:", data.label);
-      onDimensionClick(data.label);
+    if (data && typeof data === 'object' && 'activeLabel' in data) {
+      const chartData = data as { activeLabel?: string };
+      if (chartData.activeLabel && onDimensionClick) {
+        console.log(
+          "[RadarChart] Calling onDimensionClick with:",
+          chartData.activeLabel
+        );
+        onDimensionClick(chartData.activeLabel);
+      }
     }
   };
 
@@ -107,7 +101,6 @@ const RadarChart: React.FC<RadarChartProps> = ({
             dataKey="label"
             tick={{ fontSize: 12, fill: "var(--color-black)" }}
             className="radar-axis-label"
-            onClick={handleRadarClick}
           />
           <PolarRadiusAxis
             angle={90}
@@ -123,7 +116,6 @@ const RadarChart: React.FC<RadarChartProps> = ({
             fill={userColor}
             fillOpacity={0.3}
             strokeWidth={2}
-            onClick={handleRadarClick}
           />
           <Radar
             name="Class Average"
@@ -132,7 +124,6 @@ const RadarChart: React.FC<RadarChartProps> = ({
             fill={classAverageColor}
             fillOpacity={0.2}
             strokeWidth={2}
-            onClick={handleRadarClick}
           />
           {showLegend && (
             <Legend
