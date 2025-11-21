@@ -5,6 +5,7 @@ import RadarChart, {
   type RadarDataPoint,
 } from "../../components/ui/Charts/RadarChart/RadarChart";
 import DimensionFeedbackCard from "../../components/ui/DimensionFeedbackCard/DimensionFeedbackCard";
+import DimensionLabel from "../../components/ui/DimensionLabel/DimensionLabel";
 import ChatInterface, {
   type ChatMessage,
 } from "../../components/ui/ChatInterface/ChatInterface";
@@ -57,6 +58,11 @@ const ProjectDetail = () => {
 
   // Submission content
   const [submissionContent, setSubmissionContent] = useState<string>("");
+
+  // Selected dimension for feedback display
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const loadProject = async () => {
@@ -339,24 +345,98 @@ const ProjectDetail = () => {
     { id: "submit-1", label: "Submit (e)" },
   ];
 
-  // Prepare radar data from feedback (top 5 dimensions)
+  // Prepare radar data from feedback (all dimensions)
   const radarData: RadarDataPoint[] = aiFeedback
-    ? aiFeedback.dimensions.slice(0, 5).map((dim) => {
+    ? aiFeedback.dimensions.map((dim) => {
         console.log(
           "[ProjectDetail] Radar dimension:",
           dim.name,
           "score:",
-          dim.score
+          dim.score,
+          "variant:",
+          dim.variant
         );
         return {
           dimension: dim.name,
           userScore: dim.score,
-          classAverage: 2.5, // Mock class average
+          classAverage: 2.0, // Mock class average
         };
       })
     : [];
 
   console.log("[ProjectDetail] Radar data:", radarData.length, "points");
+  console.log("[ProjectDetail] aiFeedback exists:", !!aiFeedback);
+  console.log(
+    "[ProjectDetail] aiFeedback dimensions:",
+    aiFeedback?.dimensions.length
+  );
+
+  // Generate improvement suggestion based on score (1-3 scale)
+  const getImprovementSuggestion = (
+    dimensionName: string,
+    score: number
+  ): string => {
+    const suggestions: Record<string, Record<number, string>> = {
+      "Frame the problem with an integrative approach": {
+        1: "To reach level 2, start by clearly identifying the problem and acknowledging multiple perspectives. Begin exploring how different disciplines might view the issue differently.",
+        2: "To get level 3, you need to demonstrate sophisticated integration of multiple disciplinary perspectives. Show how these perspectives interact and complement each other to frame a more complete understanding of the problem.",
+      },
+      "Stakeholder consideration": {
+        1: "To reach level 2, identify the key stakeholders affected by the issue. Consider their diverse interests and how they might be impacted differently.",
+        2: "To get level 3, conduct deeper analysis of stakeholder relationships and power dynamics. Consider both direct and indirect stakeholders, and analyze potential conflicts of interest and ethical implications.",
+      },
+      "Range of disciplinary perspectives": {
+        1: "To reach level 2, incorporate perspectives from at least 2-3 different disciplines. Show awareness that multiple fields can contribute to understanding the issue.",
+        2: "To get level 3, integrate 4 or more distinct disciplinary perspectives. Demonstrate deep understanding of how each discipline uniquely contributes to analyzing the problem.",
+      },
+      "Disciplinary reasoning": {
+        1: "To reach level 2, begin using concepts and methods specific to different disciplines. Show basic understanding of how each discipline approaches problems.",
+        2: "To get level 3, demonstrate sophisticated use of disciplinary reasoning. Apply discipline-specific methodologies accurately and explain the rationale behind choosing particular analytical approaches.",
+      },
+      "Credibility of disciplinary knowledge": {
+        1: "To reach level 2, start citing credible sources from different disciplines. Include peer-reviewed research, expert opinions, or authoritative references.",
+        2: "To get level 3, critically evaluate the quality and relevance of disciplinary sources. Discuss the strengths and limitations of different knowledge claims and explain why certain sources are more credible in specific contexts.",
+      },
+      "Number of disciplinary integration": {
+        1: "To reach level 2, make explicit connections between at least two disciplines. Show how insights from one field relate to or inform another.",
+        2: "To get level 3, create sophisticated integrations across multiple disciplines. Demonstrate how combining insights generates new understanding that wouldn't emerge from any single discipline alone.",
+      },
+      "Depth of disciplinary integration": {
+        1: "To reach level 2, move beyond simply listing different perspectives. Begin synthesizing ideas by identifying common themes or complementary insights across disciplines.",
+        2: "To get level 3, achieve deep integration where disciplinary insights are woven together seamlessly. Create new frameworks or solutions that transform understanding by combining disciplinary knowledge in novel ways.",
+      },
+      "Social (society) impact": {
+        1: "To reach level 2, identify specific societal impacts of the issue. Consider effects on communities, institutions, or social structures.",
+        2: "To get level 3, analyze societal impacts with nuance and depth. Consider short-term and long-term effects, intended and unintended consequences, and differential impacts on various social groups. Discuss ethical implications and potential solutions.",
+      },
+      Limitations: {
+        1: "To reach level 2, acknowledge that your analysis has limitations. Identify gaps in your research or areas where more information would be valuable.",
+        2: "To get level 3, provide thoughtful, specific discussion of limitations. Address methodological constraints, scope limitations, potential biases, and areas requiring further investigation. Show how these limitations might affect your conclusions.",
+      },
+    };
+
+    // Generic suggestion if specific dimension not found
+    const genericSuggestions: Record<number, string> = {
+      1: "To reach level 2, you need to enhance the depth of your explanations. Add more detailed examples and dive deeper into the mechanisms and relationships within this dimension. Use more detailed reasoning to strengthen your arguments.",
+      2: "To get level 3, demonstrate mastery by providing comprehensive analysis with sophisticated integration. Include concrete examples, consider multiple perspectives, and show how different elements interact. Back up your arguments with credible evidence and explain the implications of your analysis.",
+    };
+
+    if (score >= 3) return ""; // No suggestion needed for level 3
+
+    return (
+      suggestions[dimensionName]?.[score] || genericSuggestions[score] || ""
+    );
+  };
+
+  // Handle dimension click from radar chart
+  const handleDimensionClick = (dimension: string) => {
+    console.log("[ProjectDetail] Dimension clicked:", dimension);
+    console.log(
+      "[ProjectDetail] Available dimensions:",
+      aiFeedback?.dimensions.map((d) => d.name)
+    );
+    setSelectedDimension(dimension);
+  };
 
   // Handle chat message send
   const handleSendMessage = (message: string) => {
@@ -449,13 +529,21 @@ const ProjectDetail = () => {
           <div className="project-detail-col-1">
             {/* Radar Chart */}
             <div className="detail-card radar-section">
-              <h4 className="subtitle-1 mb-4">Radar Chart</h4>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="subtitle-1">Radar Chart</h4>
+                {selectedDimension && (
+                  <span className="caption text-grey-55">
+                    Selected: {selectedDimension}
+                  </span>
+                )}
+              </div>
               {radarData.length > 0 ? (
                 <RadarChart
                   data={radarData}
                   selectedDimensions={radarData.map((d) => d.dimension)}
                   maxScore={3}
-                  height={300}
+                  height={450}
+                  onDimensionClick={handleDimensionClick}
                 />
               ) : (
                 <div className="text-center text-grey-55 caption py-8">
@@ -466,15 +554,70 @@ const ProjectDetail = () => {
 
             {/* Feedback Cards */}
             <div className="feedback-cards-section">
-              {aiFeedback.dimensions.map((dim, idx) => (
-                <DimensionFeedbackCard
-                  key={idx}
-                  dimensionLabel={dim.name}
-                  dimensionVariant={dim.variant as Variant}
-                  level={dim.score}
-                  feedbackText={dim.feedback}
-                />
-              ))}
+              {selectedDimension ? (
+                aiFeedback.dimensions
+                  .filter((dim) => dim.name === selectedDimension)
+                  .map((dim, idx) => {
+                    const improvementSuggestion = getImprovementSuggestion(
+                      dim.name,
+                      dim.score
+                    );
+
+                    return (
+                      <div key={idx} className="feedback-with-suggestion">
+                        <DimensionFeedbackCard
+                          dimensionLabel={dim.name}
+                          dimensionVariant={dim.variant as Variant}
+                          level={dim.score}
+                          feedbackText={dim.feedback}
+                        />
+
+                        {improvementSuggestion && (
+                          <>
+                            <div className="suggestion-arrow">
+                              <svg
+                                width="32"
+                                height="32"
+                                viewBox="0 0 32 32"
+                                fill="none"
+                              >
+                                <path
+                                  d="M16 4L16 28M16 28L8 20M16 28L24 20"
+                                  stroke="#000000"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                            <div className="improvement-suggestion-card">
+                              <div className="suggestion-header">
+                                <DimensionLabel
+                                  text={dim.name}
+                                  variant={dim.variant as Variant}
+                                  size="medium"
+                                />
+                                <span className="body-2">:</span>
+                              </div>
+                              <p className="suggestion-body caption">
+                                {improvementSuggestion}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+              ) : (
+                <div className="feedback-instruction">
+                  <p className="subtitle-2 text-grey-80">
+                    👆 Click a dimension on the radar chart
+                  </p>
+                  <p className="caption text-grey-55">
+                    Select any dimension to view detailed feedback
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* View Full Report Button */}
@@ -509,10 +652,6 @@ const ProjectDetail = () => {
                   <p className="subtitle-2">No submission content available</p>
                   <p className="caption">
                     Submit your project to view content here
-                  </p>
-                  <p className="caption text-grey-55 mt-2">
-                    Debug: submissionId={submissionId || "null"}, aiFeedback=
-                    {aiFeedback ? "exists" : "null"}
                   </p>
                 </div>
               )}

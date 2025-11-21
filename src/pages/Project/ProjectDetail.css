@@ -65,13 +65,66 @@
 }
 
 .radar-section {
-  min-height: 180px;
+  min-height: 500px;
 }
 
 .feedback-cards-section {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.feedback-with-suggestion {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.suggestion-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.suggestion-arrow svg {
+  width: 32px;
+  height: 32px;
+}
+
+.improvement-suggestion-card {
+  background: var(--color-white);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.improvement-suggestion-card:hover {
+  box-shadow: 0px 0px 24px 16px rgba(0, 0, 0, 0.12);
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.suggestion-body {
+  color: var(--color-grey-80);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.feedback-instruction {
+  background: var(--color-grey-10);
+  border: 1px dashed var(--color-grey-25);
+  border-radius: 8px;
+  padding: 32px 24px;
+  text-align: center;
+  margin: 16px 0;
 }
 
 /* Column 2 - Submission Content */
