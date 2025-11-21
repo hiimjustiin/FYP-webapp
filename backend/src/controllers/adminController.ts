@@ -532,6 +532,53 @@ export const getAllSubmissions = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// DELETE /api/admin/submissions/:id - Delete submission
+export const deleteSubmission = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Invalid submission ID" },
+      });
+    }
+
+    // Start a transaction-like pattern
+    // First, delete associated dimension scores
+    await query(
+      "DELETE FROM submission_dimension_scores WHERE submission_id = $1",
+      [id]
+    );
+
+    // Then delete the submission
+    const result = await query(
+      "DELETE FROM project_submissions WHERE id = $1 RETURNING id",
+      [id]
+    );
+
+    // Check if submission was actually deleted
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Submission not found" },
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Submission deleted successfully",
+      data: { submissionId: result.rows[0].id },
+    });
+  } catch (error) {
+    console.error("Error deleting submission:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to delete submission" },
+    });
+  }
+};
+
 // GET /api/admin/instructors - Get all instructors for dropdown
 export const getInstructors = async (_req: AuthRequest, res: Response) => {
   try {

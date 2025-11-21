@@ -8,6 +8,7 @@ import Button from "../components/ui/Button/Button";
 import Dropdown from "../components/ui/Dropdown/Dropdown";
 import Table from "../components/ui/Table/Table";
 import SearchBar from "../components/ui/SearchBar/SearchBar";
+import { AlertDialog } from "../components/ui/AlertDialog/AlertDialog";
 
 export default function AdminSubmissions() {
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
@@ -17,6 +18,10 @@ export default function AdminSubmissions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [courseFilter, setCourseFilter] = useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<AdminSubmission | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -70,6 +75,45 @@ export default function AdminSubmissions() {
     setSearchTerm(term);
   };
 
+  const handleDeleteClick = (submission: AdminSubmission) => {
+    setSelectedSubmission(submission);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedSubmission) return;
+
+    try {
+      setDeleting(true);
+      setError("");
+
+      // Call API to delete
+      await adminService.deleteSubmission(selectedSubmission.id);
+
+      // Remove from UI state
+      setSubmissions((prev) =>
+        prev.filter((sub) => sub.id !== selectedSubmission.id)
+      );
+
+      // Close dialog and clear selection
+      setDeleteDialogOpen(false);
+      setSelectedSubmission(null);
+    } catch (err) {
+      console.error("Failed to delete submission:", err);
+      // Show error in dialog, don't close it
+      setError(
+        err instanceof Error ? err.message : "Failed to delete submission"
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedSubmission(null);
+  };
+
   const filteredSubmissions = submissions.filter(
     (sub) =>
       !searchTerm ||
@@ -110,9 +154,7 @@ export default function AdminSubmissions() {
       <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="heading-3 mb-2">
-            Platform Submissions
-          </h1>
+          <h1 className="heading-3 mb-2">Platform Submissions</h1>
           <p className="body text-[var(--color-grey-55)]">
             View and manage all submissions across all courses
           </p>
@@ -237,12 +279,40 @@ export default function AdminSubmissions() {
                     >
                       View File
                     </Button>
+                    <Button
+                      variant="red"
+                      onClick={() => handleDeleteClick(sub)}
+                      className="text-xs"
+                    >
+                      Delete
+                    </Button>
                   </div>,
                 ]),
               ]}
             />
           )}
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        {deleteDialogOpen && selectedSubmission && (
+          <AlertDialog
+            isOpen={deleteDialogOpen}
+            type={error ? "error" : "warning"}
+            title={error ? "Deletion Failed" : "Delete Submission"}
+            message={
+              error
+                ? `${error}\n\nPlease try again.`
+                : `Are you sure you want to delete the submission from ${selectedSubmission.student_name} for ${selectedSubmission.project_title}? This action cannot be undone.`
+            }
+            primaryButtonText={
+              error ? "Try Again" : deleting ? "Deleting..." : "Delete"
+            }
+            secondaryButtonText="Cancel"
+            onPrimaryAction={handleConfirmDelete}
+            onSecondaryAction={handleCancelDelete}
+            closeOnOverlayClick={false}
+          />
+        )}
       </div>
     </div>
   );
