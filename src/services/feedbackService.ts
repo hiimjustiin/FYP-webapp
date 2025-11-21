@@ -28,6 +28,8 @@ export interface Submission {
   ai_overall_strengths?: string[];
   ai_priority_improvements?: string[];
   ai_estimated_level?: string;
+  essay_text?: string;
+  file_urls?: string[];
 }
 
 export interface FeedbackResponse {
