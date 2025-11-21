@@ -196,6 +196,10 @@ export const adminService = {
     return data.submissions;
   },
 
+  async deleteSubmission(submissionId: string): Promise<void> {
+    await api.delete(`/admin/submissions/${submissionId}`);
+  },
+
   // Utility
   async getInstructors(): Promise<Instructor[]> {
     const data = await api.get<{ instructors: Instructor[] }>(
