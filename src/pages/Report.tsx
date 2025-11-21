@@ -1,9 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  reportService,
-  type PortfolioData,
-} from "../services/reportService";
+import { reportService, type PortfolioData } from "../services/reportService";
 import {
   DimensionLineChart,
   type DimensionData,
@@ -59,11 +56,13 @@ const Report = () => {
 
   const timelineDimensions = useMemo(() => {
     if (!data) return [];
-    const uniqueDims = Array.from(new Set(data.timeline.map((t) => t.dimension)));
+    const uniqueDims = Array.from(
+      new Set(data.timeline.map((t) => t.dimension))
+    );
     return uniqueDims.map((dim, index) => ({
       id: dim,
       text: dim,
-      color: `hsl(${(index * 360) / uniqueDims.length}, 70%, 50%)`
+      color: `hsl(${(index * 360) / uniqueDims.length}, 70%, 50%)`,
     }));
   }, [data]);
 
@@ -256,8 +255,6 @@ const Report = () => {
               ))}
             </div>
           </div>
-
-
         </div>
 
         {/* Right Column */}

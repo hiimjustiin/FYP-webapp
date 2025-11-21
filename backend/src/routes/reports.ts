@@ -109,8 +109,10 @@ router.get("/portfolio", async (req: AuthRequest, res: Response) => {
     );
     const overallAvgScore =
       projectsResult.rows.length > 0
-        ? projectsResult.rows.reduce((sum, p) => sum + parseFloat(p.avg_score), 0) /
-          projectsResult.rows.length
+        ? projectsResult.rows.reduce(
+            (sum, p) => sum + parseFloat(p.avg_score),
+            0
+          ) / projectsResult.rows.length
         : 0;
 
     // Find best and worst dimensions
@@ -131,13 +133,15 @@ router.get("/portfolio", async (req: AuthRequest, res: Response) => {
           bestDimension: bestDimension
             ? {
                 label: bestDimension.label,
-                score: Math.round(parseFloat(bestDimension.avg_score) * 10) / 10,
+                score:
+                  Math.round(parseFloat(bestDimension.avg_score) * 10) / 10,
               }
             : null,
           worstDimension: worstDimension
             ? {
                 label: worstDimension.label,
-                score: Math.round(parseFloat(worstDimension.avg_score) * 10) / 10,
+                score:
+                  Math.round(parseFloat(worstDimension.avg_score) * 10) / 10,
               }
             : null,
         },
