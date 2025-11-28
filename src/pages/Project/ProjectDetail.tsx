@@ -11,7 +11,6 @@ import ChatInterface, {
 } from "../../components/ui/ChatInterface/ChatInterface";
 import ComparisonSelector from "../../components/layout/ComparisonSelector/ComparisonSelector";
 import type { DropdownOption } from "../../components/ui/Dropdown/Dropdown";
-import type { Variant } from "../../services/dimensionsService";
 import { projectService, type Project } from "../../services/projectService";
 import { feedbackService } from "../../services/feedbackService";
 import "./ProjectDetail.css";
@@ -22,7 +21,7 @@ interface DimensionFeedback {
   score: number;
   maxScore: number;
   feedback: string;
-  variant: string;
+  color: string;
 }
 
 interface AIFeedback {
@@ -159,7 +158,7 @@ const ProjectDetail = () => {
               score: d.ai_score || 0,
               maxScore: 3,
               feedback: d.ai_reasoning || "Analysis in progress...",
-              variant: d.dimension_variant,
+              color: d.dimension_color,
             })),
             summary: sub.ai_overall_summary || "Analysis complete",
             strengths: sub.ai_overall_strengths || [],
@@ -250,7 +249,7 @@ const ProjectDetail = () => {
               score: d.ai_score || 0,
               maxScore: 3,
               feedback: d.ai_reasoning || "Analysis in progress...",
-              variant: d.dimension_variant,
+              color: d.dimension_color,
             })),
             summary: sub.ai_overall_summary || "Analysis complete",
             strengths: sub.ai_overall_strengths || [],
@@ -353,8 +352,8 @@ const ProjectDetail = () => {
           dim.name,
           "score:",
           dim.score,
-          "variant:",
-          dim.variant
+          "color:",
+          dim.color
         );
         return {
           dimension: dim.name,
@@ -567,7 +566,7 @@ const ProjectDetail = () => {
                       <div key={idx} className="feedback-with-suggestion">
                         <DimensionFeedbackCard
                           dimensionLabel={dim.name}
-                          dimensionVariant={dim.variant as Variant}
+                          dimensionColor={dim.color}
                           level={dim.score}
                           feedbackText={dim.feedback}
                         />
@@ -594,7 +593,7 @@ const ProjectDetail = () => {
                               <div className="suggestion-header">
                                 <DimensionLabel
                                   text={dim.name}
-                                  variant={dim.variant as Variant}
+                                  color={dim.color}
                                   size="medium"
                                 />
                                 <span className="body-2">:</span>

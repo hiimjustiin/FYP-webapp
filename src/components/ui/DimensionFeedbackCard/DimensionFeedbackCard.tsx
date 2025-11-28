@@ -1,13 +1,22 @@
 import React, { useState } from "react";
 import DimensionLabel from "../DimensionLabel/DimensionLabel";
-import type { Variant } from "../../../services/dimensionsService";
 import ChevronDown from "../../../assets/icons/chevron_down.svg";
 import ChevronUp from "../../../assets/icons/chevron_up.svg";
 import "./DimensionFeedbackCard.css";
 
 export interface DimensionFeedbackCardProps {
   dimensionLabel: string;
-  dimensionVariant: Variant;
+  dimensionColor?: string; // Hex color code (e.g., #84CC16)
+  dimensionVariant?:
+    | "lime"
+    | "yellow"
+    | "purple"
+    | "teal"
+    | "blue"
+    | "grey"
+    | "green"
+    | "navy"
+    | "pink"; // Deprecated, use dimensionColor
   level: number;
   feedbackText: string;
   isExpanded?: boolean;
@@ -17,6 +26,7 @@ export interface DimensionFeedbackCardProps {
 
 const DimensionFeedbackCard: React.FC<DimensionFeedbackCardProps> = ({
   dimensionLabel,
+  dimensionColor,
   dimensionVariant,
   level,
   feedbackText,
@@ -43,6 +53,7 @@ const DimensionFeedbackCard: React.FC<DimensionFeedbackCardProps> = ({
       <div className="dimension-feedback-header">
         <DimensionLabel
           text={dimensionLabel}
+          color={dimensionColor}
           variant={dimensionVariant}
           size="medium"
         />

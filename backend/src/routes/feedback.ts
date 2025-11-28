@@ -62,7 +62,7 @@ router.get(
 
       // Fetch dimension labels from dimensions table
       const dimensionsResult = await query(
-        `SELECT d.id as dimension_id, d.label as dimension_label, d.variant as dimension_variant
+        `SELECT d.id as dimension_id, d.label as dimension_label, d.color_hex as dimension_color
          FROM dimensions d
          ORDER BY d.id`
       );
@@ -95,7 +95,7 @@ router.get(
           ...score,
           dimension_label:
             dimInfo?.dimension_label || `Dimension ${score.dimension_id}`,
-          dimension_variant: dimInfo?.dimension_variant || "grey",
+          dimension_color: dimInfo?.dimension_color || "#6B7280",
         };
       });
 

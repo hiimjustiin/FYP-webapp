@@ -327,6 +327,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
       `SELECT 
         sds.dimension_id,
         d.label as dimension_label,
+        d.color_hex as dimension_color,
         sds.personal_score as score,
         sds.ai_score_original,
         sds.ai_feedback_raw,
@@ -335,7 +336,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
       FROM submission_dimension_scores sds
       JOIN dimensions d ON sds.dimension_id = d.id
       WHERE sds.submission_id = $1
-      ORDER BY d.display_order ASC`,
+      ORDER BY d.id ASC`,
       [submissionId]
     );
 
@@ -451,7 +452,7 @@ export const triggerScoring = async (req: AuthRequest, res: Response) => {
 
     // Get dimensions
     const dimensionsResult = await query(
-      "SELECT id, label FROM dimensions ORDER BY display_order ASC"
+      "SELECT id, label, rubric_level_1, rubric_level_2, rubric_level_3 FROM dimensions WHERE is_active = true ORDER BY id ASC"
     );
 
     // Trigger AI analysis

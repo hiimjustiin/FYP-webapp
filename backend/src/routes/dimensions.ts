@@ -37,7 +37,7 @@ router.use(authenticate);
 router.get("/", async (_req: AuthRequest, res: Response) => {
   try {
     const result = await query(
-      "SELECT id, label, variant, display_order FROM dimensions ORDER BY display_order ASC"
+      "SELECT id, label, short_label, description, color_hex, rubric_level_1, rubric_level_2, rubric_level_3, is_active FROM dimensions WHERE is_active = true ORDER BY id ASC"
     );
 
     res.json({
@@ -96,7 +96,7 @@ router.get(
         sds.dimension_id,
         sds.personal_score,
         d.label as dimension_label,
-        d.variant as dimension_variant,
+        d.color_hex as dimension_color,
         (
           SELECT ROUND(AVG(sds2.personal_score)::numeric, 1)
           FROM submission_dimension_scores sds2
