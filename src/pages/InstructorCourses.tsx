@@ -4,6 +4,7 @@ import {
   type InstructorCourse,
   type CreateCourseData,
   type UpdateCourseData,
+  type Dimension,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
 import InputField from "../components/ui/InputField/InputField";
@@ -13,6 +14,7 @@ import SearchBar from "../components/ui/SearchBar/SearchBar";
 
 export default function InstructorCourses() {
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
+  const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,17 +24,21 @@ export default function InstructorCourses() {
   );
 
   useEffect(() => {
-    loadCourses();
+    loadData();
   }, []);
 
-  const loadCourses = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
       setError("");
-      const coursesData = await instructorService.getCourses();
+      const [coursesData, dimensionsData] = await Promise.all([
+        instructorService.getCourses(),
+        instructorService.getDimensions(),
+      ]);
       setCourses(coursesData);
+      setDimensions(dimensionsData);
     } catch (err) {
-      console.error("Failed to load courses:", err);
+      console.error("Failed to load data:", err);
       setError(err instanceof Error ? err.message : "Failed to load courses");
     } finally {
       setLoading(false);
@@ -53,7 +59,7 @@ export default function InstructorCourses() {
 
     try {
       await instructorService.deleteCourse(courseId);
-      loadCourses();
+      loadData();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete course");
     }
@@ -127,11 +133,26 @@ export default function InstructorCourses() {
             <Table
               noBorder
               data={[
-                ["Code", "Title", "Term", "Students", "Submissions", "Actions"],
+                [
+                  "Code",
+                  "Title",
+                  "Term",
+                  "Dimensions",
+                  "Students",
+                  "Submissions",
+                  "Actions",
+                ],
                 ...filteredCourses.map((course) => [
                   course.code,
                   course.title,
                   course.term || "N/A",
+                  <span
+                    key={`dim-${course.id}`}
+                    className="text-sm text-gray-600"
+                  >
+                    {course.dimension_ids?.length || 0} of{" "}
+                    {dimensions.length || 9}
+                  </span>,
                   course.enrolled_count,
                   course.submission_count,
                   <div className="flex gap-2" key={course.id}>
@@ -160,12 +181,13 @@ export default function InstructorCourses() {
         {(showCreateModal || editingCourse) && (
           <CourseModal
             course={editingCourse}
+            dimensions={dimensions}
             onClose={() => {
               setShowCreateModal(false);
               setEditingCourse(null);
             }}
             onSave={() => {
-              loadCourses();
+              loadData();
               setShowCreateModal(false);
               setEditingCourse(null);
             }}
@@ -179,10 +201,12 @@ export default function InstructorCourses() {
 // Course Create/Edit Modal Component
 function CourseModal({
   course,
+  dimensions,
   onClose,
   onSave,
 }: {
   course: InstructorCourse | null;
+  dimensions: Dimension[];
   onClose: () => void;
   onSave: () => void;
 }) {
@@ -192,13 +216,58 @@ function CourseModal({
     description: course?.description || "",
     term: course?.term || "",
     passcode: course?.passcode || "",
+    dimension_ids: course?.dimension_ids || dimensions.map((d) => d.id),
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Initialize dimension_ids with all dimensions if creating new course
+  useEffect(() => {
+    if (
+      !course &&
+      dimensions.length > 0 &&
+      formData.dimension_ids.length === 0
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        dimension_ids: dimensions.map((d) => d.id),
+      }));
+    }
+  }, [course, dimensions, formData.dimension_ids.length]);
+
+  const handleDimensionToggle = (dimensionId: number) => {
+    setFormData((prev) => {
+      const newDimensionIds = prev.dimension_ids.includes(dimensionId)
+        ? prev.dimension_ids.filter((id) => id !== dimensionId)
+        : [...prev.dimension_ids, dimensionId].sort((a, b) => a - b);
+      return { ...prev, dimension_ids: newDimensionIds };
+    });
+  };
+
+  const handleSelectAll = () => {
+    setFormData((prev) => ({
+      ...prev,
+      dimension_ids: dimensions.map((d) => d.id),
+    }));
+  };
+
+  const handleDeselectAll = () => {
+    setFormData((prev) => ({
+      ...prev,
+      dimension_ids: [],
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Validate at least one dimension is selected
+    if (formData.dimension_ids.length === 0) {
+      setError("Please select at least one dimension for this course");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -210,6 +279,7 @@ function CourseModal({
           description: formData.description,
           term: formData.term,
           passcode: formData.passcode || undefined,
+          dimension_ids: formData.dimension_ids,
         };
         await instructorService.updateCourse(course.id, updateData);
       } else {
@@ -220,6 +290,7 @@ function CourseModal({
           description: formData.description,
           term: formData.term,
           passcode: formData.passcode || undefined,
+          dimension_ids: formData.dimension_ids,
         };
         await instructorService.createCourse(createData);
       }
@@ -300,6 +371,71 @@ function CourseModal({
           <p className="text-xs text-gray-500 -mt-2">
             Case-sensitive. Students must enter this passcode to enroll.
           </p>
+
+          {/* Dimension Selection */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Available Dimensions ({formData.dimension_ids.length} of{" "}
+                {dimensions.length} selected)
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Select All
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={handleDeselectAll}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto bg-gray-50">
+              {dimensions.map((dim) => (
+                <label
+                  key={dim.id}
+                  className="flex items-start gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.dimension_ids.includes(dim.id)}
+                    onChange={() => handleDimensionToggle(dim.id)}
+                    className="mt-0.5 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-gray-900">
+                      {dim.id}. {dim.label}
+                    </span>
+                    {dim.short_label && (
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({dim.short_label})
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                    style={{
+                      backgroundColor: `${dim.color_hex}20`,
+                      color: dim.color_hex,
+                    }}
+                  >
+                    ●
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Select which ILA dimensions will be used for scoring in this
+              course.
+            </p>
+          </div>
 
           <div className="flex gap-3 pt-4">
             <Button
