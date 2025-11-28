@@ -306,7 +306,13 @@ export const getAllCourses = async (_req: AuthRequest, res: Response) => {
         u.display_name as instructor_name,
         u.email as instructor_email,
         COUNT(DISTINCT ce.user_id) as enrollment_count,
-        COUNT(DISTINCT ps.id) as submission_count
+        COUNT(DISTINCT ps.id) as submission_count,
+        COALESCE(
+          (SELECT array_agg(cd.dimension_id ORDER BY cd.dimension_id)
+           FROM course_dimensions cd
+           WHERE cd.course_id = c.id),
+          ARRAY[]::smallint[]
+        ) as dimension_ids
        FROM courses c
        LEFT JOIN users u ON c.instructor_id = u.id
        LEFT JOIN course_enrollments ce ON c.id = ce.course_id AND ce.status = 'active'
@@ -339,9 +345,17 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { code, title, description, instructor_id, term, passcode } =
-      req.body;
+    const {
+      code,
+      title,
+      description,
+      instructor_id,
+      term,
+      passcode,
+      dimension_ids,
+    } = req.body;
 
+    // Create the course
     const result = await query(
       `INSERT INTO courses (code, title, description, instructor_id, term, passcode)
        VALUES ($1, $2, $3, $4, $5, COALESCE($6, $1))
@@ -349,9 +363,31 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       [code, title, description, instructor_id, term, passcode]
     );
 
+    const course = result.rows[0];
+
+    // Add course dimensions (default to all 9 if not specified)
+    const dimensionsToAdd =
+      dimension_ids && dimension_ids.length > 0
+        ? dimension_ids
+        : [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    if (dimensionsToAdd.length > 0) {
+      const dimensionValues = dimensionsToAdd
+        .map((_: number, idx: number) => `($1, $${idx + 2})`)
+        .join(", ");
+
+      await query(
+        `INSERT INTO course_dimensions (course_id, dimension_id) VALUES ${dimensionValues}`,
+        [course.id, ...dimensionsToAdd]
+      );
+    }
+
+    // Return course with dimension_ids
+    course.dimension_ids = dimensionsToAdd;
+
     return res.status(201).json({
       success: true,
-      data: { course: result.rows[0] },
+      data: { course },
     });
   } catch (error) {
     console.error("Error creating course:", error);
@@ -366,8 +402,15 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 export const updateCourse = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { code, title, description, instructor_id, term, passcode } =
-      req.body;
+    const {
+      code,
+      title,
+      description,
+      instructor_id,
+      term,
+      passcode,
+      dimension_ids,
+    } = req.body;
 
     const updateFields: string[] = [];
     const values: (string | undefined)[] = [];
@@ -409,33 +452,67 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
       values.push(passcode);
     }
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: { message: "No fields to update" },
-      });
+    let result;
+    if (updateFields.length > 0) {
+      updateFields.push("updated_at = NOW()");
+      paramCount++;
+      values.push(id as string);
+
+      result = await query(
+        `UPDATE courses SET ${updateFields.join(", ")} WHERE id = $${paramCount}
+         RETURNING *`,
+        values
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "Course not found" },
+        });
+      }
+    } else {
+      // Just fetch the course if no fields to update
+      result = await query(`SELECT * FROM courses WHERE id = $1`, [id]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "Course not found" },
+        });
+      }
     }
 
-    updateFields.push("updated_at = NOW()");
-    paramCount++;
-    values.push(id as string);
+    // Update course dimensions if provided
+    if (dimension_ids !== undefined && Array.isArray(dimension_ids)) {
+      // Delete existing dimensions
+      await query(`DELETE FROM course_dimensions WHERE course_id = $1`, [id]);
 
-    const result = await query(
-      `UPDATE courses SET ${updateFields.join(", ")} WHERE id = $${paramCount}
-       RETURNING *`,
-      values
+      // Insert new dimensions
+      if (dimension_ids.length > 0) {
+        const dimensionValues = dimension_ids
+          .map((_: number, idx: number) => `($1, $${idx + 2})`)
+          .join(", ");
+
+        await query(
+          `INSERT INTO course_dimensions (course_id, dimension_id) VALUES ${dimensionValues}`,
+          [id, ...dimension_ids]
+        );
+      }
+    }
+
+    // Fetch updated dimension_ids
+    const dimensionsResult = await query(
+      `SELECT array_agg(dimension_id ORDER BY dimension_id) as dimension_ids
+       FROM course_dimensions
+       WHERE course_id = $1`,
+      [id]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: { message: "Course not found" },
-      });
-    }
+    const course = result.rows[0];
+    course.dimension_ids = dimensionsResult.rows[0]?.dimension_ids || [];
 
     return res.json({
       success: true,
-      data: { course: result.rows[0] },
+      data: { course },
     });
   } catch (error) {
     console.error("Error updating course:", error);
@@ -598,6 +675,28 @@ export const getInstructors = async (_req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       error: { message: "Failed to fetch instructors" },
+    });
+  }
+};
+
+// GET /api/admin/dimensions - Get all dimensions for course configuration
+export const getAllDimensions = async (_req: AuthRequest, res: Response) => {
+  try {
+    const result = await query(
+      `SELECT id, label, short_label, description, color_hex, rubric_level_1, rubric_level_2, rubric_level_3, is_active
+       FROM dimensions
+       ORDER BY id ASC`
+    );
+
+    return res.json({
+      success: true,
+      data: { dimensions: result.rows },
+    });
+  } catch (error) {
+    console.error("Error fetching dimensions:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to fetch dimensions" },
     });
   }
 };

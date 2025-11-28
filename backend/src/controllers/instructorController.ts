@@ -12,7 +12,11 @@ export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
         c.id, c.code, c.title, c.description, c.term, c.passcode,
         COALESCE((SELECT COUNT(DISTINCT user_id)::integer FROM course_enrollments WHERE course_id = c.id AND status = 'active'), 0) as enrolled_count,
         COALESCE((SELECT COUNT(*)::integer FROM project_submissions WHERE course_id = c.id), 0) as submission_count,
-        COALESCE((SELECT COUNT(*)::integer FROM project_submissions WHERE course_id = c.id AND status = 'submitted'), 0) as pending_count
+        COALESCE((SELECT COUNT(*)::integer FROM project_submissions WHERE course_id = c.id AND status = 'submitted'), 0) as pending_count,
+        COALESCE(
+          (SELECT array_agg(dimension_id ORDER BY dimension_id) FROM course_dimensions WHERE course_id = c.id),
+          ARRAY[]::smallint[]
+        ) as dimension_ids
       FROM courses c
       WHERE c.instructor_id = $1
       ORDER BY c.created_at DESC`,
@@ -25,6 +29,7 @@ export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
       enrolled_count: parseInt(row.enrolled_count, 10),
       submission_count: parseInt(row.submission_count, 10),
       pending_count: parseInt(row.pending_count, 10),
+      dimension_ids: row.dimension_ids || [],
     }));
 
     res.json({ success: true, data: { courses: coursesWithNumbers } });
@@ -39,7 +44,8 @@ export const getInstructorCourses = async (req: AuthRequest, res: Response) => {
 // POST /api/instructor/courses - Create new course
 export const createCourse = async (req: AuthRequest, res: Response) => {
   try {
-    const { code, title, description, term, passcode } = req.body;
+    const { code, title, description, term, passcode, dimension_ids } =
+      req.body;
 
     if (!code || !title) {
       return res.status(400).json({
@@ -55,9 +61,46 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       [code, title, description, req.user?.id, term, passcode]
     );
 
+    const course = result.rows[0];
+
+    // Handle dimension assignments
+    if (
+      dimension_ids &&
+      Array.isArray(dimension_ids) &&
+      dimension_ids.length > 0
+    ) {
+      // Insert selected dimensions
+      for (const dimId of dimension_ids) {
+        await query(
+          `INSERT INTO course_dimensions (course_id, dimension_id)
+           VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [course.id, dimId]
+        );
+      }
+    } else {
+      // Default: assign all dimensions
+      await query(
+        `INSERT INTO course_dimensions (course_id, dimension_id)
+         SELECT $1, id FROM dimensions WHERE is_active = true`,
+        [course.id]
+      );
+    }
+
+    // Fetch the dimension_ids for response
+    const dimResult = await query(
+      `SELECT array_agg(dimension_id ORDER BY dimension_id) as dimension_ids
+       FROM course_dimensions WHERE course_id = $1`,
+      [course.id]
+    );
+
     return res.status(201).json({
       success: true,
-      data: { course: result.rows[0] },
+      data: {
+        course: {
+          ...course,
+          dimension_ids: dimResult.rows[0]?.dimension_ids || [],
+        },
+      },
     });
   } catch (error) {
     console.error("Error creating course:", error);
@@ -72,7 +115,8 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 export const updateCourse = async (req: AuthRequest, res: Response) => {
   try {
     const { courseId } = req.params;
-    const { code, title, description, term, passcode } = req.body;
+    const { code, title, description, term, passcode, dimension_ids } =
+      req.body;
 
     // Verify instructor owns this course
     const courseCheck = await query(
@@ -119,33 +163,71 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
       values.push(passcode);
     }
 
-    if (updateFields.length === 0) {
+    if (updateFields.length === 0 && !dimension_ids) {
       return res.status(400).json({
         success: false,
         error: { message: "No fields to update" },
       });
     }
 
-    updateFields.push("updated_at = NOW()");
-    paramCount++;
-    values.push(courseId as string);
+    let course;
+    if (updateFields.length > 0) {
+      updateFields.push("updated_at = NOW()");
+      paramCount++;
+      values.push(courseId as string);
 
-    const result = await query(
-      `UPDATE courses SET ${updateFields.join(", ")} WHERE id = $${paramCount}
-       RETURNING *`,
-      values
-    );
+      const result = await query(
+        `UPDATE courses SET ${updateFields.join(", ")} WHERE id = $${paramCount}
+         RETURNING *`,
+        values
+      );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: { message: "Course not found" },
-      });
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "Course not found" },
+        });
+      }
+      course = result.rows[0];
+    } else {
+      const result = await query("SELECT * FROM courses WHERE id = $1", [
+        courseId,
+      ]);
+      course = result.rows[0];
     }
+
+    // Handle dimension updates if provided
+    if (dimension_ids && Array.isArray(dimension_ids)) {
+      // Remove existing dimension assignments
+      await query("DELETE FROM course_dimensions WHERE course_id = $1", [
+        courseId,
+      ]);
+
+      // Insert new dimension assignments
+      for (const dimId of dimension_ids) {
+        await query(
+          `INSERT INTO course_dimensions (course_id, dimension_id)
+           VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [courseId, dimId]
+        );
+      }
+    }
+
+    // Fetch the dimension_ids for response
+    const dimResult = await query(
+      `SELECT array_agg(dimension_id ORDER BY dimension_id) as dimension_ids
+       FROM course_dimensions WHERE course_id = $1`,
+      [courseId]
+    );
 
     return res.json({
       success: true,
-      data: { course: result.rows[0] },
+      data: {
+        course: {
+          ...course,
+          dimension_ids: dimResult.rows[0]?.dimension_ids || [],
+        },
+      },
     });
   } catch (error) {
     console.error("Error updating course:", error);
@@ -327,6 +409,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
       `SELECT 
         sds.dimension_id,
         d.label as dimension_label,
+        d.color_hex as dimension_color,
         sds.personal_score as score,
         sds.ai_score_original,
         sds.ai_feedback_raw,
@@ -335,7 +418,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
       FROM submission_dimension_scores sds
       JOIN dimensions d ON sds.dimension_id = d.id
       WHERE sds.submission_id = $1
-      ORDER BY d.display_order ASC`,
+      ORDER BY d.id ASC`,
       [submissionId]
     );
 
@@ -451,7 +534,7 @@ export const triggerScoring = async (req: AuthRequest, res: Response) => {
 
     // Get dimensions
     const dimensionsResult = await query(
-      "SELECT id, label FROM dimensions ORDER BY display_order ASC"
+      "SELECT id, label, rubric_level_1, rubric_level_2, rubric_level_3 FROM dimensions WHERE is_active = true ORDER BY id ASC"
     );
 
     // Trigger AI analysis

@@ -21,20 +21,7 @@ import {
   type Submission,
   type Project,
   type ProjectListItem,
-  type Variant,
 } from "../services/dimensionsService";
-
-const VARIANT_COLORS: Record<Variant, string> = {
-  lime: "var(--color-green-m1)",
-  yellow: "var(--color-yellow)",
-  purple: "var(--color-purple)",
-  teal: "var(--color-teal)",
-  blue: "var(--color-blue-m3)",
-  grey: "var(--color-grey-80)",
-  green: "var(--color-green-p1)",
-  navy: "var(--color-blue-ntu)",
-  pink: "var(--color-red-p2)",
-};
 
 const Home = () => {
   const { projectId } = useParams<{ projectId?: string }>();
@@ -212,7 +199,7 @@ const Home = () => {
     return selectedDims.map((d) => ({
       id: d.id.toString(),
       text: d.label,
-      color: VARIANT_COLORS[d.variant],
+      color: d.color_hex,
     }));
   }, [selectedDims]);
 

@@ -6,7 +6,7 @@ import { api } from "../lib/api";
 export interface DimensionScore {
   dimension_id: number;
   dimension_label: string;
-  dimension_variant: string;
+  dimension_color: string;
   ai_score?: number; // 1-3 scale
   ai_reasoning?: string;
   ai_strengths?: string[];

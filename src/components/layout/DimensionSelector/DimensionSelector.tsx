@@ -39,7 +39,7 @@ export const DimensionSelector = ({
             <DimensionLabel
               key={d.id}
               text={d.label}
-              variant={d.variant}
+              color={d.color_hex}
               size="small"
               isSelected={isSelected}
               onClick={() => onToggleDim(d.id.toString())}

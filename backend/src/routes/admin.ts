@@ -14,6 +14,7 @@ import {
   getAllSubmissions,
   deleteSubmission,
   getInstructors,
+  getAllDimensions,
 } from "../controllers/adminController.js";
 
 const router: Router = Router();
@@ -65,5 +66,6 @@ router.delete("/submissions/:id", deleteSubmission);
 
 // Utility routes
 router.get("/instructors", getInstructors);
+router.get("/dimensions", getAllDimensions);
 
 export default router;

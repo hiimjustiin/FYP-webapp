@@ -14,14 +14,13 @@ import StarRating from "../../components/ui/StarRating/StarRating";
 import DimensionFeedbackCard from "../../components/ui/DimensionFeedbackCard/DimensionFeedbackCard";
 import ComparisonSelector from "../../components/layout/ComparisonSelector/ComparisonSelector";
 import type { DropdownOption } from "../../components/ui/Dropdown/Dropdown";
-import type { Variant } from "../../services/dimensionsService";
 import "./ProjectReport.css";
 
 /** Mock Data Structures */
 interface DimensionScore {
   id: string;
   label: string;
-  variant: Variant;
+  color: string;
   initialScore: number;
   finalScore: number;
   feedback: string;
@@ -38,7 +37,7 @@ const MOCK_DIMENSIONS: DimensionScore[] = [
   {
     id: "1",
     label: "Frame the problem with an integrative approach",
-    variant: "lime",
+    color: "#84CC16",
     initialScore: 1,
     finalScore: 2,
     feedback:
@@ -47,7 +46,7 @@ const MOCK_DIMENSIONS: DimensionScore[] = [
   {
     id: "2",
     label: "Stakeholder consideration",
-    variant: "yellow",
+    color: "#EAB308",
     initialScore: 1,
     finalScore: 1,
     feedback:
@@ -56,7 +55,7 @@ const MOCK_DIMENSIONS: DimensionScore[] = [
   {
     id: "3",
     label: "Range of disciplinary perspectives",
-    variant: "purple",
+    color: "#A855F7",
     initialScore: 2,
     finalScore: 2,
     feedback:
@@ -65,7 +64,7 @@ const MOCK_DIMENSIONS: DimensionScore[] = [
   {
     id: "4",
     label: "Disciplinary reasoning",
-    variant: "teal",
+    color: "#14B8A6",
     initialScore: 2,
     finalScore: 1,
     feedback:
@@ -74,7 +73,7 @@ const MOCK_DIMENSIONS: DimensionScore[] = [
   {
     id: "5",
     label: "Credibility of disciplinary knowledge",
-    variant: "blue",
+    color: "#3B82F6",
     initialScore: 1,
     finalScore: 2,
     feedback:
@@ -112,7 +111,7 @@ const ProjectReport: React.FC = () => {
     return MOCK_DIMENSIONS.slice(0, 5).map((dim) => ({
       id: dim.id,
       text: dim.label,
-      color: `var(--color-${dim.variant})`,
+      color: dim.color,
     }));
   }, []);
 
@@ -177,7 +176,7 @@ const ProjectReport: React.FC = () => {
                 <div key={dim.id} className="breakdown-item">
                   <DimensionLabel
                     text={dim.label}
-                    variant={dim.variant}
+                    color={dim.color}
                     size="small"
                   />
                   <StarRating
@@ -218,7 +217,7 @@ const ProjectReport: React.FC = () => {
               <DimensionFeedbackCard
                 key={dim.id}
                 dimensionLabel={dim.label}
-                dimensionVariant={dim.variant}
+                dimensionColor={dim.color}
                 level={dim.finalScore}
                 feedbackText={dim.feedback}
               />

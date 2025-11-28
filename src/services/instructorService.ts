@@ -10,6 +10,16 @@ export interface InstructorCourse {
   enrolled_count: number;
   submission_count: number;
   pending_count: number;
+  dimension_ids?: number[];
+}
+
+export interface Dimension {
+  id: number;
+  label: string;
+  short_label?: string;
+  description?: string;
+  color_hex: string;
+  is_active: boolean;
 }
 
 export interface CreateCourseData {
@@ -18,6 +28,7 @@ export interface CreateCourseData {
   description?: string;
   term?: string;
   passcode?: string;
+  dimension_ids?: number[];
 }
 
 export interface UpdateCourseData {
@@ -26,6 +37,7 @@ export interface UpdateCourseData {
   description?: string;
   term?: string;
   passcode?: string;
+  dimension_ids?: number[];
 }
 
 export interface CourseStudent {
@@ -104,6 +116,11 @@ export const instructorService = {
       "/instructor/courses"
     );
     return data.courses;
+  },
+
+  async getDimensions(): Promise<Dimension[]> {
+    const data = await api.get<{ dimensions: Dimension[] }>("/dimensions");
+    return data.dimensions;
   },
 
   async createCourse(courseData: CreateCourseData): Promise<InstructorCourse> {
