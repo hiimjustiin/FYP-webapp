@@ -432,7 +432,7 @@ function CourseModal({
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Select which ILA dimensions will be used for scoring in this
+              Choose the ILA dimensions to be utilized for scoring in this
               course.
             </p>
           </div>
