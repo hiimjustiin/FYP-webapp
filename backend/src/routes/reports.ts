@@ -35,7 +35,7 @@ router.get("/portfolio", async (req: AuthRequest, res: Response) => {
       `SELECT 
         d.id,
         d.label,
-        d.variant,
+        d.color_hex,
         COALESCE(AVG(sds.ai_score), 0) as avg_score,
         COUNT(sds.id) as assessment_count,
         MIN(sds.ai_score) as min_score,
@@ -90,13 +90,13 @@ router.get("/portfolio", async (req: AuthRequest, res: Response) => {
         p.title as project_title,
         d.id as dimension_id,
         d.label as dimension_label,
-        d.variant,
+        d.color_hex,
         COALESCE(AVG(sds.ai_score), 0) as avg_score
       FROM projects p
       CROSS JOIN dimensions d
       JOIN project_submissions ps ON p.id = ps.project_id AND ps.user_id = $1
       LEFT JOIN submission_dimension_scores sds ON ps.id = sds.submission_id AND sds.dimension_id = d.id
-      GROUP BY p.id, p.title, d.id, d.label, d.variant
+      GROUP BY p.id, p.title, d.id, d.label, d.color_hex
       ORDER BY p.created_at DESC, d.id`,
       [userId]
     );
@@ -156,11 +156,11 @@ router.get("/portfolio", async (req: AuthRequest, res: Response) => {
         dimensions: dimensionsResult.rows.map((d) => ({
           id: d.id,
           label: d.label,
-          variant: d.variant,
+          color: d.color_hex,
           avgScore: Math.round(parseFloat(d.avg_score) * 10) / 10,
           assessmentCount: parseInt(d.assessment_count),
-          minScore: parseFloat(d.min_score),
-          maxScore: parseFloat(d.max_score),
+          minScore: parseFloat(d.min_score) || 0,
+          maxScore: parseFloat(d.max_score) || 0,
         })),
         recentSubmissions: recentSubmissionsResult.rows.map((s) => ({
           id: s.id,
@@ -181,7 +181,7 @@ router.get("/portfolio", async (req: AuthRequest, res: Response) => {
           projectTitle: h.project_title,
           dimensionId: h.dimension_id,
           dimensionLabel: h.dimension_label,
-          variant: h.variant,
+          color: h.color_hex,
           score: Math.round(parseFloat(h.avg_score) * 10) / 10,
         })),
       },
