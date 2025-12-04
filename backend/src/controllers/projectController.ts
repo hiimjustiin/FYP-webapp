@@ -863,12 +863,12 @@ export const getSubmissionFeedback = async (
 
     const submission = submissionCheck.rows[0];
 
-    // Get dimension scores with variant info
+    // Get dimension scores with color info
     const scoresResult = await query(
       `SELECT 
         sds.*,
         d.label as dimension_label,
-        d.variant as dimension_variant
+        d.color_hex as dimension_color
        FROM submission_dimension_scores sds
        JOIN dimensions d ON sds.dimension_id = d.id
        WHERE sds.submission_id = $1
