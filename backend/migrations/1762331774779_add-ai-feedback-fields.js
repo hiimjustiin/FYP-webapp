@@ -73,7 +73,7 @@ export async function up(pgm) {
     ai_processing_status: {
       type: 'varchar(20)',
       notNull: true,
-      default: "'pending'",
+      default: 'pending',
       comment: 'pending | processing | completed | failed',
     },
     ai_processing_error: {
@@ -125,7 +125,7 @@ export async function up(pgm) {
     ai_processing_status: {
       type: 'varchar(20)',
       notNull: true,
-      default: "'pending'",
+      default: 'pending',
       comment: 'pending | processing | completed | failed | retrying',
     },
     ai_processing_error: {
