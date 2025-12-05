@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Button from "../../components/ui/Button/Button";
@@ -17,6 +17,127 @@ const formatDate = (iso: string) =>
     year: "numeric",
   });
 
+/** Star Rating Component for InterQ Scores (1-3 stars) */
+const StarRating = ({ score }: { score: number | undefined }) => {
+  if (score === undefined || score === null) {
+    return <span className="text-gray-400">—</span>;
+  }
+
+  // Round to nearest 0.5 for half-star support
+  const roundedScore = Math.round(score * 2) / 2;
+  const fullStars = Math.floor(roundedScore);
+  const hasHalfStar = roundedScore % 1 !== 0;
+  const emptyStars = 3 - fullStars - (hasHalfStar ? 1 : 0);
+
+  return (
+    <div
+      className="flex items-center gap-0.5"
+      title={`${score.toFixed(1)}/3.0`}
+    >
+      {/* Full stars */}
+      {Array.from({ length: fullStars }).map((_, i) => (
+        <svg
+          key={`full-${i}`}
+          className="w-4 h-4 text-yellow-400"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+      {/* Half star */}
+      {hasHalfStar && (
+        <svg className="w-4 h-4 text-yellow-400" viewBox="0 0 20 20">
+          <defs>
+            <linearGradient id="half">
+              <stop offset="50%" stopColor="currentColor" />
+              <stop offset="50%" stopColor="#D1D5DB" />
+            </linearGradient>
+          </defs>
+          <path
+            fill="url(#half)"
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+          />
+        </svg>
+      )}
+      {/* Empty stars */}
+      {Array.from({ length: emptyStars }).map((_, i) => (
+        <svg
+          key={`empty-${i}`}
+          className="w-4 h-4 text-gray-300"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+      <span className="ml-1 text-xs text-gray-500">({score.toFixed(1)})</span>
+    </div>
+  );
+};
+
+/** Loading Spinner Component */
+const LoadingSpinner = () => (
+  <div className="flex items-center gap-2">
+    <svg
+      className="animate-spin h-4 w-4 text-blue-600"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+    <span className="text-sm text-blue-600">Evaluating...</span>
+  </div>
+);
+
+/** Status Badge Component */
+const StatusBadge = ({ status, error }: { status: string; error?: string }) => {
+  if (status === "Processing") {
+    return <LoadingSpinner />;
+  }
+
+  if (status === "Failed") {
+    return (
+      <div
+        className="flex items-center gap-1"
+        title={error || "AI evaluation failed"}
+      >
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+          ❌ Failed
+        </span>
+      </div>
+    );
+  }
+
+  if (status === "Completed") {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+        ✓ Completed
+      </span>
+    );
+  }
+
+  // Fallback for any other status
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+      {status}
+    </span>
+  );
+};
+
 /** ------------------------------ Component ------------------------------ */
 const ProjectLanding = () => {
   const navigate = useNavigate();
@@ -27,24 +148,43 @@ const ProjectLanding = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch projects on mount
-  useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await projectService.getProjects();
-        setProjects(data);
-      } catch (err) {
-        console.error("Failed to load projects:", err);
-        setError("Failed to load projects. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Check if any projects are still processing
+  const hasProcessingProjects = useMemo(
+    () => projects.some((p) => p.status === "Processing"),
+    [projects]
+  );
 
-    loadProjects();
+  // Fetch projects function (reusable for polling)
+  const loadProjects = useCallback(async (showLoading = true) => {
+    try {
+      if (showLoading) setIsLoading(true);
+      setError(null);
+      const data = await projectService.getProjects();
+      setProjects(data);
+    } catch (err) {
+      console.error("Failed to load projects:", err);
+      setError("Failed to load projects. Please try again.");
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
   }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
+
+  // Auto-poll when there are processing projects
+  useEffect(() => {
+    if (!hasProcessingProjects) return;
+
+    const pollInterval = setInterval(() => {
+      console.log("[ProjectLanding] Polling for updates...");
+      loadProjects(false); // Don't show loading spinner during poll
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [hasProcessingProjects, loadProjects]);
 
   // Convert projects to searchable members (all unique members across projects)
   const allMembers = useMemo(() => {
@@ -119,7 +259,9 @@ const ProjectLanding = () => {
       return [
         p.course_code || "—",
         p.title,
-        p.submission_date ? formatDate(p.submission_date) : "—",
+        p.submission_date
+          ? formatDate(p.submission_date)
+          : formatDate(p.created_at),
         <MemberGroup
           key={`mg-${p.id}`}
           members={projectMembers}
@@ -127,18 +269,44 @@ const ProjectLanding = () => {
           maxVisible={6}
           layout="horizontal"
         />,
-        p.interq_score || "—",
-        p.status,
+        // InterQ Scores - show stars for completed, spinner for processing
+        p.status === "Processing" ? (
+          <span key={`score-${p.id}`} className="text-gray-400 text-sm">
+            Pending...
+          </span>
+        ) : p.status === "Failed" ? (
+          <span key={`score-${p.id}`} className="text-red-500 text-sm">
+            —
+          </span>
+        ) : (
+          <StarRating key={`score-${p.id}`} score={p.interq_score} />
+        ),
+        // Status with badge
+        <StatusBadge
+          key={`status-${p.id}`}
+          status={p.status}
+          error={p.ai_processing_error}
+        />,
+        // Actions
         <div key={`act-${p.id}`} className="flex gap-2">
-          <Button variant="blue" onClick={() => navigate(`/projects/${p.id}`)}>
-            Open
-          </Button>
           <Button
-            variant="grey"
-            onClick={() => navigate(`/project/${p.id}/edit`)}
+            variant="blue"
+            onClick={() => navigate(`/projects/${p.id}`)}
+            disabled={p.status === "Processing"}
           >
-            Edit
+            {p.status === "Processing" ? "Processing..." : "Open"}
           </Button>
+          {p.status === "Failed" && (
+            <Button
+              variant="grey"
+              onClick={() => {
+                // TODO: Implement retry functionality
+                alert("Retry functionality coming soon");
+              }}
+            >
+              Retry
+            </Button>
+          )}
         </div>,
       ];
     });
@@ -208,6 +376,17 @@ const ProjectLanding = () => {
               </div>
             </div>
           </div>
+
+          {/* Processing notification banner */}
+          {hasProcessingProjects && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center gap-3">
+              <LoadingSpinner />
+              <span className="text-sm text-blue-700">
+                Some projects are being evaluated by AI. This page will
+                auto-refresh.
+              </span>
+            </div>
+          )}
 
           {/* Search + Table */}
           <div className="flex-1 min-h-0">

@@ -84,11 +84,30 @@ export const getProjects = async (
       return;
     }
 
-    // Get projects
+    // Get projects with latest submission AI status and average score
     const projectsResult = await query(
-      `SELECT p.*, u.display_name as owner_name
+      `SELECT 
+         p.*, 
+         u.display_name as owner_name,
+         latest_sub.ai_processing_status,
+         latest_sub.ai_processing_error,
+         latest_sub.avg_ai_score as interq_score
        FROM projects p
        LEFT JOIN users u ON p.owner_id = u.id
+       LEFT JOIN LATERAL (
+         SELECT 
+           ps.ai_processing_status,
+           ps.ai_processing_error,
+           (
+             SELECT AVG(sds.ai_score)::numeric(3,2)
+             FROM submission_dimension_scores sds 
+             WHERE sds.submission_id = ps.id AND sds.ai_score IS NOT NULL
+           ) as avg_ai_score
+         FROM project_submissions ps
+         WHERE ps.project_id = p.id
+         ORDER BY ps.submitted_at DESC
+         LIMIT 1
+       ) latest_sub ON true
        WHERE p.owner_id = $1 OR p.id IN (
          SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $1
        )
@@ -126,10 +145,14 @@ export const getProjects = async (
       return acc;
     }, {} as Record<string, typeof membersData>);
 
-    // Attach members to projects
+    // Attach members to projects and normalize interq_score
     const projects = projectsResult.rows.map((project) => ({
       ...project,
       members: membersByProject[project.id] || [],
+      // Ensure interq_score is a number or null
+      interq_score: project.interq_score
+        ? parseFloat(project.interq_score)
+        : null,
     }));
 
     res.json({
@@ -245,12 +268,14 @@ export const createProject = async (
     const {
       title,
       description,
-      status = "Draft",
       course_id,
       project_type = "individual",
       essay_text,
       member_ids, // JSON string array of user IDs
     } = req.body;
+
+    // Status is always "Processing" on creation (no more Draft)
+    const status = "Processing";
 
     const uploadedFiles = Array.isArray(req.files)
       ? (req.files as Express.Multer.File[])
@@ -381,6 +406,7 @@ export const createProject = async (
       }
 
       // Handle file uploads if any
+      const fileUrls: string[] = [];
       if (uploadedFiles.length > 0) {
         for (const file of uploadedFiles) {
           await query(
@@ -398,10 +424,97 @@ export const createProject = async (
               req.user.id,
             ]
           );
+          fileUrls.push(file.filename);
         }
       }
 
+      // Validate project has content for AI evaluation
+      const hasEssayText = essay_text && essay_text.trim().length > 0;
+      if (!hasEssayText && fileUrls.length === 0) {
+        await query("ROLLBACK");
+        res.status(400).json({
+          success: false,
+          error: {
+            message:
+              "Project must have essay text or uploaded files to be evaluated",
+          },
+        });
+        return;
+      }
+
+      // Create submission record for AI evaluation
+      const crypto = await import("crypto");
+      const contentForHash = JSON.stringify({
+        essay: essay_text || "",
+        files: [...fileUrls].sort(),
+      });
+      const contentHash = crypto
+        .createHash("sha256")
+        .update(contentForHash)
+        .digest("hex");
+
+      const submissionResult = await query(
+        `INSERT INTO project_submissions (
+          project_id, course_id, user_id, name, submitted_at,
+          essay_text, file_urls, content_hash, ai_processing_status
+        )
+        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending')
+        RETURNING id`,
+        [
+          project.id,
+          course_id,
+          req.user.id,
+          "Submission 1",
+          essay_text || null,
+          JSON.stringify(fileUrls),
+          contentHash,
+        ]
+      );
+
+      const submissionId = submissionResult.rows[0].id;
+
       await query("COMMIT");
+
+      // Trigger AI evaluation asynchronously (don't wait for response)
+      const AI_SERVICE_URL =
+        process.env.AI_SERVICE_URL || "http://backend-ai:8000";
+      const essayTextForAI = hasEssayText
+        ? essay_text
+        : "[No essay text provided. Analysis based on uploaded files.]";
+
+      fetch(`${AI_SERVICE_URL}/api/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submission_id: submissionId,
+          project_id: project.id,
+          course_id: course_id,
+          user_id: req.user.id,
+          essay_text: essayTextForAI,
+          file_urls: fileUrls,
+          reanalyze: false,
+        }),
+      }).catch((error) => {
+        console.error("Failed to trigger AI evaluation:", error);
+        // Update submission and project status to failed
+        query(
+          `UPDATE project_submissions 
+           SET ai_processing_status = 'failed', 
+               ai_processing_error = $1 
+           WHERE id = $2`,
+          ["Failed to connect to AI service", submissionId]
+        ).catch((err) =>
+          console.error("Failed to update submission status:", err)
+        );
+
+        query(`UPDATE projects SET status = 'Failed' WHERE id = $1`, [
+          project.id,
+        ]).catch((err) =>
+          console.error("Failed to update project status:", err)
+        );
+      });
 
       // Fetch complete project with members
       const membersResult = await query(
@@ -415,11 +528,16 @@ export const createProject = async (
       const completeProject = {
         ...project,
         members: membersResult.rows,
+        latest_submission_id: submissionId,
       };
 
       res.status(201).json({
         success: true,
-        data: { project: completeProject },
+        data: {
+          project: completeProject,
+          submission_id: submissionId,
+          message: "Project created and submitted for AI evaluation.",
+        },
       });
     } catch (error) {
       await query("ROLLBACK");
