@@ -196,6 +196,14 @@ class DatabaseService:
                     result.submission_id
                 ))
                 
+                # Also update project status to Completed
+                cur.execute("""
+                    UPDATE projects p
+                    SET status = 'Completed', updated_at = NOW()
+                    FROM project_submissions ps
+                    WHERE ps.id = %s AND p.id = ps.project_id
+                """, (result.submission_id,))
+                
                 # Insert/update dimension scores
                 for dim_score in result.dimension_scores:
                     cur.execute("""
