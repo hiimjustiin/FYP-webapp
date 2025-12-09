@@ -359,7 +359,7 @@ const ProjectLanding = () => {
 
             {/* Add New Project card (clickable) */}
             <div
-              className="dashboard-card basis-5/12 min-w-0 px-6 py-5 flex items-center justify-center cursor-pointer hover:scale-102 active:scale-98 transition-all"
+              className="dashboard-card basis-5/12 min-w-0 px-6 py-5 flex items-center justify-center cursor-pointer hover:scale-102 active:scale-98 transition-all !bg-[var(--color-blue-m1)] !text-white"
               onClick={() => navigate("/project/new")}
               role="button"
               tabIndex={0}
