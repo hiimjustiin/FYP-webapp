@@ -667,23 +667,7 @@ const ProjectDetail = () => {
             />
           </div>
         </div>
-      ) : project.status === "Draft" ? (
-        <div className="processing-state">
-          <div className="processing-state-icon">📋</div>
-          <h5 className="subtitle-1 mb-2">Ready to Submit?</h5>
-          <p className="body-2 text-grey-80 mb-4">
-            Submit your project to receive detailed AI feedback and assessment
-            based on the 9 ILA dimensions for interdisciplinary learning.
-          </p>
-          <Button
-            variant="blue"
-            onClick={handleSubmitProject}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
-          </Button>
-        </div>
-      ) : (
+      ) : project.status === "Processing" ? (
         <div className="processing-state">
           <div className="processing-state-icon">⏳</div>
           <h5 className="subtitle-1 mb-2">AI Evaluation in Progress</h5>
@@ -702,6 +686,40 @@ const ProjectDetail = () => {
               Refresh Page
             </Button>
           </div>
+        </div>
+      ) : project.status === "Failed" ? (
+        <div className="processing-state">
+          <div className="processing-state-icon">❌</div>
+          <h5 className="subtitle-1 mb-2">AI Evaluation Failed</h5>
+          <p className="body-2 text-grey-80 mb-4">
+            {project.ai_processing_error ||
+              "An error occurred while analyzing your project. Please try again."}
+          </p>
+          <div className="flex justify-center gap-3 mt-4">
+            <Button
+              variant="blue"
+              onClick={handleSubmitProject}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Retrying..." : "Retry Evaluation"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="processing-state">
+          <div className="processing-state-icon">📋</div>
+          <h5 className="subtitle-1 mb-2">No Feedback Yet</h5>
+          <p className="body-2 text-grey-80 mb-4">
+            This project doesn&apos;t have AI feedback available. This may
+            happen if the project was created before AI evaluation was enabled.
+          </p>
+          <Button
+            variant="blue"
+            onClick={handleSubmitProject}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
+          </Button>
         </div>
       )}
     </div>

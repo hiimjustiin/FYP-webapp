@@ -35,7 +35,7 @@ const ProjectEdit = () => {
           title: "Sample Project",
           description: "Sample project description",
           course_code: "cs",
-          status: "Draft",
+          status: "Completed",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           submission_date: new Date().toISOString(),
@@ -97,7 +97,9 @@ const ProjectEdit = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p className="subtitle-2 text-[var(--color-grey-55)]">Loading project...</p>
+        <p className="subtitle-2 text-[var(--color-grey-55)]">
+          Loading project...
+        </p>
       </div>
     );
   }
