@@ -20,6 +20,7 @@ import ProjectReport from "./pages/Report/ProjectReport";
 import Team from "./pages/Team.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
+import Courses from "./pages/Courses.js";
 import LoginPage from "./pages/LoginPage.js";
 import RegisterPage from "./pages/RegisterPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
@@ -249,6 +250,16 @@ const AppContent = () => {
           <ProtectedRoute>
             <DashboardLayout key="project-report">
               <ProjectReport />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/courses"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout key="courses">
+              <Courses />
             </DashboardLayout>
           </ProtectedRoute>
         }
