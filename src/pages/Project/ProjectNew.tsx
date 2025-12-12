@@ -35,9 +35,9 @@ const ProjectNew = () => {
 
       console.log("Project created and submitted for AI evaluation:", result);
       alert(
-        "Project submitted for AI evaluation! You can check the status on the project list."
+        "Project submitted for AI evaluation! Redirecting to project details..."
       );
-      navigate("/project");
+      navigate(`/projects/${result.id}`);
     } catch (error: unknown) {
       console.error("Failed to create project:", error);
       interface ErrorResponse {

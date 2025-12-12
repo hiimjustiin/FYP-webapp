@@ -40,7 +40,6 @@ const Sidebar: React.FC = () => {
       iconFilled: ProjectIconFilled,
       path: "/project",
     },
-    { name: "Team", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/team" },
     {
       name: "Report",
       icon: ReportIcon,
@@ -53,6 +52,7 @@ const Sidebar: React.FC = () => {
       iconFilled: StarIconFilled,
       path: "/courses",
     },
+    { name: "Team", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/team" },
   ];
 
   // Instructor navigation items
