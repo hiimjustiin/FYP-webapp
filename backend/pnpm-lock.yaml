@@ -39,8 +39,8 @@ importers:
         specifier: ^2.0.2
         version: 2.0.2
       nodemailer:
-        specifier: ^7.0.9
-        version: 7.0.9
+        specifier: ^7.0.11
+        version: 7.0.11
       openai:
         specifier: ^6.6.0
         version: 6.6.0
@@ -1071,8 +1071,8 @@ packages:
       '@types/pg':
         optional: true
 
-  nodemailer@7.0.9:
-    resolution: {integrity: sha512-9/Qm0qXIByEP8lEV2qOqcAW7bRpL8CR9jcTwk3NBnHJNmP9fIJ86g2fgmIXqHY+nj55ZEMwWqYAT2QTDpRUYiQ==}
+  nodemailer@7.0.11:
+    resolution: {integrity: sha512-gnXhNRE0FNhD7wPSCGhdNh46Hs6nm+uTyg+Kq0cZukNQiYdnCsoQjodNP9BQVG9XrcK/v6/MgpAPBUFyzh9pvw==}
     engines: {node: '>=6.0.0'}
 
   object-assign@4.1.1:
@@ -2679,7 +2679,7 @@ snapshots:
     optionalDependencies:
       '@types/pg': 8.15.5
 
-  nodemailer@7.0.9: {}
+  nodemailer@7.0.11: {}
 
   object-assign@4.1.1: {}
 
