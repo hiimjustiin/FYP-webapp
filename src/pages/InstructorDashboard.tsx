@@ -172,7 +172,7 @@ const InstructorDashboard = () => {
           {/* Courses Needing Attention */}
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="heading-4">Courses Needing Attention</h2>
+              <h2 className="heading-4">Courses Pending Review</h2>
               <Button
                 variant="grey"
                 onClick={() => navigate("/instructor/courses")}
