@@ -76,7 +76,7 @@ open http://localhost:3000
 
 ```bash
 # Run migrations (if not already applied)
-docker compose exec backend pnpm db:migrate
+docker compose exec backend bun db:migrate
 ```
 
 ## Deployment Options
@@ -583,13 +583,13 @@ server {
 docker-compose up -d postgres
 
 # Terminal 2: Start Express Backend
-cd backend && pnpm dev
+cd backend && bun dev
 
 # Terminal 3: Start Python AI Service
 cd backend-ai && python main.py
 
 # Terminal 4: Start Frontend
-pnpm dev
+bun dev
 ```
 
 ### Production Deployment (Docker Compose)
@@ -598,7 +598,7 @@ pnpm dev
 docker-compose -f docker-compose.prod.yml up -d --build
 
 # Run database migrations
-docker-compose exec backend pnpm db:migrate
+docker-compose exec backend bun db:migrate
 
 # Check logs
 docker-compose logs -f ai-service
@@ -610,13 +610,13 @@ docker-compose up -d --scale ai-service=3
 ### Database Migrations
 ```bash
 # Create new migration
-cd backend && pnpm db:migrate:create migration-name
+cd backend && bun db:migrate:create migration-name
 
 # Run migrations
-pnpm db:migrate
+bun db:migrate
 
 # Rollback last migration
-pnpm db:migrate:down
+bun db:migrate:down
 ```
 
 ---
