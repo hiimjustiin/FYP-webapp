@@ -10,6 +10,16 @@ const router: RouterType = Router();
 router.use(authenticate);
 router.use(authorize("instructor", "admin"));
 
+// Dashboard endpoints
+router.get(
+  "/dashboard/recent-activity",
+  instructorController.getDashboardRecentActivity
+);
+router.get(
+  "/dashboard/at-risk-students",
+  instructorController.getDashboardAtRiskStudents
+);
+
 // GET /api/instructor/courses - Get courses taught by instructor
 router.get("/courses", instructorController.getInstructorCourses);
 
@@ -50,6 +60,12 @@ router.post(
 router.put(
   "/submissions/:submissionId/review",
   instructorController.reviewSubmission
+);
+
+// PUT /api/instructor/submissions/:submissionId/suggestion - Add/update instructor suggestion
+router.put(
+  "/submissions/:submissionId/suggestion",
+  instructorController.upsertSubmissionSuggestion
 );
 
 // POST /api/instructor/submissions/upload - Upload submission file

@@ -196,12 +196,12 @@ jobs:
             
             echo ""
             echo "============================================"
-            echo "Step 12: Run database migrations"
+            echo "Step 12: Verify migrations (auto-run on startup)"
             echo "============================================"
-            echo "Waiting for database to be ready..."
+            echo "Waiting for backend to complete startup and migrations..."
             sleep 10
-            echo "Running migrations..."
-            sudo docker compose exec -T backend pnpm db:migrate || echo "⚠️ Migration failed or no pending migrations"
+            echo "Checking backend health..."
+            sudo docker compose exec -T backend curl -f http://localhost:3001/health || echo "⚠️ Backend not yet ready"
             
             echo ""
             echo "============================================"

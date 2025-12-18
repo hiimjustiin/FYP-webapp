@@ -13,16 +13,12 @@ export interface Project {
   title: string;
   description?: string;
   owner_id: string;
-  status:
-    | "Draft"
-    | "Submitted"
-    | "Completed"
-    | "active"
-    | "completed"
-    | "archived";
+  status: "Processing" | "Completed" | "Failed";
   course_code?: string;
   submission_date?: string;
-  interq_score?: string;
+  interq_score?: number; // 1-3 scale average AI score
+  ai_processing_status?: string; // pending | processing | completed | failed
+  ai_processing_error?: string;
   settings?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -34,7 +30,6 @@ export interface Project {
 export interface CreateProjectData {
   title: string;
   description?: string;
-  status?: "Draft" | "Submitted" | "Completed";
   course_id: string;
   project_type: "individual" | "group";
   essay_text?: string;
@@ -45,10 +40,8 @@ export interface CreateProjectData {
 export interface UpdateProjectData {
   title?: string;
   description?: string;
-  status?: "Draft" | "Submitted" | "Completed";
   course_code?: string;
   submission_date?: string;
-  interq_score?: string;
   settings?: Record<string, unknown>;
 }
 
@@ -86,9 +79,6 @@ export const projectService = {
 
     if (projectData.description) {
       formData.append("description", projectData.description);
-    }
-    if (projectData.status) {
-      formData.append("status", projectData.status);
     }
     if (projectData.essay_text) {
       formData.append("essay_text", projectData.essay_text);

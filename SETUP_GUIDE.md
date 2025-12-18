@@ -111,17 +111,17 @@ ila-webapp/
 
 ```bash
 cd backend
-pnpm install
-pnpm dev          # Development server
-pnpm build        # Build for production
+bun install
+bun dev          # Development server
+bun build        # Build for production
 ```
 
 ### Frontend Development
 
 ```bash
-pnpm install
-pnpm dev          # Development server
-pnpm build        # Build for production
+bun install
+bun dev          # Development server
+bun build        # Build for production
 ```
 
 ### Database Management

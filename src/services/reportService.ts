@@ -1,5 +1,4 @@
 import { api } from "../lib/api";
-import type { Variant } from "./dimensionsService";
 
 export interface PortfolioOverview {
   totalProjects: number;
@@ -27,7 +26,7 @@ export interface ProjectSummary {
 export interface DimensionPerformance {
   id: number;
   label: string;
-  variant: Variant;
+  color: string;
   avgScore: number;
   assessmentCount: number;
   minScore: number;
@@ -55,7 +54,7 @@ export interface HeatmapCell {
   projectTitle: string;
   dimensionId: number;
   dimensionLabel: string;
-  variant: Variant;
+  color: string;
   score: number;
 }
 

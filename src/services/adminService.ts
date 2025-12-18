@@ -46,6 +46,7 @@ export interface AdminCourse {
   passcode?: string;
   enrollment_count: number;
   submission_count: number;
+  dimension_ids: number[];
   created_at: string;
 }
 
@@ -69,6 +70,18 @@ export interface Instructor {
   id: string;
   email: string;
   display_name: string;
+}
+
+export interface Dimension {
+  id: number;
+  label: string;
+  short_label?: string;
+  description?: string;
+  color_hex: string;
+  rubric_level_1?: string;
+  rubric_level_2?: string;
+  rubric_level_3?: string;
+  is_active: boolean;
 }
 
 export interface PaginationResult<T> {
@@ -155,6 +168,7 @@ export const adminService = {
     instructor_id?: string;
     term?: string;
     passcode?: string;
+    dimension_ids?: number[];
   }): Promise<AdminCourse> {
     const data = await api.post<{ course: AdminCourse }>(
       "/admin/courses",
@@ -165,7 +179,9 @@ export const adminService = {
 
   async updateCourse(
     courseId: string,
-    updates: Partial<Omit<AdminCourse, "id" | "created_at">>
+    updates: Partial<Omit<AdminCourse, "id" | "created_at">> & {
+      dimension_ids?: number[];
+    }
   ): Promise<AdminCourse> {
     const data = await api.put<{ course: AdminCourse }>(
       `/admin/courses/${courseId}`,
@@ -206,5 +222,12 @@ export const adminService = {
       "/admin/instructors"
     );
     return data.instructors;
+  },
+
+  async getDimensions(): Promise<Dimension[]> {
+    const data = await api.get<{ dimensions: Dimension[] }>(
+      "/admin/dimensions"
+    );
+    return data.dimensions;
   },
 };

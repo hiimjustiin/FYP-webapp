@@ -16,7 +16,7 @@ Node.js/Express backend for the Interdisciplinary Learning Analytics webapp with
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Copy environment variables
 cp .env.example .env
@@ -29,13 +29,13 @@ nano .env
 
 ```bash
 # Start development server
-pnpm dev
+bun dev
 
 # Build for production
-pnpm build
+bun build
 
 # Start production server
-pnpm start
+bun start
 ```
 
 ## 🗄️ Database
@@ -44,16 +44,16 @@ pnpm start
 
 ```bash
 # Run migrations (applies schema changes)
-pnpm db:migrate
+bun db:migrate
 
 # Rollback last migration (if needed)
-pnpm db:migrate:down
+bun db:migrate:down
 
 # Create a new migration
-pnpm db:migrate:create my-migration-name
+bun db:migrate:create my-migration-name
 
 # Seed database
-pnpm db:seed
+bun db:seed
 ```
 
 **📖 For detailed migration documentation, see:**
@@ -201,16 +201,16 @@ backend/
 
 ```bash
 # Run tests
-pnpm test
+bun test
 
 # Run tests with coverage
-pnpm test:coverage
+bun test:coverage
 
 # Run linting
-pnpm lint
+bun lint
 
 # Fix linting issues
-pnpm lint:fix
+bun lint:fix
 ```
 
 ## 🚀 Docker
@@ -249,13 +249,13 @@ console.error("Error:", {
 
 ```bash
 # Enable debug logging
-DEBUG=* pnpm dev
+DEBUG=* bun dev
 
 # Database query logging
-DEBUG=database pnpm dev
+DEBUG=database bun dev
 
 # Authentication debugging
-DEBUG=auth pnpm dev
+DEBUG=auth bun dev
 ```
 
 ## 📈 Performance

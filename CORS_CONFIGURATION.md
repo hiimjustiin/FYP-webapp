@@ -76,7 +76,7 @@ The backend supports:
    ```bash
    CORS_ORIGIN=http://localhost:5173,http://localhost:3000
    ```
-3. Restart backend: `cd backend && pnpm dev`
+3. Restart backend: `cd backend && bun dev`
 
 ### Issue 2: CORS works locally but fails in Docker
 
@@ -111,7 +111,7 @@ The backend supports:
 ### For Development
 
 1. **Always use `.env` file**: Don't hardcode URLs in code
-2. **Check Vite port**: Run `pnpm dev` and note the port in terminal
+2. **Check Vite port**: Run `bun dev` and note the port in terminal
 3. **Restart backend**: After changing CORS settings
 4. **Multiple developers**: Use comma-separated origins to support different setups
 
@@ -204,12 +204,12 @@ VITE_API_BASE_URL=https://api.yourdomain.com
 
 ```bash
 # Check what port Vite is using
-pnpm dev  # Look for "Local: http://localhost:XXXX"
+bun dev  # Look for "Local: http://localhost:XXXX"
 
 # Update backend CORS and restart
 cd backend
 echo "CORS_ORIGIN=http://localhost:5173,http://localhost:3000" >> .env
-pnpm dev
+bun dev
 
 # For Docker
 docker compose down

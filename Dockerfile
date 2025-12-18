@@ -1,23 +1,20 @@
-# Use Node.js 18 Alpine as base image
-FROM node:18-alpine as builder
-
-# Install pnpm
-RUN npm install -g pnpm
+# Use Bun Alpine as base image
+FROM oven/bun:1-alpine as builder
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json bun.lock* ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN pnpm build
+RUN bun run build
 
 # Production stage
 FROM nginx:alpine
