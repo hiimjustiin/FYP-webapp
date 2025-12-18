@@ -58,6 +58,12 @@ const ProjectDetail = () => {
   // Submission content
   const [submissionContent, setSubmissionContent] = useState<string>("");
 
+  // Instructor suggestion
+  const [instructorSuggestion, setInstructorSuggestion] = useState<{
+    suggestion_text: string;
+    updated_at: string;
+  } | null>(null);
+
   // Selected dimension for feedback display
   const [selectedDimension, setSelectedDimension] = useState<string | null>(
     null
@@ -141,6 +147,11 @@ const ProjectDetail = () => {
           console.warn(
             "[ProjectDetail] No essay_text or file_urls found in submission"
           );
+        }
+
+        // Set instructor suggestion if available
+        if (sub.instructor_suggestion) {
+          setInstructorSuggestion(sub.instructor_suggestion);
         }
 
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
@@ -232,6 +243,11 @@ const ProjectDetail = () => {
               sub.file_urls.length
             } file(s)]\n${sub.file_urls.join("\n")}`
           );
+        }
+
+        // Set instructor suggestion if available
+        if (sub.instructor_suggestion) {
+          setInstructorSuggestion(sub.instructor_suggestion);
         }
 
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
@@ -655,6 +671,29 @@ const ProjectDetail = () => {
                 </div>
               )}
             </div>
+
+            {/* Instructor Suggestion Card */}
+            {instructorSuggestion && (
+              <div className="detail-card mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">💡</span>
+                  <h4 className="subtitle-1">Instructor Suggestion</h4>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
+                  <p className="body-2 text-gray-800 whitespace-pre-wrap">
+                    {instructorSuggestion.suggestion_text}
+                  </p>
+                  <div className="flex justify-end mt-3">
+                    <span className="caption text-grey-55">
+                      Updated:{" "}
+                      {new Date(
+                        instructorSuggestion.updated_at
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Column 3: Chat Interface */}

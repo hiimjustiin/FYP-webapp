@@ -99,6 +99,14 @@ router.get(
         };
       });
 
+      // Get instructor suggestion if exists
+      const suggestionResult = await query(
+        `SELECT suggestion_text, updated_at
+         FROM submission_instructor_suggestions
+         WHERE submission_id = $1`,
+        [submissionId]
+      );
+
       res.json({
         success: true,
         data: {
@@ -116,6 +124,7 @@ router.get(
             ai_estimated_level: submission.ai_estimated_level,
             essay_text: submission.essay_text,
             file_urls: submission.file_urls,
+            instructor_suggestion: suggestionResult.rows[0] || null,
           },
           dimensions,
         },

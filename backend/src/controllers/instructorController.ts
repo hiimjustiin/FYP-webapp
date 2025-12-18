@@ -422,6 +422,14 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
       [submissionId]
     );
 
+    // Get instructor suggestion if exists
+    const suggestionResult = await query(
+      `SELECT suggestion_text, updated_at
+       FROM submission_instructor_suggestions
+       WHERE submission_id = $1`,
+      [submissionId]
+    );
+
     // Parse AI feedback to extract reasoning and full analysis
     const scores = scoresResult.rows.map((row) => {
       let reasoning = null;
@@ -461,6 +469,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
           file_type: submission.file_type,
           student_name: submission.student_name,
           student_email: submission.student_email,
+          instructor_suggestion: suggestionResult.rows[0] || null,
           student_id: submission.student_id,
           project_title: submission.project_title,
           project_description: submission.project_description,
@@ -735,6 +744,168 @@ export const uploadSubmission = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       error: { message: "Failed to upload submission" },
+    });
+  }
+};
+
+// GET /api/instructor/dashboard/recent-activity
+export const getDashboardRecentActivity = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const result = await query(
+      `SELECT 
+        ps.id, ps.name, ps.submitted_at, ps.status,
+        u.display_name as student_name, u.student_id,
+        p.title as project_title,
+        c.code as course_code, c.title as course_title, c.id as course_id
+      FROM project_submissions ps
+      JOIN users u ON ps.user_id = u.id
+      JOIN projects p ON ps.project_id = p.id
+      JOIN courses c ON ps.course_id = c.id
+      WHERE c.instructor_id = $1
+      ORDER BY ps.submitted_at DESC
+      LIMIT $2`,
+      [req.user?.id, limit]
+    );
+
+    return res.json({ success: true, data: { activities: result.rows } });
+  } catch (error) {
+    console.error("Error fetching recent activity:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to fetch recent activity" },
+    });
+  }
+};
+
+// GET /api/instructor/dashboard/at-risk-students
+export const getDashboardAtRiskStudents = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const result = await query(
+      `SELECT 
+        u.id, u.display_name, u.student_id, u.email,
+        c.id as course_id, c.code as course_code, c.title as course_title,
+        ce.enrolled_at,
+        COUNT(DISTINCT ps.id) as submission_count,
+        MAX(ps.submitted_at) as last_submission_at,
+        EXTRACT(EPOCH FROM (NOW() - MAX(ps.submitted_at)))/86400 as days_since_last_submission
+      FROM course_enrollments ce
+      JOIN users u ON ce.user_id = u.id
+      JOIN courses c ON ce.course_id = c.id
+      LEFT JOIN project_submissions ps ON ps.user_id = u.id AND ps.course_id = c.id
+      WHERE c.instructor_id = $1 AND ce.status = 'active'
+      GROUP BY u.id, u.display_name, u.student_id, u.email, c.id, c.code, c.title, ce.enrolled_at
+      HAVING COUNT(DISTINCT ps.id) = 0 
+         OR MAX(ps.submitted_at) IS NULL 
+         OR EXTRACT(EPOCH FROM (NOW() - MAX(ps.submitted_at)))/86400 > 7
+      ORDER BY last_submission_at ASC NULLS FIRST, submission_count ASC
+      LIMIT $2`,
+      [req.user?.id, limit]
+    );
+
+    return res.json({ success: true, data: { students: result.rows } });
+  } catch (error) {
+    console.error("Error fetching at-risk students:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to fetch at-risk students" },
+    });
+  }
+};
+
+// PUT /api/instructor/submissions/:submissionId/suggestion
+export const upsertSubmissionSuggestion = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { submissionId } = req.params;
+    const { suggestion_text } = req.body;
+
+    // Validate suggestion text
+    if (!suggestion_text || typeof suggestion_text !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Suggestion text is required" },
+      });
+    }
+
+    const trimmedSuggestion = suggestion_text.trim();
+    if (trimmedSuggestion.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Suggestion text cannot be empty" },
+      });
+    }
+
+    if (trimmedSuggestion.length > 5000) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          message: "Suggestion text cannot exceed 5000 characters",
+        },
+      });
+    }
+
+    // Verify submission exists and instructor owns the course
+    const submissionCheck = await query(
+      `SELECT ps.id, c.instructor_id 
+       FROM project_submissions ps
+       JOIN courses c ON ps.course_id = c.id
+       WHERE ps.id = $1`,
+      [submissionId]
+    );
+
+    if (submissionCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Submission not found" },
+      });
+    }
+
+    const submission = submissionCheck.rows[0];
+    if (
+      req.user?.role !== "admin" &&
+      submission.instructor_id !== req.user?.id
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: { message: "Access denied" },
+      });
+    }
+
+    // Upsert suggestion (overwrite if exists)
+    const result = await query(
+      `INSERT INTO submission_instructor_suggestions 
+        (submission_id, instructor_id, suggestion_text, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (submission_id) 
+       DO UPDATE SET 
+         suggestion_text = EXCLUDED.suggestion_text,
+         instructor_id = EXCLUDED.instructor_id,
+         updated_at = NOW()
+       RETURNING *`,
+      [submissionId, req.user?.id, trimmedSuggestion]
+    );
+
+    return res.json({
+      success: true,
+      data: { suggestion: result.rows[0] },
+    });
+  } catch (error) {
+    console.error("Error upserting submission suggestion:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to save suggestion" },
     });
   }
 };
