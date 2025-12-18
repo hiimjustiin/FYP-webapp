@@ -16,6 +16,11 @@ export interface DimensionScore {
   personal_score: number;
 }
 
+export interface InstructorSuggestion {
+  suggestion_text: string;
+  updated_at: string;
+}
+
 export interface Submission {
   id: string;
   project_id: string;
@@ -30,6 +35,7 @@ export interface Submission {
   ai_estimated_level?: string;
   essay_text?: string;
   file_urls?: string[];
+  instructor_suggestion?: InstructorSuggestion | null;
 }
 
 export interface FeedbackResponse {

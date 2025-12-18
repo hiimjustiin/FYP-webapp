@@ -23,6 +23,10 @@ interface SubmissionDetail {
   ai_overall_summary?: string | null;
   ai_overall_strengths?: string[] | null;
   ai_priority_improvements?: string[] | null;
+  instructor_suggestion?: {
+    suggestion_text: string;
+    updated_at: string;
+  } | null;
 }
 
 interface DimensionScoreDetail extends DimensionScore {
@@ -42,11 +46,16 @@ const SubmissionDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [scoring, setScoring] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [suggestionText, setSuggestionText] = useState("");
+  const [savingSuggestion, setSavingSuggestion] = useState(false);
 
   const fetchSubmissionDetails = async () => {
     try {
       setLoading(true);
       const data = await instructorService.getSubmissionDetails(submissionId!);
+      setSuggestionText(
+        data.submission.instructor_suggestion?.suggestion_text || ""
+      );
       setSubmission(data.submission);
       setScores(data.scores || []);
     } catch (err) {
@@ -135,6 +144,28 @@ const SubmissionDetail = () => {
       alert("Failed to save review. Please try again.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveSuggestion = async () => {
+    if (!suggestionText.trim()) {
+      alert("Please enter a suggestion before saving.");
+      return;
+    }
+
+    try {
+      setSavingSuggestion(true);
+      await instructorService.upsertSubmissionSuggestion(
+        submissionId!,
+        suggestionText
+      );
+      alert("Suggestion saved successfully!");
+      await fetchSubmissionDetails();
+    } catch (err) {
+      console.error("Error saving suggestion:", err);
+      alert("Failed to save suggestion. Please try again.");
+    } finally {
+      setSavingSuggestion(false);
     }
   };
 
@@ -482,6 +513,62 @@ const SubmissionDetail = () => {
                         )}
                     </div>
                   )}
+
+                  {/* Instructor Suggestion Section */}
+                  <div className="mb-6 dashboard-card p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
+                    <div className="flex items-center gap-2 mb-4">
+                      <svg
+                        className="w-5 h-5 text-purple-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                      </svg>
+                      <h3 className="heading-4 text-purple-900">
+                        Instructor Suggestions
+                      </h3>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="caption text-purple-700 font-medium mb-2 block">
+                        Overall improvement suggestions for the student
+                      </label>
+                      <textarea
+                        className="w-full px-4 py-3 border border-purple-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                        rows={6}
+                        placeholder="Provide constructive feedback and suggestions to help the student improve their work. This will be visible to the student alongside the AI feedback..."
+                        value={suggestionText}
+                        onChange={(e) => setSuggestionText(e.target.value)}
+                        maxLength={5000}
+                      />
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-xs text-purple-600">
+                          {suggestionText.length} / 5000 characters
+                        </p>
+                        {submission.instructor_suggestion && (
+                          <p className="text-xs text-purple-600">
+                            Last updated:{" "}
+                            {new Date(
+                              submission.instructor_suggestion.updated_at
+                            ).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="purple"
+                      onClick={handleSaveSuggestion}
+                      disabled={savingSuggestion || !suggestionText.trim()}
+                      className="w-full"
+                    >
+                      {savingSuggestion
+                        ? "Saving..."
+                        : submission.instructor_suggestion
+                        ? "Update Suggestion"
+                        : "Save Suggestion"}
+                    </Button>
+                  </div>
 
                   <div className="space-y-5 mb-6">
                     {scores.map((score) => {
