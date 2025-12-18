@@ -1,6 +1,10 @@
 # Use Bun Alpine as base image
 FROM oven/bun:1-alpine as builder
 
+# Accept build arguments for Vite environment variables
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 # Set working directory
 WORKDIR /app
 
@@ -13,7 +17,7 @@ RUN bun install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application with environment variables baked in
 RUN bun run build
 
 # Production stage
