@@ -155,9 +155,8 @@ jobs:
           # Production Database URL
           DATABASE_URL=postgresql://ila_user:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ila_db
 
-          # API Base URL - Use HTTPS with domain
+          # API Base URL - Use HTTPS with domain (nginx will proxy /api to backend:3001)
           VITE_API_BASE_URL=https://${{ env.DOMAIN }}/api
-          VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
           EOF
             
             echo ""
