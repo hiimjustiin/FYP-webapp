@@ -114,6 +114,12 @@ services:
         condition: service_healthy
     networks:
       - ila-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   # Frontend (React App)
   frontend:
@@ -131,7 +137,8 @@ services:
       # Mount SSL certificates from Let's Encrypt
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - ila-network
 
