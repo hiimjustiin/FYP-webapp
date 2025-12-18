@@ -7,7 +7,7 @@ RUN apk add --no-cache postgresql-client
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* ./
 
 # Install all dependencies (including devDependencies for migrations)
 # This ensures node-pg-migrate is available for running migrations

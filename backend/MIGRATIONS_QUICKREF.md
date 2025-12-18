@@ -4,20 +4,20 @@
 
 ```bash
 cd backend
-pnpm install  # Installs node-pg-migrate
+bun install  # Installs node-pg-migrate
 ```
 
 ## Common Commands
 
 ```bash
 # Apply all pending migrations
-pnpm db:migrate
+bun db:migrate
 
 # Rollback last migration
-pnpm db:migrate:down
+bun db:migrate:down
 
 # Create new migration
-pnpm db:migrate:create my-migration-name
+bun db:migrate:create my-migration-name
 ```
 
 ## Schema Changes for Project Feature
@@ -66,12 +66,12 @@ Already exists, used for group project team members.
 
 ```bash
 # Local
-docker compose exec backend pnpm db:migrate
+docker compose exec backend bun db:migrate
 
 # Production (EC2)
 ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd /home/ec2-user/ila-webapp
-sudo docker compose exec backend pnpm db:migrate
+sudo docker compose exec backend bun db:migrate
 ```
 
 ## Check Migration Status
@@ -85,13 +85,13 @@ docker compose exec postgres psql -U ila_user -d ila_db \
 
 ```bash
 # Create migration file
-pnpm db:migrate:create add-project-deadline
+bun db:migrate:create add-project-deadline
 
 # Edit the generated file in backend/migrations/
 # Add your up/down logic
 
 # Apply migration
-pnpm db:migrate
+bun db:migrate
 ```
 
 ## PostgreSQL vs MySQL Key Differences

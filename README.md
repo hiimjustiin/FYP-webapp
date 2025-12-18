@@ -5,20 +5,23 @@
 ## Tech Stack
 
 ### Frontend
+
 - [Vite](https://vitejs.dev/) (build tool)
 - [React 19](https://react.dev/) (UI library)
 - [TypeScript](https://www.typescriptlang.org/) (type safety)
 - [TailwindCSS v4](https://tailwindcss.com/) (utility-first CSS)
 - [shadcn/ui](https://ui.shadcn.com/) (UI components, Radix UI, class-variance-authority, tailwind-merge, lucide-react)
-- [pnpm](https://pnpm.io/) (fast package manager)
+- [Bun](https://bun.sh/) (all-in-one JavaScript runtime)
 
 ### Backend
+
 - [Express.js](https://expressjs.com/) with TypeScript
 - [PostgreSQL 15](https://www.postgresql.org/) (database)
 - [node-pg-migrate](https://github.com/salsita/node-pg-migrate) (database migrations)
 - JWT authentication
 
 ### AI Service
+
 - [FastAPI](https://fastapi.tiangolo.com/) (Python web framework)
 - [Pydantic AI](https://ai.pydantic.dev/) (AI agent framework)
 - [OpenAI GPT-4o](https://openai.com/) (AI model)
@@ -38,14 +41,15 @@ cp .env.example .env
 # Start all services
 docker compose up -d --build
 
-# Run database migrations
-docker compose exec backend pnpm db:migrate
+# Migrations run automatically on backend startup
+# Or manually run: docker compose exec backend bun db:migrate
 
 # View logs
 docker compose logs -f
 ```
 
 Services will be available at:
+
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 - AI Service: http://localhost:8000
@@ -56,8 +60,8 @@ Services will be available at:
 #### Frontend Only
 
 ```sh
-pnpm install
-pnpm dev
+bun install
+bun dev
 ```
 
 Visit [http://localhost:5173](http://localhost:5173) in your browser.
@@ -70,9 +74,9 @@ docker compose up postgres -d
 
 # Terminal 2 - Backend + Database
 cd backend
-pnpm install
-pnpm db:migrate
-pnpm dev
+bun install
+bun db:migrate
+bun dev
 
 # Terminal 3 - AI Service
 cd backend-ai
@@ -82,14 +86,14 @@ cp .env.example .env
 python main.py
 
 # Terminal 4 - Frontend
-pnpm install
-pnpm dev
+bun install
+bun dev
 ```
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- [pnpm](https://pnpm.io/)
+- [Node.js](https://nodejs.org/) (v18+ recommended) or [Bun](https://bun.sh/) (v1.0+)
+- [Bun](https://bun.sh/)
 - [Docker & Docker Compose](https://www.docker.com/) (for containerized deployment)
 - [Python 3.11+](https://www.python.org/) (for AI service development)
 - OpenAI API Key (required for AI feedback features)
@@ -107,7 +111,7 @@ shadcn/ui provides a set of accessible, customizable UI components. Components a
 To add new components:
 
 ```sh
-pnpm dlx shadcn@latest add <component>
+bunx shadcn@latest add <component>
 ```
 
 ## Project Structure
@@ -121,13 +125,13 @@ pnpm dlx shadcn@latest add <component>
 
 ## ESLint
 
-TypeScript-aware linting is enabled. See `eslint.config.js` for details. Run `pnpm lint` to check code quality.
+TypeScript-aware linting is enabled. See `eslint.config.js` for details. Run `bun lint` to check code quality.
 
 ## Scripts
 
-- `pnpm dev` — start development server
-- `pnpm build` — build for production
-- `pnpm lint` — run linter
+- `bun dev` — start development server
+- `bun build` — build for production
+- `bun lint` — run linter
 
 ## License
 
