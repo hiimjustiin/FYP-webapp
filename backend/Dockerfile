@@ -1,7 +1,7 @@
 FROM oven/bun:1-alpine
 
-# Install postgresql-client for pg_isready command
-RUN apk add --no-cache postgresql-client
+# Install postgresql-client for pg_isready command and curl for health checks
+RUN apk add --no-cache postgresql-client curl
 
 # Create app directory
 WORKDIR /app
