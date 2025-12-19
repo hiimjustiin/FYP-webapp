@@ -99,8 +99,9 @@ const ProjectDetail = () => {
         setProject(data);
 
         // Load all submissions for this project
-        const submissionsData =
-          await projectService.getProjectSubmissions(projectId);
+        const submissionsData = await projectService.getProjectSubmissions(
+          projectId
+        );
         setSubmissions(submissionsData.submissions);
         setTotalSubmissions(submissionsData.total_count);
 
@@ -431,7 +432,9 @@ const ProjectDetail = () => {
 
     // Confirm resubmission
     const confirmed = window.confirm(
-      `Are you sure you want to resubmit? This will create Submission ${totalSubmissions + 1} and trigger a new AI evaluation comparing to your previous submission.`
+      `Are you sure you want to resubmit? This will create Submission ${
+        totalSubmissions + 1
+      } and trigger a new AI evaluation comparing to your previous submission.`
     );
 
     if (!confirmed) return;
@@ -457,8 +460,9 @@ const ProjectDetail = () => {
       setProcessingStatus("Queued for analysis...");
 
       // Refresh submissions list
-      const submissionsData =
-        await projectService.getProjectSubmissions(projectId);
+      const submissionsData = await projectService.getProjectSubmissions(
+        projectId
+      );
       setSubmissions(submissionsData.submissions);
     } catch (err) {
       console.error("Failed to resubmit project:", err);
@@ -808,15 +812,6 @@ const ProjectDetail = () => {
                 <h4 className="subtitle-1">
                   Submission {currentIteration} of {totalSubmissions}
                 </h4>
-                {!isEditMode && submissionContent && (
-                  <Button
-                    variant="grey"
-                    onClick={handleEditClick}
-                    disabled={isSubmitting}
-                  >
-                    ✏️ Edit
-                  </Button>
-                )}
               </div>
 
               {isEditMode ? (
@@ -843,7 +838,9 @@ const ProjectDetail = () => {
                     >
                       {isSubmitting
                         ? "Resubmitting..."
-                        : `Save & Resubmit (→ Submission ${totalSubmissions + 1})`}
+                        : `Save & Resubmit (→ Submission ${
+                            totalSubmissions + 1
+                          })`}
                     </Button>
                   </div>
                 </>
