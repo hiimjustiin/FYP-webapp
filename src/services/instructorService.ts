@@ -64,6 +64,7 @@ export interface CourseSubmission {
   project_title: string;
   project_id: string;
   scores_count: number;
+  has_instructor_feedback: boolean;
 }
 
 export interface DimensionScore {

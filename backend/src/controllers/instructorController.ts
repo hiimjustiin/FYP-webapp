@@ -344,13 +344,15 @@ export const getCourseSubmissions = async (req: AuthRequest, res: Response) => {
         ps.id, ps.name, ps.submitted_at, ps.status, ps.file_url, ps.file_type,
         u.display_name as student_name, u.student_id, u.email as student_email,
         p.title as project_title, p.id as project_id,
-        COUNT(sds.id) as scores_count
+        COUNT(sds.id) as scores_count,
+        CASE WHEN sis.suggestion_text IS NOT NULL THEN true ELSE false END as has_instructor_feedback
       FROM project_submissions ps
       JOIN users u ON ps.user_id = u.id
       JOIN projects p ON ps.project_id = p.id
       LEFT JOIN submission_dimension_scores sds ON ps.id = sds.submission_id
+      LEFT JOIN submission_instructor_suggestions sis ON ps.id = sis.submission_id
       WHERE ps.course_id = $1
-      GROUP BY ps.id, u.display_name, u.student_id, u.email, p.title, p.id
+      GROUP BY ps.id, u.display_name, u.student_id, u.email, p.title, p.id, sis.suggestion_text
       ORDER BY ps.submitted_at DESC`,
       [courseId]
     );
