@@ -80,6 +80,7 @@ const Settings = () => {
                 <ProfileForm
                   authUserId={authUser?.id || ""}
                   authUserEmail={authUser?.email || ""}
+                  authUserRole={authUser?.role}
                   initialData={profileData}
                   onSuccess={(message) =>
                     showAlert("success", "Success", message)
