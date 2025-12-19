@@ -13,6 +13,8 @@ import {
   deleteProject,
   submitProject,
   getSubmissionFeedback,
+  getProjectSubmissions,
+  resubmitProject,
   updateProjectValidation,
 } from "../controllers/projectController.js";
 import { authenticate } from "../middleware/auth.js";
@@ -57,8 +59,10 @@ const handleUpload = (
 // Project routes
 router.get("/", getProjects);
 router.get("/:id", getProject);
+router.get("/:id/submissions", getProjectSubmissions); // Get all submissions for a project
 router.post("/", handleUpload, createProject); // Support up to 10 files
 router.post("/:id/submit", submitProject); // Submit project for AI evaluation
+router.post("/:id/resubmit", handleUpload, resubmitProject); // Resubmit with updated content
 router.get("/submissions/:submissionId/feedback", getSubmissionFeedback); // Get AI feedback for submission
 router.put("/:id", updateProjectValidation, updateProject);
 router.delete("/:id", deleteProject);

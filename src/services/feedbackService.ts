@@ -21,11 +21,35 @@ export interface InstructorSuggestion {
   updated_at: string;
 }
 
+export interface ComparisonAnalysis {
+  previous_submission_id: string;
+  current_submission_id: string;
+  overall_improvement: "improved" | "regressed" | "unchanged";
+  previous_avg_score: number;
+  current_avg_score: number;
+  score_delta: number;
+  dimension_comparisons: Array<{
+    dimension_id: number;
+    dimension_name: string;
+    previous_score: number;
+    current_score: number;
+    score_change: number;
+    improvement_summary: string;
+  }>;
+  summary: string;
+  key_improvements: string[];
+  key_regressions: string[];
+}
+
 export interface Submission {
   id: string;
   project_id: string;
   project_title: string;
   name: string;
+  iteration_number: number;
+  total_submissions: number;
+  previous_submission_id?: string | null;
+  comparison_analysis?: ComparisonAnalysis | null;
   submitted_at: string;
   ai_processing_status: string;
   ai_processing_error?: string;
