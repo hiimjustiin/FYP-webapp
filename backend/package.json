@@ -8,6 +8,8 @@
         "start": "node dist/server.js",
         "dev": "bun --watch src/server.ts",
         "build": "tsc",
+        "typecheck": "tsc --noEmit",
+        "typecheck:watch": "tsc --noEmit --watch",
         "db:migrate": "bun run src/utils/migrate.ts",
         "db:migrate:down": "bun run src/utils/migrate.ts down",
         "db:migrate:create": "node-pg-migrate create --migrations-dir ./migrations",
