@@ -100,32 +100,32 @@ docker-compose exec -T postgres psql -U ila_user -d ila_db < backup.sql
 ```bash
 # Install backend dependencies
 cd backend
-pnpm install
+bun install
 
 # Run backend in development mode (outside Docker)
-pnpm dev
+bun dev
 
 # Build backend
-pnpm build
+bun build
 
 # Run database migrations
-pnpm db:migrate
+bun db:migrate
 
 # Seed database
-pnpm db:seed
+bun db:seed
 ```
 
 ### Frontend Development
 
 ```bash
 # Install frontend dependencies
-pnpm install
+bun install
 
 # Run frontend in development mode (outside Docker)
-pnpm dev
+bun dev
 
 # Build frontend
-pnpm build
+bun build
 ```
 
 ## 🔧 Configuration

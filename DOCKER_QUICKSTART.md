@@ -61,7 +61,7 @@ docker compose up -d --build
 
 ```bash
 # Apply database schema and seed data
-docker compose exec backend pnpm db:migrate
+docker compose exec backend bun db:migrate
 
 # Expected output:
 # > Migrating files:
@@ -147,13 +147,13 @@ docker compose exec backend sh
 docker compose exec backend-ai bash
 
 # Run database migrations
-docker compose exec backend pnpm db:migrate
+docker compose exec backend bun db:migrate
 
 # Create new migration
-docker compose exec backend pnpm db:migrate:create my-migration-name
+docker compose exec backend bun db:migrate:create my-migration-name
 
 # Rollback last migration
-docker compose exec backend pnpm db:migrate:down
+docker compose exec backend bun db:migrate:down
 ```
 
 ## Troubleshooting

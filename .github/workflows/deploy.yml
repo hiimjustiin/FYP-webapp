@@ -155,9 +155,8 @@ jobs:
           # Production Database URL
           DATABASE_URL=postgresql://ila_user:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/ila_db
 
-          # API Base URL - Use HTTPS with domain
+          # API Base URL - Use HTTPS with domain (nginx will proxy /api to backend:3001)
           VITE_API_BASE_URL=https://${{ env.DOMAIN }}/api
-          VITE_API_BASE_URL=http://${{ env.EC2_HOST }}:3001/api
           EOF
             
             echo ""
@@ -196,12 +195,32 @@ jobs:
             
             echo ""
             echo "============================================"
-            echo "Step 12: Run database migrations"
+            echo "Step 12: Wait for services to be healthy"
             echo "============================================"
-            echo "Waiting for database to be ready..."
-            sleep 10
-            echo "Running migrations..."
-            sudo docker compose exec -T backend pnpm db:migrate || echo "⚠️ Migration failed or no pending migrations"
+            echo "Waiting for all services to complete startup (including migrations)..."
+            
+            # Wait for services to be healthy using docker compose wait (more reliable)
+            timeout=60
+            elapsed=0
+            echo "Checking service health..."
+            
+            while [ $elapsed -lt $timeout ]; do
+              if sudo docker compose ps | grep -q "(healthy)"; then
+                echo "✅ Services are healthy!"
+                break
+              fi
+              echo "Waiting for services... ($elapsed/$timeout seconds)"
+              sleep 5
+              elapsed=$((elapsed + 5))
+            done
+            
+            echo "Final container status:"
+            sudo docker compose ps
+            
+            # Show backend logs for verification
+            echo ""
+            echo "Recent backend logs:"
+            sudo docker compose logs --tail=20 backend
             
             echo ""
             echo "============================================"

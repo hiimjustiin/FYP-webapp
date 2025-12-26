@@ -3,15 +3,16 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   instructorService,
   type InstructorCourse,
+  type RecentActivity,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
-import Table from "../components/ui/Table/Table";
 import { useNavigate } from "react-router-dom";
 
 const InstructorDashboard = () => {
   const { user, isInitialized, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,19 +22,23 @@ const InstructorDashboard = () => {
       return;
     }
 
-    const fetchCourses = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const data = await instructorService.getCourses();
-        setCourses(data);
+        const [coursesData, activityData] = await Promise.all([
+          instructorService.getCourses(),
+          instructorService.getRecentActivity(12),
+        ]);
+        setCourses(coursesData);
+        setRecentActivity(activityData);
       } catch (err) {
-        console.error("Error fetching courses:", err);
-        setError("Failed to load courses");
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCourses();
+    fetchDashboardData();
   }, [isInitialized, isAuthenticated]);
 
   if (loading) {
@@ -51,6 +56,48 @@ const InstructorDashboard = () => {
       </div>
     );
   }
+
+  // Calculate insights
+  const totalStudents = courses.reduce(
+    (sum, course) => sum + course.enrolled_count,
+    0
+  );
+  const totalPending = courses.reduce(
+    (sum, course) => sum + course.pending_count,
+    0
+  );
+  const coursesByPending = [...courses]
+    .filter((c) => c.pending_count > 0)
+    .sort((a, b) => b.pending_count - a.pending_count);
+  const coursesWithNoSubmissions = courses.filter(
+    (c) => c.submission_count === 0 && c.enrolled_count > 0
+  );
+
+  // Status badge helper
+  const getStatusBadge = (status: string) => {
+    const badges = {
+      submitted: "bg-[#FFF3CD] text-[#856404]",
+      scoring: "bg-[#D1ECF1] text-[#0C5460]",
+      scored: "bg-[#D4EDDA] text-[#155724]",
+      reviewed: "bg-[#D1D1D1] text-[#383838]",
+    };
+    return badges[status as keyof typeof badges] || badges.submitted;
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   return (
     <div className="min-h-screen bg-[var(--color-grey-05)]">
@@ -85,13 +132,13 @@ const InstructorDashboard = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">
-              Total Courses
+              Active Courses
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
-              {Number(courses.length)}
+              {courses.length}
             </div>
           </div>
           <div className="dashboard-card p-6">
@@ -99,90 +146,281 @@ const InstructorDashboard = () => {
               Total Students
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
-              {Number(
-                courses.reduce((sum, course) => sum + course.enrolled_count, 0)
-              )}
+              {totalStudents}
             </div>
           </div>
-          <div className="dashboard-card p-6">
+          <div
+            className="dashboard-card p-6 cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate("/instructor/submissions")}
+          >
             <div className="caption text-[var(--color-grey-55)] mb-2">
-              Pending Reviews
+              Recent Submissions
             </div>
-            <div className="heading-3 text-[var(--color-red-ntu)]">
-              {Number(
-                courses.reduce((sum, course) => sum + course.pending_count, 0)
-              )}
+            <div className="heading-3 text-[var(--color-blue-ntu)]">
+              {totalPending}
             </div>
+            {totalPending > 0 && (
+              <div className="caption text-[var(--color-blue-ntu)] mt-1">
+                View all →
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Courses List */}
-        <div className="dashboard-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="heading-4">My Courses</h2>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Courses Needing Attention */}
+          <div className="dashboard-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="heading-4">Courses Needing Attention</h2>
+              <Button
+                variant="grey"
+                onClick={() => navigate("/instructor/courses")}
+              >
+                View All
+              </Button>
+            </div>
+
+            {coursesByPending.length === 0 &&
+            coursesWithNoSubmissions.length === 0 ? (
+              <div className="py-8 text-center">
+                <svg
+                  className="w-12 h-12 mx-auto mb-3 text-[var(--color-grey-30)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p className="subtitle-2 text-[var(--color-grey-55)]">
+                  All caught up!
+                </p>
+                <p className="caption text-[var(--color-grey-55)]">
+                  No courses need immediate attention
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {coursesByPending.slice(0, 5).map((course) => (
+                  <div
+                    key={course.id}
+                    className="p-4 bg-[var(--color-grey-05)] rounded-lg border border-[var(--color-grey-10)] hover:border-[var(--color-blue-ntu)] transition-colors cursor-pointer"
+                    onClick={() =>
+                      navigate(`/instructor/courses/${course.id}/submissions`)
+                    }
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="subtitle-2 text-[var(--color-blue-ntu)]">
+                          {course.code}
+                        </span>
+                        <p className="caption text-[var(--color-grey-55)]">
+                          {course.title}
+                        </p>
+                      </div>
+                      <span className="px-3 py-1 bg-[var(--color-red-ntu)] text-white text-xs font-medium rounded-full">
+                        {course.pending_count} pending
+                      </span>
+                    </div>
+                    <div className="caption text-[var(--color-grey-55)]">
+                      {course.enrolled_count} students ·{" "}
+                      {course.submission_count} submissions
+                    </div>
+                  </div>
+                ))}
+                {coursesWithNoSubmissions.slice(0, 3).map((course) => (
+                  <div
+                    key={course.id}
+                    className="p-4 bg-[#FFF3CD] rounded-lg border border-[#FFC107] cursor-pointer hover:border-[#FF9800] transition-colors"
+                    onClick={() =>
+                      navigate(`/instructor/courses/${course.id}/students`)
+                    }
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <span className="subtitle-2 text-[#856404]">
+                          {course.code}
+                        </span>
+                        <p className="caption text-[#856404]">{course.title}</p>
+                      </div>
+                      <span className="px-3 py-1 bg-[#FF9800] text-white text-xs font-medium rounded-full">
+                        No submissions
+                      </span>
+                    </div>
+                    <div className="caption text-[#856404]">
+                      {course.enrolled_count} enrolled students
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {courses.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="subtitle-2 text-[var(--color-grey-55)] mb-2">
-                No courses found
-              </p>
-              <p className="caption text-[var(--color-grey-55)]">
-                You haven't been assigned to any courses yet
-              </p>
+          {/* Recent Activity */}
+          <div className="dashboard-card p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="heading-4">Recent Submissions</h2>
+              <Button
+                variant="grey"
+                onClick={() => navigate("/instructor/submissions")}
+              >
+                View All
+              </Button>
             </div>
-          ) : (
-            <Table
-              noBorder
-              data={[
-                [
-                  "Course Code",
-                  "Title",
-                  "Term",
-                  "Students",
-                  "Submissions",
-                  "Pending",
-                  "Actions",
-                ],
-                ...courses.map((row: InstructorCourse) => [
-                  <span className="subtitle-2 text-[var(--color-blue-ntu)]">
-                    {row.code}
-                  </span>,
-                  row.title,
-                  <span className="caption">{row.term}</span>,
-                  <span className="body-2">{Number(row.enrolled_count)}</span>,
-                  <span className="body-2">
-                    {Number(row.submission_count)}
-                  </span>,
-                  <span
-                    className={`body-2 font-medium ${
-                      row.pending_count > 0 ? "text-[var(--color-red-ntu)]" : ""
-                    }`}
+
+            {recentActivity.length === 0 ? (
+              <div className="py-8 text-center">
+                <svg
+                  className="w-12 h-12 mx-auto mb-3 text-[var(--color-grey-30)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <p className="subtitle-2 text-[var(--color-grey-55)] mb-1">
+                  No submissions yet
+                </p>
+                <p className="caption text-[var(--color-grey-55)]">
+                  Activity will appear here once students submit
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="p-3 bg-[var(--color-grey-05)] rounded-lg border border-[var(--color-grey-10)] hover:border-[var(--color-blue-ntu)] transition-colors cursor-pointer"
+                    onClick={() =>
+                      navigate(`/instructor/submissions/${activity.id}`)
+                    }
                   >
-                    {Number(row.pending_count)}
-                  </span>,
-                  <div className="flex gap-2">
-                    <Button
-                      variant="blue"
-                      onClick={() =>
-                        navigate(`/instructor/courses/${row.id}/students`)
-                      }
-                    >
-                      Students
-                    </Button>
-                    <Button
-                      variant="darkBlue"
-                      onClick={() =>
-                        navigate(`/instructor/courses/${row.id}/submissions`)
-                      }
-                    >
-                      Submissions
-                    </Button>
-                  </div>,
-                ]),
-              ]}
-            />
-          )}
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="subtitle-2 text-[var(--color-grey-90)] truncate">
+                          {activity.student_name}
+                        </p>
+                        <p className="caption text-[var(--color-grey-55)] truncate">
+                          {activity.project_title}
+                        </p>
+                      </div>
+                      <span
+                        className={`ml-2 px-2 py-1 text-xs font-medium rounded ${getStatusBadge(
+                          activity.status
+                        )}`}
+                      >
+                        {activity.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="caption text-[var(--color-grey-55)]">
+                        {activity.course_code}
+                      </span>
+                      <span className="caption text-[var(--color-grey-55)]">
+                        {formatTimeAgo(activity.submitted_at)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mt-6 dashboard-card p-6">
+          <h2 className="heading-4 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Button
+              variant="blue"
+              onClick={() => navigate("/instructor/submissions")}
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Review Submissions
+            </Button>
+            <Button
+              variant="darkBlue"
+              onClick={() => navigate("/instructor/students")}
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+              Manage Students
+            </Button>
+            <Button
+              variant="purple"
+              onClick={() => navigate("/instructor/courses")}
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                />
+              </svg>
+              Course Settings
+            </Button>
+            <Button variant="grey" onClick={() => navigate("/settings")}>
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              Profile Settings
+            </Button>
+          </div>
         </div>
       </div>
     </div>

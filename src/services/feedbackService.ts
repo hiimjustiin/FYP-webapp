@@ -6,7 +6,7 @@ import { api } from "../lib/api";
 export interface DimensionScore {
   dimension_id: number;
   dimension_label: string;
-  dimension_variant: string;
+  dimension_color: string;
   ai_score?: number; // 1-3 scale
   ai_reasoning?: string;
   ai_strengths?: string[];
@@ -14,6 +14,11 @@ export interface DimensionScore {
   ai_examples?: string;
   ai_processing_status: string;
   personal_score: number;
+}
+
+export interface InstructorSuggestion {
+  suggestion_text: string;
+  updated_at: string;
 }
 
 export interface Submission {
@@ -30,6 +35,7 @@ export interface Submission {
   ai_estimated_level?: string;
   essay_text?: string;
   file_urls?: string[];
+  instructor_suggestion?: InstructorSuggestion | null;
 }
 
 export interface FeedbackResponse {

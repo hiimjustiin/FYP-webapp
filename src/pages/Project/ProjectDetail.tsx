@@ -11,7 +11,6 @@ import ChatInterface, {
 } from "../../components/ui/ChatInterface/ChatInterface";
 import ComparisonSelector from "../../components/layout/ComparisonSelector/ComparisonSelector";
 import type { DropdownOption } from "../../components/ui/Dropdown/Dropdown";
-import type { Variant } from "../../services/dimensionsService";
 import { projectService, type Project } from "../../services/projectService";
 import { feedbackService } from "../../services/feedbackService";
 import "./ProjectDetail.css";
@@ -22,7 +21,7 @@ interface DimensionFeedback {
   score: number;
   maxScore: number;
   feedback: string;
-  variant: string;
+  color: string;
 }
 
 interface AIFeedback {
@@ -58,6 +57,12 @@ const ProjectDetail = () => {
 
   // Submission content
   const [submissionContent, setSubmissionContent] = useState<string>("");
+
+  // Instructor suggestion
+  const [instructorSuggestion, setInstructorSuggestion] = useState<{
+    suggestion_text: string;
+    updated_at: string;
+  } | null>(null);
 
   // Selected dimension for feedback display
   const [selectedDimension, setSelectedDimension] = useState<string | null>(
@@ -144,6 +149,11 @@ const ProjectDetail = () => {
           );
         }
 
+        // Set instructor suggestion if available
+        if (sub.instructor_suggestion) {
+          setInstructorSuggestion(sub.instructor_suggestion);
+        }
+
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
           // Convert real AI feedback to display format
           const feedback: AIFeedback = {
@@ -159,7 +169,7 @@ const ProjectDetail = () => {
               score: d.ai_score || 0,
               maxScore: 3,
               feedback: d.ai_reasoning || "Analysis in progress...",
-              variant: d.dimension_variant,
+              color: d.dimension_color,
             })),
             summary: sub.ai_overall_summary || "Analysis complete",
             strengths: sub.ai_overall_strengths || [],
@@ -235,6 +245,11 @@ const ProjectDetail = () => {
           );
         }
 
+        // Set instructor suggestion if available
+        if (sub.instructor_suggestion) {
+          setInstructorSuggestion(sub.instructor_suggestion);
+        }
+
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
           // Feedback is ready
           const feedback: AIFeedback = {
@@ -250,7 +265,7 @@ const ProjectDetail = () => {
               score: d.ai_score || 0,
               maxScore: 3,
               feedback: d.ai_reasoning || "Analysis in progress...",
-              variant: d.dimension_variant,
+              color: d.dimension_color,
             })),
             summary: sub.ai_overall_summary || "Analysis complete",
             strengths: sub.ai_overall_strengths || [],
@@ -353,8 +368,8 @@ const ProjectDetail = () => {
           dim.name,
           "score:",
           dim.score,
-          "variant:",
-          dim.variant
+          "color:",
+          dim.color
         );
         return {
           dimension: dim.name,
@@ -567,7 +582,7 @@ const ProjectDetail = () => {
                       <div key={idx} className="feedback-with-suggestion">
                         <DimensionFeedbackCard
                           dimensionLabel={dim.name}
-                          dimensionVariant={dim.variant as Variant}
+                          dimensionColor={dim.color}
                           level={dim.score}
                           feedbackText={dim.feedback}
                         />
@@ -594,7 +609,7 @@ const ProjectDetail = () => {
                               <div className="suggestion-header">
                                 <DimensionLabel
                                   text={dim.name}
-                                  variant={dim.variant as Variant}
+                                  color={dim.color}
                                   size="medium"
                                 />
                                 <span className="body-2">:</span>
@@ -656,6 +671,29 @@ const ProjectDetail = () => {
                 </div>
               )}
             </div>
+
+            {/* Instructor Suggestion Card */}
+            {instructorSuggestion && (
+              <div className="detail-card mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">💡</span>
+                  <h4 className="subtitle-1">Instructor Suggestion</h4>
+                </div>
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
+                  <p className="body-2 text-gray-800 whitespace-pre-wrap">
+                    {instructorSuggestion.suggestion_text}
+                  </p>
+                  <div className="flex justify-end mt-3">
+                    <span className="caption text-grey-55">
+                      Updated:{" "}
+                      {new Date(
+                        instructorSuggestion.updated_at
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Column 3: Chat Interface */}
@@ -668,23 +706,7 @@ const ProjectDetail = () => {
             />
           </div>
         </div>
-      ) : project.status === "Draft" ? (
-        <div className="processing-state">
-          <div className="processing-state-icon">📋</div>
-          <h5 className="subtitle-1 mb-2">Ready to Submit?</h5>
-          <p className="body-2 text-grey-80 mb-4">
-            Submit your project to receive detailed AI feedback and assessment
-            based on the 9 ILA dimensions for interdisciplinary learning.
-          </p>
-          <Button
-            variant="blue"
-            onClick={handleSubmitProject}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
-          </Button>
-        </div>
-      ) : (
+      ) : project.status === "Processing" ? (
         <div className="processing-state">
           <div className="processing-state-icon">⏳</div>
           <h5 className="subtitle-1 mb-2">AI Evaluation in Progress</h5>
@@ -703,6 +725,40 @@ const ProjectDetail = () => {
               Refresh Page
             </Button>
           </div>
+        </div>
+      ) : project.status === "Failed" ? (
+        <div className="processing-state">
+          <div className="processing-state-icon">❌</div>
+          <h5 className="subtitle-1 mb-2">AI Evaluation Failed</h5>
+          <p className="body-2 text-grey-80 mb-4">
+            {project.ai_processing_error ||
+              "An error occurred while analyzing your project. Please try again."}
+          </p>
+          <div className="flex justify-center gap-3 mt-4">
+            <Button
+              variant="blue"
+              onClick={handleSubmitProject}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Retrying..." : "Retry Evaluation"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="processing-state">
+          <div className="processing-state-icon">📋</div>
+          <h5 className="subtitle-1 mb-2">No Feedback Yet</h5>
+          <p className="body-2 text-grey-80 mb-4">
+            This project doesn&apos;t have AI feedback available. This may
+            happen if the project was created before AI evaluation was enabled.
+          </p>
+          <Button
+            variant="blue"
+            onClick={handleSubmitProject}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit for AI Feedback"}
+          </Button>
         </div>
       )}
     </div>

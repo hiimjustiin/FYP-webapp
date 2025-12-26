@@ -62,7 +62,7 @@ router.get(
 
       // Fetch dimension labels from dimensions table
       const dimensionsResult = await query(
-        `SELECT d.id as dimension_id, d.label as dimension_label, d.variant as dimension_variant
+        `SELECT d.id as dimension_id, d.label as dimension_label, d.color_hex as dimension_color
          FROM dimensions d
          ORDER BY d.id`
       );
@@ -95,9 +95,17 @@ router.get(
           ...score,
           dimension_label:
             dimInfo?.dimension_label || `Dimension ${score.dimension_id}`,
-          dimension_variant: dimInfo?.dimension_variant || "grey",
+          dimension_color: dimInfo?.dimension_color || "#6B7280",
         };
       });
+
+      // Get instructor suggestion if exists
+      const suggestionResult = await query(
+        `SELECT suggestion_text, updated_at
+         FROM submission_instructor_suggestions
+         WHERE submission_id = $1`,
+        [submissionId]
+      );
 
       res.json({
         success: true,
@@ -116,6 +124,7 @@ router.get(
             ai_estimated_level: submission.ai_estimated_level,
             essay_text: submission.essay_text,
             file_urls: submission.file_urls,
+            instructor_suggestion: suggestionResult.rows[0] || null,
           },
           dimensions,
         },

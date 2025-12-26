@@ -1,22 +1,16 @@
 import { api } from "../lib/api";
 
 // Type definitions
-export type Variant =
-  | "lime"
-  | "yellow"
-  | "purple"
-  | "teal"
-  | "blue"
-  | "grey"
-  | "green"
-  | "navy"
-  | "pink";
-
 export interface Dimension {
   id: number;
   label: string;
-  variant: Variant;
-  display_order: number;
+  short_label?: string;
+  description?: string;
+  color_hex: string;
+  rubric_level_1?: string;
+  rubric_level_2?: string;
+  rubric_level_3?: string;
+  is_active: boolean;
 }
 
 export interface DimensionScore {

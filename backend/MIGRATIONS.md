@@ -17,7 +17,7 @@ This project uses `node-pg-migrate` for database schema migrations. **Never edit
 
 ```bash
 cd backend
-pnpm install
+bun install
 ```
 
 This installs `node-pg-migrate` as a dev dependency.
@@ -42,7 +42,7 @@ DATABASE_URL=postgresql://ila_user:JPBFpINsKQ4hQDrJYSDe@postgres:5432/ila_db
 
 ```bash
 cd backend
-pnpm db:migrate
+bun db:migrate
 ```
 
 This runs all migrations in `backend/migrations/` that haven't been applied yet.
@@ -50,13 +50,13 @@ This runs all migrations in `backend/migrations/` that haven't been applied yet.
 ### Rollback Last Migration
 
 ```bash
-pnpm db:migrate:down
+bun db:migrate:down
 ```
 
 ### Create a New Migration
 
 ```bash
-pnpm db:migrate:create add-new-column
+bun db:migrate:create add-new-column
 ```
 
 This creates a new migration file in `backend/migrations/` with a timestamp prefix.
@@ -149,7 +149,7 @@ exports.down = (pgm) => {
 docker compose up -d
 
 # Run migrations inside backend container
-docker compose exec backend pnpm db:migrate
+docker compose exec backend bun db:migrate
 ```
 
 ### Production (EC2)
@@ -160,13 +160,13 @@ ssh -i ila-pk.pem ec2-user@13.229.1.151
 cd /home/ec2-user/ila-webapp
 
 # Run migrations (ensure postgres is healthy first)
-sudo docker compose exec backend pnpm db:migrate
+sudo docker compose exec backend bun db:migrate
 ```
 
 Or run as a one-off command:
 
 ```bash
-sudo docker compose run --rm backend pnpm db:migrate
+sudo docker compose run --rm backend bun db:migrate
 ```
 
 ## Adding Migrations to Deploy Pipeline
@@ -181,7 +181,7 @@ Add this step to `.github/workflows/deploy.yml` after starting containers:
     ssh -i ~/.ssh/id_rsa ${{ env.EC2_USER }}@${{ env.EC2_HOST }} << 'ENDSSH'
       cd ${{ env.DEPLOY_PATH }}
       echo "Running database migrations..."
-      sudo docker compose exec -T backend pnpm db:migrate
+      sudo docker compose exec -T backend bun db:migrate
     ENDSSH
 ```
 
@@ -191,7 +191,7 @@ Add to your deploy script before starting the backend:
 
 ```bash
 echo "Running database migrations..."
-sudo docker compose run --rm backend pnpm db:migrate
+sudo docker compose run --rm backend bun db:migrate
 ```
 
 ## Best Practices
@@ -229,7 +229,7 @@ docker compose up -d
 
 # Wait for postgres to initialize, then run migrations
 sleep 10
-docker compose exec backend pnpm db:migrate
+docker compose exec backend bun db:migrate
 ```
 
 ### Check migration status
@@ -300,4 +300,4 @@ exports.up = (pgm) => {
 
 - Check [node-pg-migrate docs](https://salsita.github.io/node-pg-migrate/)
 - Review existing migrations in `backend/migrations/`
-- Run `pnpm db:migrate:create --help` for options
+- Run `bun db:migrate:create --help` for options

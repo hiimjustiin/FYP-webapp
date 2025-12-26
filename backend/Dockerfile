@@ -1,26 +1,29 @@
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install postgresql-client for pg_isready command and curl for health checks
+RUN apk add --no-cache postgresql-client curl
 
 # Create app directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json bun.lock* ./
 
 # Install all dependencies (including devDependencies for migrations)
 # This ensures node-pg-migrate is available for running migrations
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
-# Copy source code
+# Copy source code and entrypoint script
 COPY . .
 
+# Make entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Build the application
-RUN pnpm build
+RUN bun run build
 
 # Expose port
 EXPOSE 3001
 
-# Start the server
-CMD ["pnpm", "start"]
+# Use entrypoint script to run migrations then start server
+ENTRYPOINT ["/app/entrypoint.sh"]

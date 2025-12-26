@@ -124,6 +124,13 @@ class DatabaseService:
                             ai_processing_completed_at = NOW()
                         WHERE id = %s
                     """, (status, submission_id))
+                    # Also update project status to Completed
+                    cur.execute("""
+                        UPDATE projects p
+                        SET status = 'Completed'
+                        FROM project_submissions ps
+                        WHERE ps.id = %s AND p.id = ps.project_id
+                    """, (submission_id,))
                 elif status == 'failed':
                     cur.execute("""
                         UPDATE project_submissions
@@ -132,6 +139,13 @@ class DatabaseService:
                             ai_retry_count = ai_retry_count + 1
                         WHERE id = %s
                     """, (status, error, submission_id))
+                    # Also update project status to Failed
+                    cur.execute("""
+                        UPDATE projects p
+                        SET status = 'Failed'
+                        FROM project_submissions ps
+                        WHERE ps.id = %s AND p.id = ps.project_id
+                    """, (submission_id,))
                 
                 conn.commit()
         finally:
@@ -181,6 +195,14 @@ class DatabaseService:
                     result.estimated_cost,
                     result.submission_id
                 ))
+                
+                # Also update project status to Completed
+                cur.execute("""
+                    UPDATE projects p
+                    SET status = 'Completed', updated_at = NOW()
+                    FROM project_submissions ps
+                    WHERE ps.id = %s AND p.id = ps.project_id
+                """, (result.submission_id,))
                 
                 # Insert/update dimension scores
                 for dim_score in result.dimension_scores:

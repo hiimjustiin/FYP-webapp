@@ -27,16 +27,17 @@ const ProjectNew = () => {
         essay_text: data.text || undefined,
         member_ids: teamMembers.map((m) => m.id),
         files: files.length > 0 ? files : undefined,
-        status: "Draft" as const,
       };
 
-      console.log("Submitting project:", projectPayload);
+      console.log("Submitting project for AI evaluation:", projectPayload);
 
       const result = await projectService.createProject(projectPayload);
 
-      console.log("Project created successfully:", result);
-      alert("Project created successfully!");
-      navigate("/project");
+      console.log("Project created and submitted for AI evaluation:", result);
+      alert(
+        "Project submitted for AI evaluation! Redirecting to project details..."
+      );
+      navigate(`/projects/${result.id}`);
     } catch (error: unknown) {
       console.error("Failed to create project:", error);
       interface ErrorResponse {

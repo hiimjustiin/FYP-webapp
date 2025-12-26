@@ -15,6 +15,8 @@ import TeamIcon from "../../assets/icons/team.svg";
 import TeamIconFilled from "../../assets/icons/team_filled.svg";
 import ReportIcon from "../../assets/icons/report.svg";
 import ReportIconFilled from "../../assets/icons/report_filled.svg";
+import StarIcon from "../../assets/icons/star.svg";
+import StarIconFilled from "../../assets/icons/star_filled.svg";
 import SettingsIcon from "../../assets/icons/settings.svg";
 import SettingsIconFilled from "../../assets/icons/settings_filled.svg";
 import LogoutIcon from "../../assets/icons/logout.svg";
@@ -38,13 +40,19 @@ const Sidebar: React.FC = () => {
       iconFilled: ProjectIconFilled,
       path: "/project",
     },
-    { name: "Team", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/team" },
     {
       name: "Report",
       icon: ReportIcon,
       iconFilled: ReportIconFilled,
       path: "/report",
     },
+    {
+      name: "Courses",
+      icon: StarIcon,
+      iconFilled: StarIconFilled,
+      path: "/courses",
+    },
+    { name: "Team", icon: TeamIcon, iconFilled: TeamIconFilled, path: "/team" },
   ];
 
   // Instructor navigation items
