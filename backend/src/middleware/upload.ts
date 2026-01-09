@@ -28,12 +28,13 @@ export const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB max
   },
   fileFilter: (_req, file, cb) => {
-    const allowedTypes = [".pdf", ".ppt", ".pptx", ".txt", ".doc", ".docx"];
+    // POC: Only PDF files supported for AI evaluation
+    const allowedTypes = [".pdf"];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowedTypes.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error("Only PDF, PPT, DOC, and TXT files are allowed"));
+      cb(new Error("Only PDF files are allowed for AI evaluation"));
     }
   },
 });

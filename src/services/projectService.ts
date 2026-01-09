@@ -164,14 +164,25 @@ export const projectService = {
   async resubmitProject(
     id: string,
     essayText?: string,
-    fileUrls?: string[]
+    files?: File[]
   ): Promise<ResubmitProjectResponse> {
+    // Use FormData to support file uploads
+    const formData = new FormData();
+
+    if (essayText) {
+      formData.append("essay_text", essayText);
+    }
+
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
+    // Send FormData without custom Content-Type header (browser sets it with boundary)
     const data = await api.post<ResubmitProjectResponse>(
       `/projects/${id}/resubmit`,
-      {
-        essay_text: essayText,
-        file_urls: fileUrls,
-      }
+      formData
     );
     return data;
   },

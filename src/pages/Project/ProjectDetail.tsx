@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button/Button";
 import TextArea from "../../components/ui/TextArea/TextArea";
+import FileDrop from "../../components/ui/FileDrop/FileDrop";
 import RadarChart, {
   type RadarDataPoint,
 } from "../../components/ui/Charts/RadarChart/RadarChart";
@@ -69,6 +70,9 @@ const ProjectDetail = () => {
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedEssayText, setEditedEssayText] = useState<string>("");
+  const [editedFiles, setEditedFiles] = useState<File[]>([]);
+  const [isFileBasedSubmission, setIsFileBasedSubmission] =
+    useState<boolean>(false);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -169,12 +173,14 @@ const ProjectDetail = () => {
         });
 
         // Load submission content (essay_text or file_urls)
+        // Track if this is a file-based submission for edit mode
         if (sub.essay_text) {
           console.log(
             "[ProjectDetail] Setting essay_text as submission content, length:",
             sub.essay_text.length
           );
           setSubmissionContent(sub.essay_text);
+          setIsFileBasedSubmission(false);
         } else if (sub.file_urls && sub.file_urls.length > 0) {
           console.log(
             "[ProjectDetail] Setting file_urls as submission content"
@@ -184,10 +190,12 @@ const ProjectDetail = () => {
               sub.file_urls.length
             } file(s)]\n${sub.file_urls.join("\n")}`
           );
+          setIsFileBasedSubmission(true);
         } else {
           console.warn(
             "[ProjectDetail] No essay_text or file_urls found in submission"
           );
+          setIsFileBasedSubmission(false);
         }
 
         // Set instructor suggestion if available
@@ -410,7 +418,14 @@ const ProjectDetail = () => {
 
   // Handle edit mode toggle
   const handleEditClick = () => {
-    setEditedEssayText(submissionContent);
+    if (isFileBasedSubmission) {
+      // For file-based submissions, clear files and let user upload new ones
+      setEditedFiles([]);
+      setEditedEssayText("");
+    } else {
+      // For text-based submissions, load current text for editing
+      setEditedEssayText(submissionContent);
+    }
     setIsEditMode(true);
   };
 
@@ -418,16 +433,29 @@ const ProjectDetail = () => {
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setEditedEssayText("");
+    setEditedFiles([]);
+  };
+
+  // Handle file selection in edit mode
+  const handleEditFilesSelected = (files: File[]) => {
+    setEditedFiles(files);
   };
 
   // Handle resubmission with edited content
   const handleResubmit = async () => {
     if (!project || !projectId) return;
 
-    // Validate content
-    if (!editedEssayText.trim()) {
-      setError("Please enter your essay text before resubmitting.");
-      return;
+    // Validate content based on submission type
+    if (isFileBasedSubmission) {
+      if (editedFiles.length === 0) {
+        setError("Please upload at least one PDF file before resubmitting.");
+        return;
+      }
+    } else {
+      if (!editedEssayText.trim()) {
+        setError("Please enter your essay text before resubmitting.");
+        return;
+      }
     }
 
     // Confirm resubmission
@@ -444,9 +472,11 @@ const ProjectDetail = () => {
       setError(null);
       setIsEditMode(false);
 
+      // Call resubmit with either text or files based on submission type
       const result = await projectService.resubmitProject(
         projectId,
-        editedEssayText
+        isFileBasedSubmission ? undefined : editedEssayText,
+        isFileBasedSubmission ? editedFiles : undefined
       );
 
       console.log("Resubmission result:", result);
@@ -455,9 +485,21 @@ const ProjectDetail = () => {
       setSubmissionId(result.submission_id);
       setCurrentIteration(result.iteration_number);
       setTotalSubmissions(result.iteration_number);
-      setSubmissionContent(editedEssayText);
+
+      // Update content display based on type
+      if (isFileBasedSubmission) {
+        setSubmissionContent(
+          `[File submission: ${editedFiles.length} file(s)]\n${editedFiles
+            .map((f) => f.name)
+            .join("\n")}`
+        );
+      } else {
+        setSubmissionContent(editedEssayText);
+      }
+
       setAIFeedback(null);
       setProcessingStatus("Queued for analysis...");
+      setEditedFiles([]);
 
       // Refresh submissions list
       const submissionsData = await projectService.getProjectSubmissions(
@@ -816,13 +858,37 @@ const ProjectDetail = () => {
 
               {isEditMode ? (
                 <>
-                  <TextArea
-                    value={editedEssayText}
-                    onChange={setEditedEssayText}
-                    placeholder="Edit your essay text here..."
-                    maxLength={50000}
-                    showCharCount={true}
-                  />
+                  {isFileBasedSubmission ? (
+                    // File-based submission: show FileDrop
+                    <div className="mb-4">
+                      <p className="body-2 text-gray-600 mb-3">
+                        Upload a new PDF file to resubmit:
+                      </p>
+                      <FileDrop
+                        onFilesSelected={handleEditFilesSelected}
+                        accept=".pdf"
+                        multiple={false}
+                        maxSize={50 * 1024 * 1024}
+                      />
+                      {editedFiles.length > 0 && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <p className="caption text-blue-900">
+                            📎 Selected: {editedFiles[0].name} (
+                            {(editedFiles[0].size / 1024 / 1024).toFixed(2)} MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Text-based submission: show TextArea
+                    <TextArea
+                      value={editedEssayText}
+                      onChange={setEditedEssayText}
+                      placeholder="Edit your essay text here..."
+                      maxLength={50000}
+                      showCharCount={true}
+                    />
+                  )}
                   <div className="submission-actions mt-4">
                     <Button
                       variant="grey"
@@ -834,7 +900,12 @@ const ProjectDetail = () => {
                     <Button
                       variant="blue"
                       onClick={handleResubmit}
-                      disabled={isSubmitting || !editedEssayText.trim()}
+                      disabled={
+                        isSubmitting ||
+                        (isFileBasedSubmission
+                          ? editedFiles.length === 0
+                          : !editedEssayText.trim())
+                      }
                     >
                       {isSubmitting
                         ? "Resubmitting..."

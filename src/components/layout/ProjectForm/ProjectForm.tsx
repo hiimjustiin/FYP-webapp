@@ -510,17 +510,17 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     {/* File Upload Section */}
                     <div className="mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
                       <label className="text-sm text-gray-700 mb-2 block font-medium">
-                        OR Upload Essay Files
+                        OR Upload PDF File
                       </label>
                       <p className="text-xs text-gray-600 mb-3">
-                        Upload PDF, Word documents, or other supported files.
-                        You can select multiple files.
+                        Upload a PDF file for AI evaluation. Only PDF format is
+                        currently supported.
                       </p>
                       <FileDrop
                         onFilesSelected={handleFilesSelected}
-                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.pptx,.xlsx"
+                        accept=".pdf"
                         multiple={true}
-                        maxSize={10 * 1024 * 1024}
+                        maxSize={50 * 1024 * 1024}
                       />
                     </div>
 
