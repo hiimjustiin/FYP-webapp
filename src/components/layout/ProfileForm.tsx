@@ -7,6 +7,7 @@ import Button from "../ui/Button/Button";
 interface ProfileFormProps {
   authUserId: string;
   authUserEmail: string;
+  authUserRole?: string;
   initialData: UpdateUserData;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
@@ -15,10 +16,12 @@ interface ProfileFormProps {
 const ProfileForm = ({
   authUserId,
   authUserEmail,
+  authUserRole,
   initialData,
   onSuccess,
   onError,
 }: ProfileFormProps) => {
+  const isStudent = authUserRole === "student";
   const [profileData, setProfileData] = useState<UpdateUserData>(initialData);
   const [isSaving, setIsSaving] = useState(false);
   const [validationErrors, setValidationErrors] = useState<
@@ -49,13 +52,15 @@ const ProfileForm = ({
       errors.display_name = "Display name is required";
     }
 
-    if (!profileData.student_id || profileData.student_id.trim() === "") {
+    // Student ID is only required for students
+    if (
+      isStudent &&
+      (!profileData.student_id || profileData.student_id.trim() === "")
+    ) {
       errors.student_id = "Student ID is required";
     }
 
-    if (!profileData.department || profileData.department.trim() === "") {
-      errors.department = "Department is required";
-    }
+    // Department is now optional for all roles
 
     // Validate phone format if provided
     if (profileData.phone) {
@@ -80,7 +85,29 @@ const ProfileForm = ({
 
     try {
       setIsSaving(true);
-      await userService.updateUser(authUserId, profileData);
+
+      // Clean up the data - remove empty strings for optional fields
+      const cleanedData: UpdateUserData = {
+        display_name: profileData.display_name,
+      };
+
+      if (profileData.bio?.trim()) {
+        cleanedData.bio = profileData.bio;
+      }
+
+      if (profileData.phone?.trim()) {
+        cleanedData.phone = profileData.phone;
+      }
+
+      if (profileData.department?.trim()) {
+        cleanedData.department = profileData.department;
+      }
+
+      if (profileData.student_id?.trim()) {
+        cleanedData.student_id = profileData.student_id;
+      }
+
+      await userService.updateUser(authUserId, cleanedData);
       onSuccess("Profile updated successfully");
     } catch (error) {
       console.error("Failed to update profile:", error);
@@ -131,34 +158,36 @@ const ProfileForm = ({
         )}
       </div>
 
-      {/* Student ID */}
-      <div>
-        <label className="block caption mb-2 text-gray-700 font-medium">
-          Student ID <span className="text-red-600">*</span>
-        </label>
-        <InputField
-          type="text"
-          placeholder="Enter your student ID"
-          value={profileData.student_id}
-          onChange={(value) => {
-            handleInputChange("student_id", value);
-            clearFieldError("student_id");
-          }}
-          className={`w-full ${
-            validationErrors.student_id ? "border-red-500" : ""
-          }`}
-        />
-        {validationErrors.student_id && (
-          <p className="mt-1 text-sm text-red-600">
-            {validationErrors.student_id}
-          </p>
-        )}
-      </div>
+      {/* Student ID - Only for students */}
+      {isStudent && (
+        <div>
+          <label className="block caption mb-2 text-gray-700 font-medium">
+            Student ID <span className="text-red-600">*</span>
+          </label>
+          <InputField
+            type="text"
+            placeholder="Enter your student ID"
+            value={profileData.student_id}
+            onChange={(value) => {
+              handleInputChange("student_id", value);
+              clearFieldError("student_id");
+            }}
+            className={`w-full ${
+              validationErrors.student_id ? "border-red-500" : ""
+            }`}
+          />
+          {validationErrors.student_id && (
+            <p className="mt-1 text-sm text-red-600">
+              {validationErrors.student_id}
+            </p>
+          )}
+        </div>
+      )}
 
-      {/* Department */}
+      {/* Department - Optional for all roles */}
       <div>
         <label className="block caption mb-2 text-gray-700 font-medium">
-          Department <span className="text-red-600">*</span>
+          Department
         </label>
         <InputField
           type="text"
