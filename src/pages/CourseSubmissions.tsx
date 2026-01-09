@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   instructorService,
   type CourseSubmission,
-  type AIAnalysisResult,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
 import Table from "../components/ui/Table/Table";
@@ -19,13 +18,6 @@ const CourseSubmissions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [scoringSubmissionId, setScoringSubmissionId] = useState<string | null>(
-    null
-  );
-  const [selectedSubmission, setSelectedSubmission] =
-    useState<CourseSubmission | null>(null);
-  const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
 
   const fetchSubmissions = React.useCallback(async () => {
     if (!courseId) return;
@@ -62,40 +54,45 @@ const CourseSubmissions = () => {
     setFilteredSubmissions(filtered);
   }, [searchQuery, submissions]);
 
-  const handleTriggerScoring = async (submissionId: string) => {
-    setScoringSubmissionId(submissionId);
-    try {
-      const result = await instructorService.triggerScoring(submissionId);
-      setAiResult(result);
-      setSelectedSubmission(
-        submissions.find((s) => s.id === submissionId) || null
-      );
-      setShowReviewDialog(true);
-      // Refresh submissions to get updated status
-      await fetchSubmissions();
-    } catch (err) {
-      console.error("Error triggering scoring:", err);
-      alert("Failed to score submission. Please try again.");
-    } finally {
-      setScoringSubmissionId(null);
-    }
+  const getStatusBadge = () => {
+    return (
+      <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+        Submitted
+      </span>
+    );
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      submitted: "bg-blue-100 text-blue-800",
-      scoring: "bg-yellow-100 text-yellow-800",
-      scored: "bg-green-100 text-green-800",
-      reviewed: "bg-purple-100 text-purple-800",
-    };
-
+  const getFeedbackBadge = (hasFeedback: boolean) => {
+    if (hasFeedback) {
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-[#181C62]/10 text-[#181C62]">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Reviewed
+        </span>
+      );
+    }
     return (
-      <span
-        className={`px-2 py-1 rounded text-xs font-medium ${
-          statusColors[status] || "bg-gray-100 text-gray-800"
-        }`}
-      >
-        {status.toUpperCase()}
+      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+        <svg
+          className="w-4 h-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+        Pending
       </span>
     );
   };
@@ -136,10 +133,10 @@ const CourseSubmissions = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">
-              Total
+              Total Submissions
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
               {submissions.length}
@@ -147,26 +144,10 @@ const CourseSubmissions = () => {
           </div>
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">
-              Submitted
+              Pending Instructor Review
             </div>
-            <div className="heading-3 text-blue-600">
-              {submissions.filter((s) => s.status === "submitted").length}
-            </div>
-          </div>
-          <div className="dashboard-card p-6">
-            <div className="caption text-[var(--color-grey-55)] mb-2">
-              Scored
-            </div>
-            <div className="heading-3 text-green-600">
-              {submissions.filter((s) => s.status === "scored").length}
-            </div>
-          </div>
-          <div className="dashboard-card p-6">
-            <div className="caption text-[var(--color-grey-55)] mb-2">
-              Reviewed
-            </div>
-            <div className="heading-3 text-purple-600">
-              {submissions.filter((s) => s.status === "reviewed").length}
+            <div className="heading-3 text-orange-600">
+              {submissions.filter((s) => !s.has_instructor_feedback).length}
             </div>
           </div>
         </div>
@@ -199,9 +180,9 @@ const CourseSubmissions = () => {
                   "Student",
                   "Project",
                   "File",
-                  "Status",
-                  "Scores",
                   "Submitted",
+                  "Status",
+                  "Instructor Feedback",
                   "Actions",
                 ],
                 ...filteredSubmissions.map((row: CourseSubmission) => [
@@ -217,171 +198,26 @@ const CourseSubmissions = () => {
                   <span className="caption text-[var(--color-grey-55)]">
                     {row.file_type?.toUpperCase() || "N/A"}
                   </span>,
-                  getStatusBadge(row.status),
-                  <span className="body-2">
-                    {row.scores_count > 0
-                      ? `${row.scores_count}/9`
-                      : "Not scored"}
-                  </span>,
                   <span className="caption text-[var(--color-grey-55)]">
                     {new Date(row.submitted_at).toLocaleDateString()}
                   </span>,
+                  getStatusBadge(),
+                  getFeedbackBadge(row.has_instructor_feedback),
                   <div className="flex gap-2">
-                    {row.file_url && (
-                      <Button
-                        variant="grey"
-                        onClick={() => window.open(row.file_url, "_blank")}
-                      >
-                        View
-                      </Button>
-                    )}
-                    {row.status === "submitted" && (
-                      <Button
-                        variant="blue"
-                        onClick={() => handleTriggerScoring(row.id)}
-                        disabled={scoringSubmissionId === row.id}
-                      >
-                        {scoringSubmissionId === row.id
-                          ? "Scoring..."
-                          : "Score"}
-                      </Button>
-                    )}
-                    {(row.status === "scored" || row.status === "reviewed") && (
-                      <Button
-                        variant="darkBlue"
-                        onClick={() => {
-                          setSelectedSubmission(row);
-                          setShowReviewDialog(true);
-                        }}
-                      >
-                        Review
-                      </Button>
-                    )}
+                    <Button
+                      variant="blue"
+                      onClick={() =>
+                        navigate(`/instructor/submissions/${row.id}`)
+                      }
+                    >
+                      View Details
+                    </Button>
                   </div>,
                 ]),
               ]}
             />
           )}
         </div>
-
-        {/* AI Results Dialog */}
-        {showReviewDialog && aiResult && selectedSubmission && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-            onClick={() => setShowReviewDialog(false)}
-          >
-            <div
-              className="bg-white rounded-lg shadow-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="heading-4">AI Scoring Results</h2>
-                  <button
-                    onClick={() => setShowReviewDialog(false)}
-                    className="text-[var(--color-grey-55)] hover:text-black"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="caption text-[var(--color-grey-55)] mb-1">
-                      Student
-                    </p>
-                    <p className="body-2 font-medium">
-                      {selectedSubmission.student_name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="caption text-[var(--color-grey-55)] mb-1">
-                      Project
-                    </p>
-                    <p className="body-2 font-medium">
-                      {selectedSubmission.project_title}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="caption text-[var(--color-grey-55)] mb-2">
-                      Overall Feedback
-                    </p>
-                    <p className="body-2">{aiResult.overall_feedback}</p>
-                  </div>
-                  <div>
-                    <p className="caption text-[var(--color-grey-55)] mb-2">
-                      Dimension Scores
-                    </p>
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {aiResult.dimension_scores.map((score, idx) => (
-                        <div
-                          key={idx}
-                          className="border border-[var(--color-grey-15)] rounded p-3"
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="body-2 font-medium">
-                              Dimension {score.dimension_id}
-                            </span>
-                            <span className="subtitle-2 text-[var(--color-blue-ntu)]">
-                              {score.score}/10
-                            </span>
-                          </div>
-                          <p className="caption text-[var(--color-grey-55)]">
-                            {score.reasoning}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="caption text-[var(--color-grey-55)] mb-1">
-                      Strengths
-                    </p>
-                    <ul className="list-disc list-inside body-2 space-y-1">
-                      {aiResult.strengths.map((strength, idx) => (
-                        <li key={idx}>{strength}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <p className="caption text-[var(--color-grey-55)] mb-1">
-                      Areas for Improvement
-                    </p>
-                    <ul className="list-disc list-inside body-2 space-y-1">
-                      {aiResult.areas_for_improvement.map((area, idx) => (
-                        <li key={idx}>{area}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex gap-2 pt-4 border-t border-[var(--color-grey-15)]">
-                    <Button
-                      variant="blue"
-                      onClick={() => {
-                        setShowReviewDialog(false);
-                        // Navigate to detailed review page (Phase 3)
-                        navigate(
-                          `/instructor/submissions/${selectedSubmission.id}/review`
-                        );
-                      }}
-                    >
-                      Review & Override Scores
-                    </Button>
-                    <Button
-                      variant="grey"
-                      onClick={() => {
-                        setShowReviewDialog(false);
-                        setAiResult(null);
-                        setSelectedSubmission(null);
-                      }}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

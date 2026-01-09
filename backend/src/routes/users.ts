@@ -97,14 +97,14 @@ router.put(
       .isLength({ max: 500 })
       .withMessage("Bio cannot exceed 500 characters"),
     body("phone")
-      .optional()
+      .optional({ values: "falsy" })
       .trim()
       .matches(
         /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/
       )
       .withMessage("Invalid phone number format"),
-    body("department").optional().trim(),
-    body("student_id").optional().trim(),
+    body("department").optional({ values: "falsy" }).trim(),
+    body("student_id").optional({ values: "falsy" }).trim(),
   ],
   async (req: AuthRequest, res: Response) => {
     try {
