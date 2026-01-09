@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button/Button";
+import TextArea from "../../components/ui/TextArea/TextArea";
 import RadarChart, {
   type RadarDataPoint,
 } from "../../components/ui/Charts/RadarChart/RadarChart";
@@ -11,8 +12,15 @@ import ChatInterface, {
 } from "../../components/ui/ChatInterface/ChatInterface";
 import ComparisonSelector from "../../components/layout/ComparisonSelector/ComparisonSelector";
 import type { DropdownOption } from "../../components/ui/Dropdown/Dropdown";
-import { projectService, type Project } from "../../services/projectService";
-import { feedbackService } from "../../services/feedbackService";
+import {
+  projectService,
+  type Project,
+  type SubmissionSummary,
+} from "../../services/projectService";
+import {
+  feedbackService,
+  type ComparisonAnalysis,
+} from "../../services/feedbackService";
 import "./ProjectDetail.css";
 
 /** ------------------------------- Mock AI Feedback ------------------------------- */
@@ -47,9 +55,20 @@ const ProjectDetail = () => {
   const [processingStatus, setProcessingStatus] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
+  // Submission list state
+  const [submissions, setSubmissions] = useState<SubmissionSummary[]>([]);
+  const [currentIteration, setCurrentIteration] = useState<number>(1);
+  const [totalSubmissions, setTotalSubmissions] = useState<number>(1);
+
   // Comparison state
-  const [leftSubmission, setLeftSubmission] = useState<string>("draft");
-  const [rightSubmission, setRightSubmission] = useState<string>("submit-1");
+  const [leftSubmission, setLeftSubmission] = useState<string>("");
+  const [rightSubmission, setRightSubmission] = useState<string>("");
+  const [comparisonAnalysis, setComparisonAnalysis] =
+    useState<ComparisonAnalysis | null>(null);
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedEssayText, setEditedEssayText] = useState<string>("");
 
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -79,13 +98,35 @@ const ProjectDetail = () => {
         const data = await projectService.getProject(projectId);
         setProject(data);
 
-        // If project has a submission, load its feedback
+        // Load all submissions for this project
+        const submissionsData = await projectService.getProjectSubmissions(
+          projectId
+        );
+        setSubmissions(submissionsData.submissions);
+        setTotalSubmissions(submissionsData.total_count);
+
+        // Set up comparison selector options
+        if (submissionsData.submissions.length >= 2) {
+          const latestTwo = submissionsData.submissions.slice(-2);
+          setLeftSubmission(latestTwo[0].id);
+          setRightSubmission(latestTwo[1].id);
+        }
+
+        // If project has a submission, load its feedback (latest one)
         if (data.latest_submission_id) {
           console.log(
             "[ProjectDetail] Found submission:",
             data.latest_submission_id
           );
           setSubmissionId(data.latest_submission_id);
+
+          // Find the iteration number
+          const latestSub = submissionsData.submissions.find(
+            (s) => s.id === data.latest_submission_id
+          );
+          if (latestSub) {
+            setCurrentIteration(latestSub.iteration_number);
+          }
         }
       } catch (err) {
         console.error("Failed to load project:", err);
@@ -152,6 +193,19 @@ const ProjectDetail = () => {
         // Set instructor suggestion if available
         if (sub.instructor_suggestion) {
           setInstructorSuggestion(sub.instructor_suggestion);
+        }
+
+        // Update iteration info
+        if (sub.iteration_number) {
+          setCurrentIteration(sub.iteration_number);
+        }
+        if (sub.total_submissions) {
+          setTotalSubmissions(sub.total_submissions);
+        }
+
+        // Load comparison analysis if available
+        if (sub.comparison_analysis) {
+          setComparisonAnalysis(sub.comparison_analysis);
         }
 
         if (sub.ai_processing_status === "completed" && dims.length > 0) {
@@ -354,11 +408,81 @@ const ProjectDetail = () => {
     }
   };
 
-  // Mock submissions for comparison
-  const MOCK_SUBMISSIONS: DropdownOption[] = [
-    { id: "draft", label: "Draft" },
-    { id: "submit-1", label: "Submit (e)" },
-  ];
+  // Handle edit mode toggle
+  const handleEditClick = () => {
+    setEditedEssayText(submissionContent);
+    setIsEditMode(true);
+  };
+
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditedEssayText("");
+  };
+
+  // Handle resubmission with edited content
+  const handleResubmit = async () => {
+    if (!project || !projectId) return;
+
+    // Validate content
+    if (!editedEssayText.trim()) {
+      setError("Please enter your essay text before resubmitting.");
+      return;
+    }
+
+    // Confirm resubmission
+    const confirmed = window.confirm(
+      `Are you sure you want to resubmit? This will create Submission ${
+        totalSubmissions + 1
+      } and trigger a new AI evaluation comparing to your previous submission.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      setIsEditMode(false);
+
+      const result = await projectService.resubmitProject(
+        projectId,
+        editedEssayText
+      );
+
+      console.log("Resubmission result:", result);
+
+      // Update state with new submission
+      setSubmissionId(result.submission_id);
+      setCurrentIteration(result.iteration_number);
+      setTotalSubmissions(result.iteration_number);
+      setSubmissionContent(editedEssayText);
+      setAIFeedback(null);
+      setProcessingStatus("Queued for analysis...");
+
+      // Refresh submissions list
+      const submissionsData = await projectService.getProjectSubmissions(
+        projectId
+      );
+      setSubmissions(submissionsData.submissions);
+    } catch (err) {
+      console.error("Failed to resubmit project:", err);
+      let errorMessage = "Failed to resubmit project. Please try again.";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Build submissions options for comparison dropdown
+  const submissionOptions: DropdownOption[] = submissions.map((sub) => ({
+    id: sub.id,
+    label: `Submission ${sub.iteration_number}`,
+  }));
 
   // Prepare radar data from feedback (all dimensions)
   const radarData: RadarDataPoint[] = aiFeedback
@@ -526,16 +650,52 @@ const ProjectDetail = () => {
         </div>
       </div>
 
-      {/* Comparison Selector */}
-      <div className="project-detail-comparison">
-        <ComparisonSelector
-          submissions={MOCK_SUBMISSIONS}
-          leftSubmission={leftSubmission}
-          rightSubmission={rightSubmission}
-          onLeftChange={setLeftSubmission}
-          onRightChange={setRightSubmission}
-        />
-      </div>
+      {/* Comparison Selector - Only show if 2+ submissions */}
+      {submissions.length >= 2 && (
+        <div className="project-detail-comparison">
+          <ComparisonSelector
+            submissions={submissionOptions}
+            leftSubmission={leftSubmission}
+            rightSubmission={rightSubmission}
+            onLeftChange={setLeftSubmission}
+            onRightChange={setRightSubmission}
+          />
+        </div>
+      )}
+
+      {/* Comparison Analysis Banner - Show when comparison data exists */}
+      {comparisonAnalysis && (
+        <div className="comparison-analysis-banner">
+          <div
+            className={`comparison-badge ${comparisonAnalysis.overall_improvement}`}
+          >
+            {comparisonAnalysis.overall_improvement === "improved" && "📈"}
+            {comparisonAnalysis.overall_improvement === "regressed" && "📉"}
+            {comparisonAnalysis.overall_improvement === "unchanged" && "➡️"}
+            <span className="ml-2">
+              {comparisonAnalysis.overall_improvement === "improved" &&
+                "Improved!"}
+              {comparisonAnalysis.overall_improvement === "regressed" &&
+                "Needs Work"}
+              {comparisonAnalysis.overall_improvement === "unchanged" &&
+                "Consistent"}
+            </span>
+          </div>
+          <p className="comparison-summary">{comparisonAnalysis.summary}</p>
+          {comparisonAnalysis.key_improvements.length > 0 && (
+            <div className="comparison-improvements">
+              <span className="font-medium text-green-600">Improved: </span>
+              {comparisonAnalysis.key_improvements.join(", ")}
+            </div>
+          )}
+          {comparisonAnalysis.key_regressions.length > 0 && (
+            <div className="comparison-regressions">
+              <span className="font-medium text-red-600">Needs focus: </span>
+              {comparisonAnalysis.key_regressions.join(", ")}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Main Content - Three Column Layout */}
       {aiFeedback ? (
@@ -648,17 +808,52 @@ const ProjectDetail = () => {
           {/* Column 2: Submission Content */}
           <div className="project-detail-col-2">
             <div className="submission-content-card">
-              <h4 className="subtitle-1">Student Submission</h4>
-              {submissionContent ? (
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="subtitle-1">
+                  Submission {currentIteration} of {totalSubmissions}
+                </h4>
+              </div>
+
+              {isEditMode ? (
+                <>
+                  <TextArea
+                    value={editedEssayText}
+                    onChange={setEditedEssayText}
+                    placeholder="Edit your essay text here..."
+                    maxLength={50000}
+                    showCharCount={true}
+                  />
+                  <div className="submission-actions mt-4">
+                    <Button
+                      variant="grey"
+                      onClick={handleCancelEdit}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="blue"
+                      onClick={handleResubmit}
+                      disabled={isSubmitting || !editedEssayText.trim()}
+                    >
+                      {isSubmitting
+                        ? "Resubmitting..."
+                        : `Save & Resubmit (→ Submission ${
+                            totalSubmissions + 1
+                          })`}
+                    </Button>
+                  </div>
+                </>
+              ) : submissionContent ? (
                 <>
                   <p className="submission-text body-2">{submissionContent}</p>
                   <div className="submission-actions">
                     <Button
-                      variant="red"
-                      onClick={handleSubmitProject}
+                      variant="grey"
+                      onClick={handleEditClick}
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? "Submitting..." : "Submit"}
+                      ✏️ Edit & Resubmit
                     </Button>
                   </div>
                 </>

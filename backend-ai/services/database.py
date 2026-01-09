@@ -12,7 +12,7 @@ from datetime import datetime
 import hashlib
 
 from config import get_settings
-from models.evaluation import EvaluationResult, DimensionScore
+from models.evaluation import EvaluationResult, DimensionScore, ComparisonAnalysis
 
 
 class DatabaseService:
@@ -315,6 +315,33 @@ class DatabaseService:
                     'overall': dict(submission) if submission['ai_processing_status'] == 'completed' else None,
                     'dimensions': [dict(d) for d in dimensions] if dimensions else []
                 }
+        finally:
+            self.return_connection(conn)
+    
+    async def save_comparison_analysis(
+        self, 
+        submission_id: str, 
+        comparison: ComparisonAnalysis
+    ):
+        """
+        Save comparison analysis to the submission record.
+        
+        Args:
+            submission_id: Current submission UUID
+            comparison: ComparisonAnalysis result
+        """
+        conn = self.get_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE project_submissions
+                    SET comparison_analysis = %s
+                    WHERE id = %s
+                """, (
+                    Json(comparison.dict()),
+                    submission_id
+                ))
+                conn.commit()
         finally:
             self.return_connection(conn)
 

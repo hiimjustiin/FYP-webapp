@@ -73,6 +73,7 @@ class AnalyzeSubmissionRequest(BaseModel):
     user_id: str
     essay_text: str = Field(..., description="Essay text content")
     file_urls: Optional[List[str]] = Field(default=None, description="URLs to uploaded files (PDF/DOCX)")
+    previous_submission_id: Optional[str] = Field(default=None, description="Previous submission ID for comparison analysis")
     reanalyze: bool = Field(default=False, description="Force re-analysis (skip cache)")
     
     @validator('essay_text')
@@ -83,6 +84,32 @@ class AnalyzeSubmissionRequest(BaseModel):
             # File validation happens in the endpoint
             pass
         return v
+
+
+class DimensionComparison(BaseModel):
+    """Comparison of a dimension between two submissions"""
+    
+    dimension_id: int = Field(..., ge=1, le=9)
+    dimension_name: str
+    previous_score: int = Field(..., ge=1, le=3)
+    current_score: int = Field(..., ge=1, le=3)
+    score_change: int = Field(..., ge=-2, le=2, description="Change: positive=improvement, negative=regression")
+    improvement_summary: str = Field(..., description="What improved or regressed")
+
+
+class ComparisonAnalysis(BaseModel):
+    """Comparison between current and previous submission"""
+    
+    previous_submission_id: str
+    current_submission_id: str
+    overall_improvement: Literal["improved", "regressed", "unchanged"]
+    previous_avg_score: float
+    current_avg_score: float
+    score_delta: float = Field(..., description="Change in average score")
+    dimension_comparisons: List[DimensionComparison]
+    summary: str = Field(..., description="Overall comparison summary")
+    key_improvements: List[str] = Field(default_factory=list, description="Main areas of improvement")
+    key_regressions: List[str] = Field(default_factory=list, description="Areas that regressed")
 
 
 class AnalyzeSubmissionResponse(BaseModel):

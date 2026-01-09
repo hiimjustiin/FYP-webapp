@@ -456,9 +456,10 @@ export const createProject = async (
       const submissionResult = await query(
         `INSERT INTO project_submissions (
           project_id, course_id, user_id, name, submitted_at,
-          essay_text, file_urls, content_hash, ai_processing_status
+          essay_text, file_urls, content_hash, ai_processing_status,
+          iteration_number
         )
-        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending')
+        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending', 1)
         RETURNING id`,
         [
           project.id,
@@ -835,11 +836,11 @@ export const submitProject = async (
       console.log(`[Submit] Creating submission record...`);
       const submissionResult = await query(
         `INSERT INTO project_submissions (
-          project_id, course_id, user_id, name, submitted_at
+          project_id, course_id, user_id, name, submitted_at, iteration_number
         )
-        VALUES ($1, $2, $3, $4, NOW())
+        VALUES ($1, $2, $3, $4, NOW(), 1)
         RETURNING id`,
-        [id, project.course_id, req.user.id, "Draft 1"]
+        [id, project.course_id, req.user.id, "Submission 1"]
       );
 
       submissionId = submissionResult.rows[0].id;
@@ -941,6 +942,269 @@ export const submitProject = async (
 };
 
 /**
+ * Get all submissions for a project
+ */
+export const getProjectSubmissions = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Check if user has access to project
+    const projectCheck = await query(
+      `SELECT p.id FROM projects p
+       WHERE p.id = $1 AND (
+         p.owner_id = $2 OR p.id IN (
+           SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
+         )
+       )`,
+      [id, req.user.id]
+    );
+
+    if (projectCheck.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Project not found or access denied" },
+      });
+      return;
+    }
+
+    // Get all submissions for this project ordered by iteration
+    const submissionsResult = await query(
+      `SELECT 
+        ps.id,
+        ps.name,
+        ps.iteration_number,
+        ps.submitted_at,
+        ps.ai_processing_status,
+        ps.ai_overall_summary,
+        ps.ai_estimated_level,
+        ps.previous_submission_id,
+        ps.comparison_analysis,
+        (
+          SELECT AVG(sds.ai_score)::numeric(3,2)
+          FROM submission_dimension_scores sds 
+          WHERE sds.submission_id = ps.id AND sds.ai_score IS NOT NULL
+        ) as avg_score
+       FROM project_submissions ps
+       WHERE ps.project_id = $1
+       ORDER BY ps.iteration_number ASC`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        submissions: submissionsResult.rows,
+        total_count: submissionsResult.rows.length,
+      },
+    });
+  } catch (error) {
+    console.error("Get project submissions error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+/**
+ * Resubmit a project with updated content for AI re-evaluation
+ */
+export const resubmitProject = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { id } = req.params;
+    const { essay_text, file_urls } = req.body;
+
+    // Check if user has access to project
+    const projectResult = await query(
+      `SELECT p.*, u.display_name as owner_name
+       FROM projects p
+       LEFT JOIN users u ON p.owner_id = u.id
+       WHERE p.id = $1 AND (
+         p.owner_id = $2 OR p.id IN (
+           SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
+         )
+       )`,
+      [id, req.user.id]
+    );
+
+    if (projectResult.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Project not found or access denied" },
+      });
+      return;
+    }
+
+    const project = projectResult.rows[0];
+
+    // Validate project has content
+    const hasEssayText = essay_text && essay_text.trim().length > 0;
+    const hasFiles = file_urls && file_urls.length > 0;
+
+    if (!hasEssayText && !hasFiles) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "Resubmission must have essay text or files",
+        },
+      });
+      return;
+    }
+
+    // Get the latest submission to determine next iteration number
+    const latestSubmissionResult = await query(
+      `SELECT id, iteration_number FROM project_submissions
+       WHERE project_id = $1
+       ORDER BY iteration_number DESC
+       LIMIT 1`,
+      [id]
+    );
+
+    const previousSubmission = latestSubmissionResult.rows[0];
+    const nextIterationNumber = previousSubmission
+      ? previousSubmission.iteration_number + 1
+      : 1;
+
+    // Start transaction
+    await query("BEGIN");
+
+    try {
+      // Update project essay_text if provided
+      if (hasEssayText) {
+        await query(
+          `UPDATE projects SET essay_text = $1, updated_at = NOW() WHERE id = $2`,
+          [essay_text, id]
+        );
+      }
+
+      // Create new submission record
+      const crypto = await import("crypto");
+      const contentForHash = JSON.stringify({
+        essay: essay_text || "",
+        files: file_urls ? [...file_urls].sort() : [],
+      });
+      const contentHash = crypto
+        .createHash("sha256")
+        .update(contentForHash)
+        .digest("hex");
+
+      const submissionResult = await query(
+        `INSERT INTO project_submissions (
+          project_id, course_id, user_id, name, submitted_at,
+          essay_text, file_urls, content_hash, ai_processing_status,
+          iteration_number, previous_submission_id
+        )
+        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending', $8, $9)
+        RETURNING id, iteration_number`,
+        [
+          id,
+          project.course_id,
+          req.user.id,
+          `Submission ${nextIterationNumber}`,
+          essay_text || null,
+          JSON.stringify(file_urls || []),
+          contentHash,
+          nextIterationNumber,
+          previousSubmission?.id || null,
+        ]
+      );
+
+      const newSubmission = submissionResult.rows[0];
+
+      // Update project status to Processing
+      await query(
+        `UPDATE projects SET status = 'Processing', updated_at = NOW() WHERE id = $1`,
+        [id]
+      );
+
+      await query("COMMIT");
+
+      // Trigger AI evaluation with previous submission for comparison
+      const AI_SERVICE_URL =
+        process.env.AI_SERVICE_URL || "http://backend-ai:8000";
+      const essayTextForAI = hasEssayText
+        ? essay_text
+        : "[No essay text provided. Analysis based on uploaded files.]";
+
+      fetch(`${AI_SERVICE_URL}/api/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submission_id: newSubmission.id,
+          project_id: id,
+          course_id: project.course_id,
+          user_id: req.user.id,
+          essay_text: essayTextForAI,
+          file_urls: file_urls || [],
+          previous_submission_id: previousSubmission?.id || null,
+          reanalyze: false,
+        }),
+      }).catch((error) => {
+        console.error("Failed to trigger AI evaluation:", error);
+        query(
+          `UPDATE project_submissions 
+           SET ai_processing_status = 'failed', 
+               ai_processing_error = $1 
+           WHERE id = $2`,
+          ["Failed to connect to AI service", newSubmission.id]
+        ).catch((err) =>
+          console.error("Failed to update submission status:", err)
+        );
+
+        query(`UPDATE projects SET status = 'Failed' WHERE id = $1`, [
+          id,
+        ]).catch((err) =>
+          console.error("Failed to update project status:", err)
+        );
+      });
+
+      res.json({
+        success: true,
+        data: {
+          submission_id: newSubmission.id,
+          iteration_number: newSubmission.iteration_number,
+          previous_submission_id: previousSubmission?.id || null,
+          message: `Submission ${nextIterationNumber} created. AI evaluation is in progress.`,
+        },
+      });
+    } catch (error) {
+      await query("ROLLBACK");
+      throw error;
+    }
+  } catch (error) {
+    console.error("Resubmit project error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+/**
  * Get AI feedback for a submission
  */
 export const getSubmissionFeedback = async (
@@ -1000,6 +1264,12 @@ export const getSubmissionFeedback = async (
       [submission.project_id]
     );
 
+    // Get total submission count for this project
+    const countResult = await query(
+      `SELECT COUNT(*) as total_count FROM project_submissions WHERE project_id = $1`,
+      [submission.project_id]
+    );
+
     // Format response to match frontend expectations
     res.json({
       success: true,
@@ -1009,6 +1279,10 @@ export const getSubmissionFeedback = async (
           project_id: submission.project_id,
           project_title: projectResult.rows[0]?.title || "",
           name: submission.name,
+          iteration_number: submission.iteration_number || 1,
+          total_submissions: parseInt(countResult.rows[0].total_count) || 1,
+          previous_submission_id: submission.previous_submission_id,
+          comparison_analysis: submission.comparison_analysis,
           submitted_at: submission.submitted_at,
           ai_processing_status: submission.ai_processing_status,
           ai_processing_error: submission.ai_processing_error,
