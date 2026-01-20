@@ -17,7 +17,7 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 # Make entrypoint script executable
-RUN chmod +x /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Build the application
 RUN bun run build

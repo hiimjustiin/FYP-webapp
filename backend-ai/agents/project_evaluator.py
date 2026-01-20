@@ -12,6 +12,8 @@ from pydantic_ai.models.openai import OpenAIModel
 from config import get_settings, RUBRIC_CRITERIA
 from models.evaluation import DimensionScore, OverallAssessment, EvaluationResult
 
+from verificationlayer import verify_submission_integrity
+
 
 settings = get_settings()
 
@@ -201,6 +203,15 @@ Provide:
         # Create overall assessment
         overall = await self.create_overall_assessment(dimension_scores, submission_text)
         
+        # Insertion of verification
+        is_valid, reason = verify_submission_integrity(dimension_scores, overall)
+        
+        if not is_valid:
+            # For now, just logging it. In the future, you might retry or flag it.
+            print(f"CRITICAL WARNING: AI Verification Failed: {reason}")
+            # You could technically raise an error here if you wanted to block the output
+            # raise ValueError(f"AI Verification Failed: {reason}")
+
         # Calculate processing time
         processing_time = time.time() - start_time
         
