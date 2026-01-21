@@ -14,7 +14,7 @@ import "./RadarChart.css";
 export interface RadarDataPoint {
   dimension: string;
   userScore: number;
-  classAverage: number;
+  classAverage?: number;
   maxScore?: number;
 }
 
@@ -25,6 +25,7 @@ export interface RadarChartProps {
   width?: number;
   height?: number;
   showLegend?: boolean;
+  userName?: string;
   userColor?: string;
   classAverageColor?: string;
   className?: string;
@@ -37,6 +38,7 @@ const RadarChart: React.FC<RadarChartProps> = ({
   maxScore = 5,
   height = 400,
   showLegend = true,
+  userName = "Personal Average",
   userColor = "var(--color-blue-ntu)",
   classAverageColor = "var(--color-red-ntu)",
   className = "",
@@ -50,7 +52,10 @@ const RadarChart: React.FC<RadarChartProps> = ({
       label: item.dimension,
       // Ensure scores don't exceed maxScore
       userScore: Math.min(item.userScore, maxScore),
-      classAverage: Math.min(item.classAverage, maxScore),
+      classAverage:
+        item.classAverage !== undefined
+          ? Math.min(item.classAverage, maxScore)
+          : undefined,
     }));
 
   if (filteredData.length === 0) {
@@ -67,10 +72,15 @@ const RadarChart: React.FC<RadarChartProps> = ({
     );
   }
 
+  // Check if we have class average data to display
+  const hasClassAverage = filteredData.some(
+    (d) => d.classAverage !== undefined
+  );
+
   // Handle click on radar chart - called when clicking the chart background
   const handleChartClick = (data: unknown): void => {
     console.log("[RadarChart] Chart click:", data);
-    if (data && typeof data === 'object' && 'activeLabel' in data) {
+    if (data && typeof data === "object" && "activeLabel" in data) {
       const chartData = data as { activeLabel?: string };
       if (chartData.activeLabel && onDimensionClick) {
         console.log(
@@ -110,22 +120,24 @@ const RadarChart: React.FC<RadarChartProps> = ({
             tickCount={maxScore + 1}
           />
           <Radar
-            name="Personal Average"
+            name={userName}
             dataKey="userScore"
             stroke={userColor}
             fill={userColor}
             fillOpacity={0.3}
             strokeWidth={2}
           />
-          <Radar
-            name="Class Average"
-            dataKey="classAverage"
-            stroke={classAverageColor}
-            fill={classAverageColor}
-            fillOpacity={0.2}
-            strokeWidth={2}
-          />
-          {showLegend && (
+          {hasClassAverage && (
+            <Radar
+              name="Class Average"
+              dataKey="classAverage"
+              stroke={classAverageColor}
+              fill={classAverageColor}
+              fillOpacity={0.2}
+              strokeWidth={2}
+            />
+          )}
+          {showLegend && (hasClassAverage || userName !== "Personal Average") && (
             <Legend
               verticalAlign="bottom"
               align="center"
