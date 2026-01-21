@@ -540,7 +540,6 @@ const ProjectDetail = () => {
         return {
           dimension: dim.name,
           userScore: dim.score,
-          classAverage: 2.0, // Mock class average
         };
       })
     : [];
@@ -761,6 +760,8 @@ const ProjectDetail = () => {
                   maxScore={3}
                   height={450}
                   onDimensionClick={handleDimensionClick}
+                  showLegend={false}
+                  userName="Score"
                 />
               ) : (
                 <div className="text-center text-grey-55 caption py-8">
