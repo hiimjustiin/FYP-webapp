@@ -4,6 +4,8 @@ import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Import routes
 import authRoutes from "./routes/auth.js";
@@ -118,6 +120,15 @@ app.get("/health", (_req, res) => {
     service: "ILA Backend API",
   });
 });
+
+// Static file serving for uploads (POC - use S3 in production)
+// This allows the AI service to download uploaded files via HTTP
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsPath = path.join(__dirname, "..", "uploads");
+console.log("📁 Serving static uploads from:", uploadsPath);
+app.use("/uploads", express.static(uploadsPath));
+
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);

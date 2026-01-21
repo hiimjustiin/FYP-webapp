@@ -3,6 +3,17 @@ import { body, validationResult } from "express-validator";
 import { query } from "../models/database.js";
 import type { Project } from "../models/Project.js";
 import { AuthRequest } from "../middleware/auth.js";
+
+/**
+ * Generate full URL for uploaded files that AI service can access
+ * In Docker: uses INTERNAL_BACKEND_URL (http://backend:3001)
+ * In dev: uses localhost
+ */
+const getFileUrl = (filename: string): string => {
+  const baseUrl = process.env.INTERNAL_BACKEND_URL || "http://localhost:3001";
+  return `${baseUrl}/uploads/${filename}`;
+};
+
 export const createProjectValidation = [
   body("title")
     .trim()
@@ -483,6 +494,10 @@ export const createProject = async (
         ? essay_text
         : "[No essay text provided. Analysis based on uploaded files.]";
 
+      // Convert filenames to full URLs for AI service
+      const fileUrlsForAI = fileUrls.map((filename) => getFileUrl(filename));
+      console.log("📤 Sending files to AI service:", fileUrlsForAI);
+
       fetch(`${AI_SERVICE_URL}/api/evaluate`, {
         method: "POST",
         headers: {
@@ -494,7 +509,7 @@ export const createProject = async (
           course_id: course_id,
           user_id: req.user.id,
           essay_text: essayTextForAI,
-          file_urls: fileUrls,
+          file_urls: fileUrlsForAI,
           reanalyze: false,
         }),
       }).catch((error) => {
@@ -887,6 +902,12 @@ export const submitProject = async (
           ? project.essay_text
           : "[No essay text provided. Analysis based on uploaded files.]";
 
+      // Convert filenames to full URLs for AI service
+      const fileUrlsForAI = fileUrls.map((filename: string) =>
+        getFileUrl(filename)
+      );
+      console.log("📤 Sending files to AI service:", fileUrlsForAI);
+
       fetch(`${AI_SERVICE_URL}/api/evaluate`, {
         method: "POST",
         headers: {
@@ -898,7 +919,7 @@ export const submitProject = async (
           course_id: project.course_id,
           user_id: req.user.id,
           essay_text: essayText,
-          file_urls: fileUrls,
+          file_urls: fileUrlsForAI,
           reanalyze: false,
         }),
       }).catch((error) => {
@@ -1034,7 +1055,12 @@ export const resubmitProject = async (
     }
 
     const { id } = req.params;
-    const { essay_text, file_urls } = req.body;
+    const { essay_text } = req.body;
+
+    // Handle uploaded files from multer
+    const uploadedFiles = Array.isArray(req.files)
+      ? (req.files as Express.Multer.File[])
+      : [];
 
     // Check if user has access to project
     const projectResult = await query(
@@ -1061,7 +1087,7 @@ export const resubmitProject = async (
 
     // Validate project has content
     const hasEssayText = essay_text && essay_text.trim().length > 0;
-    const hasFiles = file_urls && file_urls.length > 0;
+    const hasFiles = uploadedFiles.length > 0;
 
     if (!hasEssayText && !hasFiles) {
       res.status(400).json({
@@ -1099,11 +1125,37 @@ export const resubmitProject = async (
         );
       }
 
+      // Handle file uploads - store in project_files and collect filenames
+      const fileUrls: string[] = [];
+      if (hasFiles) {
+        for (const file of uploadedFiles) {
+          await query(
+            `INSERT INTO project_files (
+              project_id, file_name, file_url, file_type, 
+              file_size, uploaded_by
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              id,
+              file.originalname,
+              file.filename, // Stored filename on disk
+              file.mimetype,
+              file.size,
+              req.user.id,
+            ]
+          );
+          fileUrls.push(file.filename);
+        }
+        console.log(
+          `📁 Resubmit: Stored ${fileUrls.length} files for project ${id}`
+        );
+      }
+
       // Create new submission record
       const crypto = await import("crypto");
       const contentForHash = JSON.stringify({
         essay: essay_text || "",
-        files: file_urls ? [...file_urls].sort() : [],
+        files: [...fileUrls].sort(),
       });
       const contentHash = crypto
         .createHash("sha256")
@@ -1124,7 +1176,7 @@ export const resubmitProject = async (
           req.user.id,
           `Submission ${nextIterationNumber}`,
           essay_text || null,
-          JSON.stringify(file_urls || []),
+          JSON.stringify(fileUrls),
           contentHash,
           nextIterationNumber,
           previousSubmission?.id || null,
@@ -1148,6 +1200,10 @@ export const resubmitProject = async (
         ? essay_text
         : "[No essay text provided. Analysis based on uploaded files.]";
 
+      // Convert filenames to full URLs for AI service
+      const fileUrlsForAI = fileUrls.map((filename) => getFileUrl(filename));
+      console.log("📤 Resubmit: Sending files to AI service:", fileUrlsForAI);
+
       fetch(`${AI_SERVICE_URL}/api/evaluate`, {
         method: "POST",
         headers: {
@@ -1159,7 +1215,7 @@ export const resubmitProject = async (
           course_id: project.course_id,
           user_id: req.user.id,
           essay_text: essayTextForAI,
-          file_urls: file_urls || [],
+          file_urls: fileUrlsForAI,
           previous_submission_id: previousSubmission?.id || null,
           reanalyze: false,
         }),
