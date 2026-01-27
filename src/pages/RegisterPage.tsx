@@ -169,9 +169,10 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleGoogleRegister = () => {
-    // TODO: Add your Google OAuth registration logic here
-    console.log("Registering with Google...");
-    alert("Google registration not implemented yet.");
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
+    const currentOrigin = window.location.origin;
+    const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(currentOrigin)}`;
+    window.location.href = googleAuthUrl;
   };
 
   return (

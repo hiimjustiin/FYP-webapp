@@ -42,6 +42,53 @@
   box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Comparison Analysis Banner */
+.comparison-analysis-banner {
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 100%);
+  border-radius: 12px;
+  border: 1px solid var(--color-grey-10);
+}
+
+.comparison-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.comparison-badge.improved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.comparison-badge.regressed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.comparison-badge.unchanged {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.comparison-summary {
+  color: var(--color-grey-80);
+  line-height: 1.6;
+  margin: 0 0 12px 0;
+}
+
+.comparison-improvements,
+.comparison-regressions {
+  font-size: 14px;
+  color: var(--color-grey-80);
+  margin-top: 8px;
+}
+
 /* Main Content - Three Column Layout */
 .project-detail-content {
   display: grid;
