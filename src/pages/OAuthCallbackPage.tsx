@@ -25,6 +25,9 @@ const OAuthCallbackPage: React.FC = () => {
         case "no_email":
           errorMessage = "Your Google account must have an email address.";
           break;
+        case "no_user_id":
+          errorMessage = "Failed to retrieve your Google user ID. Please try again.";
+          break;
         case "server_error":
           errorMessage = "Server error during authentication. Please try again.";
           break;

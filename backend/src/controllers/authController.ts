@@ -21,7 +21,8 @@ interface GoogleTokenResponse {
 }
 
 interface GoogleUserInfo {
-  sub: string;
+  sub?: string;
+  id?: string;
   email?: string;
   email_verified?: boolean;
   name?: string;
@@ -673,11 +674,20 @@ export const googleOAuthStart = async (
   res: Response
 ): Promise<void> => {
   try {
+    console.log("🔵 Google OAuth Start - Request received");
+    console.log("Query params:", req.query);
+    
     const { clientId } = getGoogleClientConfig();
+    console.log("✅ Client ID loaded:", clientId?.substring(0, 20) + "...");
+    
     const rawRedirect = req.query.redirect as string | undefined;
+    console.log("Redirect param:", rawRedirect);
+    
     const redirectOrigin = getRedirectOrigin(rawRedirect);
+    console.log("Validated redirect origin:", redirectOrigin);
 
     if (!redirectOrigin) {
+      console.error("❌ Invalid redirect origin");
       res.status(400).json({
         success: false,
         error: { message: "Invalid redirect origin" },
@@ -686,7 +696,10 @@ export const googleOAuthStart = async (
     }
 
     const state = createOAuthState(redirectOrigin);
+    console.log("✅ State token created");
+    
     const redirectUri = getOAuthRedirectUri();
+    console.log("Redirect URI:", redirectUri);
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     authUrl.searchParams.set("client_id", clientId);
@@ -697,9 +710,11 @@ export const googleOAuthStart = async (
     authUrl.searchParams.set("access_type", "offline");
     authUrl.searchParams.set("prompt", "consent");
 
+    console.log("🔗 Redirecting to Google:", authUrl.toString().substring(0, 100) + "...");
     res.redirect(authUrl.toString());
   } catch (error) {
-    console.error("Google OAuth start error:", error);
+    console.error("❌ Google OAuth start error:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
     res.status(500).json({
       success: false,
       error: { message: "Failed to initiate Google OAuth" },
@@ -782,13 +797,34 @@ export const googleOAuthCallback = async (
 
     const userInfo: GoogleUserInfo = await userInfoResponse.json();
 
+    console.log("📧 Google user info received:", {
+      sub: userInfo.sub,
+      id: userInfo.id,
+      email: userInfo.email,
+      name: userInfo.name,
+    });
+
     if (!userInfo.email) {
+      console.error("❌ No email in user info");
       const errorUrl = buildFrontendCallbackUrl(stateData.origin, {
         error: "no_email",
       });
       res.redirect(errorUrl);
       return;
     }
+
+    // Google's user ID can be in 'sub' or 'id' field
+    const googleUserId = userInfo.sub || userInfo.id;
+    if (!googleUserId) {
+      console.error("❌ No user ID (sub or id) in Google user info:", userInfo);
+      const errorUrl = buildFrontendCallbackUrl(stateData.origin, {
+        error: "no_user_id",
+      });
+      res.redirect(errorUrl);
+      return;
+    }
+
+    console.log("✅ Google user ID:", googleUserId);
 
     // Find or create user
     let userResult = await query(
@@ -824,6 +860,12 @@ export const googleOAuthCallback = async (
       ? new Date(Date.now() + tokenData.expires_in * 1000)
       : null;
 
+    console.log("💾 Storing OAuth account:", {
+      provider: "google",
+      provider_account_id: googleUserId,
+      user_id: user.id,
+    });
+
     await query(
       `INSERT INTO oauth_accounts (provider, provider_account_id, user_id, access_token, refresh_token, expires_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, now())
@@ -831,13 +873,15 @@ export const googleOAuthCallback = async (
        DO UPDATE SET access_token = $4, refresh_token = $5, expires_at = $6, updated_at = now()`,
       [
         "google",
-        userInfo.sub,
+        googleUserId,
         user.id,
         tokenData.access_token,
         tokenData.refresh_token || null,
         expiresAt,
       ]
     );
+
+    console.log("✅ OAuth account stored successfully");
 
     // Generate app tokens
     const token = generateToken(user);
