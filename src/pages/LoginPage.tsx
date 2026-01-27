@@ -84,9 +84,10 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    // TODO: Add your Google OAuth logic here
-    console.log("Logging in with Google...");
-    alert("Google login not implemented yet.");
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
+    const currentOrigin = window.location.origin;
+    const googleAuthUrl = `${apiBaseUrl}/auth/google?redirect=${encodeURIComponent(currentOrigin)}`;
+    window.location.href = googleAuthUrl;
   };
 
   return (

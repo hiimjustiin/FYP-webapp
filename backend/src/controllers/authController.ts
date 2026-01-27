@@ -1,12 +1,161 @@
 import { Request, Response } from "express";
 import { body, validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { query } from "../models/database.js";
 import { hashPassword, comparePassword } from "../utils/password.js";
 import { generateToken, generateRefreshToken } from "../utils/jwt.js";
 import { User, CreateUserInput } from "../models/User.js";
 import { AuthRequest } from "../middleware/auth.js";
 import { generateOTP, sendOTPEmail, sendWelcomeEmail } from "../utils/email.js";
+
+interface GoogleTokenResponse {
+  access_token: string;
+  expires_in: number;
+  refresh_token?: string;
+  id_token?: string;
+  token_type: string;
+  scope?: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface GoogleUserInfo {
+  sub: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
+}
+
+const GOOGLE_OAUTH_SCOPE = "openid email profile";
+const GOOGLE_STATE_TTL_MS = 10 * 60 * 1000;
+
+const getBackendPublicUrl = (): string => {
+  const baseUrl = process.env.BACKEND_PUBLIC_URL || "http://localhost:3001";
+  return baseUrl.replace(/\/$/, "");
+};
+
+const getAllowedRedirectOrigins = (): Set<string> => {
+  const corsOriginEnv = process.env.CORS_ORIGIN || "http://localhost:5173";
+  const envOrigins = corsOriginEnv
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const devOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+  ];
+  const frontendBase = process.env.FRONTEND_BASE_URL;
+  if (frontendBase) {
+    envOrigins.push(frontendBase);
+  }
+  return new Set([...envOrigins, ...devOrigins]);
+};
+
+const getRedirectOrigin = (rawRedirect?: string): string | null => {
+  if (!rawRedirect) return null;
+  try {
+    const parsed = new URL(rawRedirect);
+    const origin = parsed.origin;
+    return getAllowedRedirectOrigins().has(origin) ? origin : null;
+  } catch {
+    return null;
+  }
+};
+
+const getOAuthRedirectUri = (): string => {
+  return `${getBackendPublicUrl()}/api/auth/google/callback`;
+};
+
+const buildFrontendCallbackUrl = (
+  origin: string,
+  params: Record<string, string>
+) => {
+  const url = new URL("/oauth/callback", origin);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+  return url.toString();
+};
+
+const getGoogleClientConfig = () => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Google OAuth environment variables are not set");
+  }
+
+  return { clientId, clientSecret };
+};
+
+const createOAuthState = (origin: string): string => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is not set");
+  }
+
+  const payload = {
+    origin,
+    nonce: crypto.randomBytes(16).toString("hex"),
+    issuedAt: Date.now(),
+  };
+
+  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(data)
+    .digest("base64url");
+
+  return `${data}.${signature}`;
+};
+
+const verifyOAuthState = (state: string): { origin: string } | null => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    return null;
+  }
+
+  const [data, signature] = state.split(".");
+  if (!data || !signature) {
+    return null;
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(data)
+    .digest("base64url");
+
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+  if (signatureBuffer.length !== expectedBuffer.length) {
+    return null;
+  }
+
+  if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(
+      Buffer.from(data, "base64url").toString("utf8")
+    ) as { origin?: string; issuedAt?: number };
+
+    if (!payload.origin || !payload.issuedAt) {
+      return null;
+    }
+
+    if (Date.now() - payload.issuedAt > GOOGLE_STATE_TTL_MS) {
+      return null;
+    }
+
+    return { origin: payload.origin };
+  } catch {
+    return null;
+  }
+};
 
 // Validation rules
 export const registerValidation = [
@@ -515,5 +664,198 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
       success: false,
       error: { message: "Internal server error" },
     });
+  }
+};
+
+// Google OAuth: Start OAuth flow
+export const googleOAuthStart = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { clientId } = getGoogleClientConfig();
+    const rawRedirect = req.query.redirect as string | undefined;
+    const redirectOrigin = getRedirectOrigin(rawRedirect);
+
+    if (!redirectOrigin) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid redirect origin" },
+      });
+      return;
+    }
+
+    const state = createOAuthState(redirectOrigin);
+    const redirectUri = getOAuthRedirectUri();
+
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("scope", GOOGLE_OAUTH_SCOPE);
+    authUrl.searchParams.set("state", state);
+    authUrl.searchParams.set("access_type", "offline");
+    authUrl.searchParams.set("prompt", "consent");
+
+    res.redirect(authUrl.toString());
+  } catch (error) {
+    console.error("Google OAuth start error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Failed to initiate Google OAuth" },
+    });
+  }
+};
+
+// Google OAuth: Handle callback
+export const googleOAuthCallback = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { code, state, error: oauthError } = req.query;
+
+    if (oauthError) {
+      console.error("Google OAuth error:", oauthError);
+      const fallbackOrigin = getAllowedRedirectOrigins().values().next().value || "http://localhost:5173";
+      const errorUrl = buildFrontendCallbackUrl(fallbackOrigin, {
+        error: "oauth_failed",
+      });
+      res.redirect(errorUrl);
+      return;
+    }
+
+    if (!code || !state) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Missing code or state parameter" },
+      });
+      return;
+    }
+
+    const stateData = verifyOAuthState(state as string);
+    if (!stateData) {
+      res.status(400).json({
+        success: false,
+        error: { message: "Invalid or expired state parameter" },
+      });
+      return;
+    }
+
+    const { clientId, clientSecret } = getGoogleClientConfig();
+    const redirectUri = getOAuthRedirectUri();
+
+    // Exchange code for tokens
+    const tokenResponse = await fetch(
+      "https://oauth2.googleapis.com/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code: code as string,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      }
+    );
+
+    const tokenData: GoogleTokenResponse = await tokenResponse.json();
+
+    if (tokenData.error || !tokenData.access_token) {
+      console.error("Google token exchange error:", tokenData.error_description);
+      const errorUrl = buildFrontendCallbackUrl(stateData.origin, {
+        error: "token_exchange_failed",
+      });
+      res.redirect(errorUrl);
+      return;
+    }
+
+    // Fetch user info
+    const userInfoResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      }
+    );
+
+    const userInfo: GoogleUserInfo = await userInfoResponse.json();
+
+    if (!userInfo.email) {
+      const errorUrl = buildFrontendCallbackUrl(stateData.origin, {
+        error: "no_email",
+      });
+      res.redirect(errorUrl);
+      return;
+    }
+
+    // Find or create user
+    let userResult = await query(
+      "SELECT id, email, display_name, role, is_active FROM users WHERE email = $1",
+      [userInfo.email]
+    );
+
+    let user: User;
+
+    if (userResult.rows.length === 0) {
+      // Create new user (auto-activated, email verified via Google)
+      const newUserResult = await query(
+        `INSERT INTO users (email, display_name, role, is_active, email_verified, avatar_url) 
+         VALUES ($1, $2, $3, true, now(), $4) 
+         RETURNING id, email, display_name, role, is_active`,
+        [
+          userInfo.email,
+          userInfo.name || userInfo.email.split("@")[0],
+          "student",
+          userInfo.picture || null,
+        ]
+      );
+      user = newUserResult.rows[0] as User;
+
+      // Send welcome email
+      await sendWelcomeEmail(userInfo.email, user.display_name || "User");
+    } else {
+      user = userResult.rows[0] as User;
+    }
+
+    // Upsert OAuth account
+    const expiresAt = tokenData.expires_in
+      ? new Date(Date.now() + tokenData.expires_in * 1000)
+      : null;
+
+    await query(
+      `INSERT INTO oauth_accounts (provider, provider_account_id, user_id, access_token, refresh_token, expires_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, now())
+       ON CONFLICT (provider, provider_account_id)
+       DO UPDATE SET access_token = $4, refresh_token = $5, expires_at = $6, updated_at = now()`,
+      [
+        "google",
+        userInfo.sub,
+        user.id,
+        tokenData.access_token,
+        tokenData.refresh_token || null,
+        expiresAt,
+      ]
+    );
+
+    // Generate app tokens
+    const token = generateToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Redirect to frontend with tokens
+    const successUrl = buildFrontendCallbackUrl(stateData.origin, {
+      token,
+      refreshToken,
+    });
+
+    res.redirect(successUrl);
+  } catch (error) {
+    console.error("Google OAuth callback error:", error);
+    const fallbackOrigin = getAllowedRedirectOrigins().values().next().value || "http://localhost:5173";
+    const errorUrl = buildFrontendCallbackUrl(fallbackOrigin, {
+      error: "server_error",
+    });
+    res.redirect(errorUrl);
   }
 };
