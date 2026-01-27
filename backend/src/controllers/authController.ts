@@ -827,7 +827,7 @@ export const googleOAuthCallback = async (
     console.log("✅ Google user ID:", googleUserId);
 
     // Find or create user
-    let userResult = await query(
+    const userResult = await query(
       "SELECT id, email, display_name, role, is_active FROM users WHERE email = $1",
       [userInfo.email]
     );
