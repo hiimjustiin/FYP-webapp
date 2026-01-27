@@ -35,6 +35,11 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       CORS_ORIGIN: ${CORS_ORIGIN}
       AI_SERVICE_URL: http://backend-ai:8000
+      # Google OAuth Configuration
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
     restart: always
 
   frontend:
