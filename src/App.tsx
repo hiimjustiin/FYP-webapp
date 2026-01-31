@@ -18,6 +18,7 @@ import ProjectEdit from "./pages/Project/ProjectEdit.js";
 import ProjectDetail from "./pages/Project/ProjectDetail.js";
 import ProjectReport from "./pages/Report/ProjectReport";
 import Team from "./pages/Team.js";
+import TeamManage from "./pages/TeamManage.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
 import Courses from "./pages/Courses.js";
@@ -235,6 +236,16 @@ const AppContent = () => {
           <ProtectedRoute>
             <DashboardLayout key="team">
               <Team />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/:projectId/manage"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout key="team-manage">
+              <TeamManage />
             </DashboardLayout>
           </ProtectedRoute>
         }

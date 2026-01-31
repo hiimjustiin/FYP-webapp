@@ -14,6 +14,7 @@ export interface Project {
   description?: string;
   owner_id: string;
   status: "Processing" | "Completed" | "Failed";
+  project_type?: "individual" | "group";
   course_code?: string;
   submission_date?: string;
   interq_score?: number; // 1-3 scale average AI score
@@ -43,6 +44,7 @@ export interface UpdateProjectData {
   course_code?: string;
   submission_date?: string;
   settings?: Record<string, unknown>;
+  member_ids?: string[];
 }
 
 interface ProjectsResponse {

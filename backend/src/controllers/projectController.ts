@@ -157,14 +157,33 @@ export const getProjects = async (
     }, {} as Record<string, typeof membersData>);
 
     // Attach members to projects and normalize interq_score
-    const projects = projectsResult.rows.map((project) => ({
-      ...project,
-      members: membersByProject[project.id] || [],
-      // Ensure interq_score is a number or null
-      interq_score: project.interq_score
-        ? parseFloat(project.interq_score)
-        : null,
-    }));
+    // For group projects, include the owner in the members list
+    const projects = projectsResult.rows.map((project) => {
+      const projectMembers = membersByProject[project.id] || [];
+      
+      // For group projects, include owner as part of the members display
+      // Owner is included with role 'owner' so frontend can identify them
+      if (project.project_type === "group") {
+        const ownerAsMember = {
+          project_id: project.id,
+          user_id: project.owner_id,
+          role: "owner",
+          email: "", // Owner email not fetched in main query, but display_name is
+          display_name: project.owner_name || "Owner",
+        };
+        // Add owner at the beginning of members list
+        projectMembers.unshift(ownerAsMember);
+      }
+      
+      return {
+        ...project,
+        members: projectMembers,
+        // Ensure interq_score is a number or null
+        interq_score: project.interq_score
+          ? parseFloat(project.interq_score)
+          : null,
+      };
+    });
 
     res.json({
       success: true,
@@ -610,7 +629,7 @@ export const updateProject = async (
 
     // Check if user owns the project
     const existingProject = await query(
-      "SELECT owner_id FROM projects WHERE id = $1",
+      "SELECT owner_id, course_id, project_type FROM projects WHERE id = $1",
       [id]
     );
 
@@ -622,7 +641,9 @@ export const updateProject = async (
       return;
     }
 
-    if (existingProject.rows[0].owner_id !== req.user.id) {
+    const project = existingProject.rows[0];
+
+    if (project.owner_id !== req.user.id) {
       res.status(403).json({
         success: false,
         error: { message: "Permission denied" },
@@ -630,7 +651,83 @@ export const updateProject = async (
       return;
     }
 
-    // Build update query dynamically
+    // Handle member_ids separately if provided (for group projects)
+    const memberIds = updates.member_ids as string[] | undefined;
+    delete updates.member_ids; // Remove from updates to avoid putting in project table
+
+    if (memberIds !== undefined) {
+      if (project.project_type !== "group") {
+        res.status(400).json({
+          success: false,
+          error: { message: "Cannot add members to individual projects" },
+        });
+        return;
+      }
+
+      // Validate all members are enrolled in the course
+      if (memberIds.length > 0) {
+        const enrollmentCheck = await query(
+          `SELECT user_id FROM course_enrollments 
+           WHERE course_id = $1 AND user_id = ANY($2) AND status = 'active'`,
+          [project.course_id, memberIds]
+        );
+
+        if (enrollmentCheck.rows.length !== memberIds.length) {
+          res.status(400).json({
+            success: false,
+            error: {
+              message:
+                "All team members must be enrolled in the course",
+            },
+          });
+          return;
+        }
+      }
+
+      // Sync project_members: remove those not in list, add those in list
+      // First, get current members (excluding owner)
+      const currentMembers = await query(
+        `SELECT user_id FROM project_members WHERE project_id = $1`,
+        [id]
+      );
+      const currentMemberIds = currentMembers.rows.map(
+        (r: { user_id: string }) => r.user_id
+      );
+
+      // Members to remove
+      const membersToRemove = currentMemberIds.filter(
+        (mId: string) => !memberIds.includes(mId)
+      );
+      // Members to add
+      const membersToAdd = memberIds.filter(
+        (mId) => !currentMemberIds.includes(mId) && mId !== project.owner_id
+      );
+
+      // Remove members
+      if (membersToRemove.length > 0) {
+        await query(
+          `DELETE FROM project_members 
+           WHERE project_id = $1 AND user_id = ANY($2)`,
+          [id, membersToRemove]
+        );
+      }
+
+      // Add new members
+      for (const memberId of membersToAdd) {
+        await query(
+          `INSERT INTO project_members (project_id, user_id, role)
+           VALUES ($1, $2, 'member')
+           ON CONFLICT (project_id, user_id) DO NOTHING`,
+          [id, memberId]
+        );
+      }
+
+      console.log(
+        `✅ Team members updated for project ${id}: removed ${membersToRemove.length}, added ${membersToAdd.length}`
+      );
+    }
+
+    // Build update query dynamically for other fields
     const updateFields = [];
     const values = [];
     let paramCount = 1;
@@ -677,6 +774,34 @@ export const updateProject = async (
       paramCount++;
     }
 
+    // If only member_ids were updated and no other fields
+    if (updateFields.length === 0 && memberIds !== undefined) {
+      // Just fetch and return the project with updated members
+      const projectResult = await query(
+        `SELECT p.* FROM projects p WHERE p.id = $1`,
+        [id]
+      );
+
+      const membersResult = await query(
+        `SELECT pm.*, u.email, u.display_name
+         FROM project_members pm
+         LEFT JOIN users u ON pm.user_id = u.id
+         WHERE pm.project_id = $1`,
+        [id]
+      );
+
+      res.json({
+        success: true,
+        data: {
+          project: {
+            ...projectResult.rows[0],
+            members: membersResult.rows,
+          },
+        },
+      });
+      return;
+    }
+
     if (updateFields.length === 0) {
       res.status(400).json({
         success: false,
@@ -695,9 +820,27 @@ export const updateProject = async (
       values
     );
 
+    // Also fetch members if it's a group project
+    let members: unknown[] = [];
+    if (project.project_type === "group") {
+      const membersResult = await query(
+        `SELECT pm.*, u.email, u.display_name
+         FROM project_members pm
+         LEFT JOIN users u ON pm.user_id = u.id
+         WHERE pm.project_id = $1`,
+        [id]
+      );
+      members = membersResult.rows;
+    }
+
     res.json({
       success: true,
-      data: { project: result.rows[0] },
+      data: {
+        project: {
+          ...result.rows[0],
+          members,
+        },
+      },
     });
   } catch (error) {
     console.error("Update project error:", error);
