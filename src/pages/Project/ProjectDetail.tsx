@@ -89,7 +89,7 @@ const ProjectDetail = () => {
 
   // Selected dimension for feedback display
   const [selectedDimension, setSelectedDimension] = useState<string | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -103,9 +103,8 @@ const ProjectDetail = () => {
         setProject(data);
 
         // Load all submissions for this project
-        const submissionsData = await projectService.getProjectSubmissions(
-          projectId
-        );
+        const submissionsData =
+          await projectService.getProjectSubmissions(projectId);
         setSubmissions(submissionsData.submissions);
         setTotalSubmissions(submissionsData.total_count);
 
@@ -120,17 +119,29 @@ const ProjectDetail = () => {
         if (data.latest_submission_id) {
           console.log(
             "[ProjectDetail] Found submission:",
-            data.latest_submission_id
+            data.latest_submission_id,
           );
           setSubmissionId(data.latest_submission_id);
 
           // Find the iteration number
           const latestSub = submissionsData.submissions.find(
-            (s) => s.id === data.latest_submission_id
+            (s) => s.id === data.latest_submission_id,
           );
           if (latestSub) {
             setCurrentIteration(latestSub.iteration_number);
           }
+        } else if (submissionsData.submissions.length > 0) {
+          // Fallback: derive latest submission from the submissions list
+          // This ensures all group team members can see feedback even if
+          // latest_submission_id wasn't returned for them
+          const lastSub =
+            submissionsData.submissions[submissionsData.submissions.length - 1];
+          console.log(
+            "[ProjectDetail] Fallback: using last submission from list:",
+            lastSub.id,
+          );
+          setSubmissionId(lastSub.id);
+          setCurrentIteration(lastSub.iteration_number);
         }
       } catch (err) {
         console.error("Failed to load project:", err);
@@ -151,7 +162,7 @@ const ProjectDetail = () => {
       try {
         console.log(
           "[ProjectDetail] Loading feedback for submission:",
-          submissionId
+          submissionId,
         );
         const feedbackData = await feedbackService.getFeedback(submissionId);
         console.log("[ProjectDetail] Got feedback:", feedbackData);
@@ -177,23 +188,23 @@ const ProjectDetail = () => {
         if (sub.essay_text) {
           console.log(
             "[ProjectDetail] Setting essay_text as submission content, length:",
-            sub.essay_text.length
+            sub.essay_text.length,
           );
           setSubmissionContent(sub.essay_text);
           setIsFileBasedSubmission(false);
         } else if (sub.file_urls && sub.file_urls.length > 0) {
           console.log(
-            "[ProjectDetail] Setting file_urls as submission content"
+            "[ProjectDetail] Setting file_urls as submission content",
           );
           setSubmissionContent(
             `[File submission: ${
               sub.file_urls.length
-            } file(s)]\n${sub.file_urls.join("\n")}`
+            } file(s)]\n${sub.file_urls.join("\n")}`,
           );
           setIsFileBasedSubmission(true);
         } else {
           console.warn(
-            "[ProjectDetail] No essay_text or file_urls found in submission"
+            "[ProjectDetail] No essay_text or file_urls found in submission",
           );
           setIsFileBasedSubmission(false);
         }
@@ -223,7 +234,7 @@ const ProjectDetail = () => {
               Math.round(
                 (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
                   (dims.length || 1)) *
-                  10
+                  10,
               ) / 10,
             maxScore: 3,
             dimensions: dims.map((d) => ({
@@ -254,12 +265,12 @@ const ProjectDetail = () => {
           setProcessingStatus(
             sub.ai_processing_status === "processing"
               ? "AI is analyzing your submission..."
-              : "Queued for analysis..."
+              : "Queued for analysis...",
           );
           // Will be handled by polling effect below
         } else if (sub.ai_processing_status === "failed") {
           setError(
-            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`
+            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
           );
           setProcessingStatus("Analysis failed.");
         }
@@ -303,7 +314,7 @@ const ProjectDetail = () => {
           setSubmissionContent(
             `[File submission: ${
               sub.file_urls.length
-            } file(s)]\n${sub.file_urls.join("\n")}`
+            } file(s)]\n${sub.file_urls.join("\n")}`,
           );
         }
 
@@ -319,7 +330,7 @@ const ProjectDetail = () => {
               Math.round(
                 (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
                   (dims.length || 1)) *
-                  10
+                  10,
               ) / 10,
             maxScore: 3,
             dimensions: dims.map((d) => ({
@@ -340,7 +351,7 @@ const ProjectDetail = () => {
         } else if (sub.ai_processing_status === "failed") {
           setProcessingStatus("Analysis failed.");
           setError(
-            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`
+            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
           );
         } else if (sub.ai_processing_status === "processing") {
           setProcessingStatus("AI is analyzing your submission...");
@@ -375,7 +386,7 @@ const ProjectDetail = () => {
 
     // Confirm submission
     const confirmed = window.confirm(
-      "Are you sure you want to submit this project for AI evaluation? This will change the status from Draft to Submitted. You'll be redirected to the project list."
+      "Are you sure you want to submit this project for AI evaluation? This will change the status from Draft to Submitted. You'll be redirected to the project list.",
     );
 
     if (!confirmed) return;
@@ -390,7 +401,7 @@ const ProjectDetail = () => {
 
       // Show success message and redirect
       alert(
-        `${result.message}\n\nYou can check the feedback status from the project list.`
+        `${result.message}\n\nYou can check the feedback status from the project list.`,
       );
 
       // Redirect to project list
@@ -462,7 +473,7 @@ const ProjectDetail = () => {
     const confirmed = window.confirm(
       `Are you sure you want to resubmit? This will create Submission ${
         totalSubmissions + 1
-      } and trigger a new AI evaluation comparing to your previous submission.`
+      } and trigger a new AI evaluation comparing to your previous submission.`,
     );
 
     if (!confirmed) return;
@@ -476,7 +487,7 @@ const ProjectDetail = () => {
       const result = await projectService.resubmitProject(
         projectId,
         isFileBasedSubmission ? undefined : editedEssayText,
-        isFileBasedSubmission ? editedFiles : undefined
+        isFileBasedSubmission ? editedFiles : undefined,
       );
 
       console.log("Resubmission result:", result);
@@ -491,7 +502,7 @@ const ProjectDetail = () => {
         setSubmissionContent(
           `[File submission: ${editedFiles.length} file(s)]\n${editedFiles
             .map((f) => f.name)
-            .join("\n")}`
+            .join("\n")}`,
         );
       } else {
         setSubmissionContent(editedEssayText);
@@ -502,9 +513,8 @@ const ProjectDetail = () => {
       setEditedFiles([]);
 
       // Refresh submissions list
-      const submissionsData = await projectService.getProjectSubmissions(
-        projectId
-      );
+      const submissionsData =
+        await projectService.getProjectSubmissions(projectId);
       setSubmissions(submissionsData.submissions);
     } catch (err) {
       console.error("Failed to resubmit project:", err);
@@ -523,7 +533,9 @@ const ProjectDetail = () => {
   // Build submissions options for comparison dropdown
   const submissionOptions: DropdownOption[] = submissions.map((sub) => ({
     id: sub.id,
-    label: `Submission ${sub.iteration_number}`,
+    label: sub.submitted_by_name
+      ? `Submission ${sub.iteration_number} (by ${sub.submitted_by_name})`
+      : `Submission ${sub.iteration_number}`,
   }));
 
   // Prepare radar data from feedback (all dimensions)
@@ -535,7 +547,7 @@ const ProjectDetail = () => {
           "score:",
           dim.score,
           "color:",
-          dim.color
+          dim.color,
         );
         return {
           dimension: dim.name,
@@ -548,13 +560,13 @@ const ProjectDetail = () => {
   console.log("[ProjectDetail] aiFeedback exists:", !!aiFeedback);
   console.log(
     "[ProjectDetail] aiFeedback dimensions:",
-    aiFeedback?.dimensions.length
+    aiFeedback?.dimensions.length,
   );
 
   // Generate improvement suggestion based on score (1-3 scale)
   const getImprovementSuggestion = (
     dimensionName: string,
-    score: number
+    score: number,
   ): string => {
     const suggestions: Record<string, Record<number, string>> = {
       "Frame the problem with an integrative approach": {
@@ -613,7 +625,7 @@ const ProjectDetail = () => {
     console.log("[ProjectDetail] Dimension clicked:", dimension);
     console.log(
       "[ProjectDetail] Available dimensions:",
-      aiFeedback?.dimensions.map((d) => d.name)
+      aiFeedback?.dimensions.map((d) => d.name),
     );
     setSelectedDimension(dimension);
   };
@@ -778,7 +790,7 @@ const ProjectDetail = () => {
                   .map((dim, idx) => {
                     const improvementSuggestion = getImprovementSuggestion(
                       dim.name,
-                      dim.score
+                      dim.score,
                     );
 
                     return (
@@ -856,6 +868,31 @@ const ProjectDetail = () => {
                   Submission {currentIteration} of {totalSubmissions}
                 </h4>
               </div>
+
+              {/* Show submitter attribution for the current submission */}
+              {(() => {
+                const currentSub = submissions.find(
+                  (s) => s.id === submissionId,
+                );
+                if (currentSub?.submitted_by_name) {
+                  return (
+                    <p className="caption text-grey-55 mb-3">
+                      Submitted by {currentSub.submitted_by_name} on{" "}
+                      {new Date(currentSub.submitted_at).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
+                    </p>
+                  );
+                }
+                return null;
+              })()}
 
               {isEditMode ? (
                 <>
@@ -939,6 +976,68 @@ const ProjectDetail = () => {
               )}
             </div>
 
+            {/* Submission History - shows all versions with submitter info for group projects */}
+            {project.project_type === "group" && submissions.length > 0 && (
+              <div className="detail-card mt-4">
+                <h4 className="subtitle-1 mb-3">Submission History</h4>
+                <div className="flex flex-col gap-2">
+                  {submissions.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                        sub.id === submissionId
+                          ? "bg-blue-50 border border-blue-200"
+                          : "hover:bg-gray-50 border border-transparent"
+                      }`}
+                      onClick={() => {
+                        setSubmissionId(sub.id);
+                        setCurrentIteration(sub.iteration_number);
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span className="body-2 font-medium">
+                          Submission {sub.iteration_number}
+                        </span>
+                        {sub.submitted_by_name && (
+                          <span className="caption text-grey-55">
+                            by {sub.submitted_by_name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="caption text-grey-55">
+                          {new Date(sub.submitted_at).toLocaleDateString(
+                            undefined,
+                            {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                        </span>
+                        <span
+                          className={`caption ${
+                            sub.ai_processing_status === "completed"
+                              ? "text-green-600"
+                              : sub.ai_processing_status === "failed"
+                                ? "text-red-500"
+                                : "text-yellow-600"
+                          }`}
+                        >
+                          {sub.ai_processing_status === "completed"
+                            ? "✓ Evaluated"
+                            : sub.ai_processing_status === "failed"
+                              ? "✗ Failed"
+                              : "⏳ Processing"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Instructor Suggestion Card */}
             {instructorSuggestion && (
               <div className="detail-card mt-4">
@@ -954,7 +1053,7 @@ const ProjectDetail = () => {
                     <span className="caption text-grey-55">
                       Updated:{" "}
                       {new Date(
-                        instructorSuggestion.updated_at
+                        instructorSuggestion.updated_at,
                       ).toLocaleString()}
                     </span>
                   </div>
