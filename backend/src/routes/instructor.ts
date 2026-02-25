@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { Router as RouterType } from "express";
 import { authenticate, authorize } from "../middleware/auth.js";
-import { upload } from "../middleware/upload.js";
+import { uploadSingle } from "../middleware/upload.js";
 import * as instructorController from "../controllers/instructorController.js";
 
 const router: RouterType = Router();
@@ -71,7 +71,7 @@ router.put(
 // POST /api/instructor/submissions/upload - Upload submission file
 router.post(
   "/submissions/upload",
-  upload.single("file"),
+  uploadSingle("file"),
   instructorController.uploadSubmission
 );
 

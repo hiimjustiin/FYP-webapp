@@ -77,6 +77,7 @@ const ProjectDetail = () => {
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Submission content
   const [submissionContent, setSubmissionContent] = useState<string>("");
@@ -1061,16 +1062,6 @@ const ProjectDetail = () => {
               </div>
             )}
           </div>
-
-          {/* Column 3: Chat Interface */}
-          <div className="project-detail-col-3">
-            <ChatInterface
-              messages={chatMessages}
-              onSendMessage={handleSendMessage}
-              isLoading={isChatLoading}
-              placeholder="Ask about your feedback..."
-            />
-          </div>
         </div>
       ) : project.status === "Processing" ? (
         <div className="processing-state">
@@ -1127,6 +1118,67 @@ const ProjectDetail = () => {
           </Button>
         </div>
       )}
+
+      {/* Floating Chat Bubble */}
+      <div className="chat-floating-container">
+        {isChatOpen ? (
+          <div className="chat-floating-panel">
+            <div className="chat-panel-header">
+              <h4>Ask about your feedback</h4>
+              <button
+                className="chat-close-btn"
+                onClick={() => setIsChatOpen(false)}
+                aria-label="Close chat"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 4L4 12M4 4L12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="chat-panel-body">
+              <ChatInterface
+                messages={chatMessages}
+                onSendMessage={handleSendMessage}
+                isLoading={isChatLoading}
+                placeholder="Ask about your feedback..."
+              />
+            </div>
+          </div>
+        ) : (
+          <button
+            className="chat-bubble-btn"
+            onClick={() => setIsChatOpen(true)}
+            aria-label="Open chat"
+          >
+            <svg
+              className="chat-bubble-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
