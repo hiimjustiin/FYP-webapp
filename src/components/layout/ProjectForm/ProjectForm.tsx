@@ -25,6 +25,8 @@ interface ProjectFormProps {
   selectedFiles?: File[];
   isSubmitting?: boolean;
   isEditing?: boolean;
+  hasSubmissions?: boolean;
+  projectId?: string;
   onSubmit: (
     data: ProjectFormData,
     teamMembers: Member[],
@@ -44,6 +46,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   selectedFiles: initialFiles = [],
   isSubmitting = false,
   isEditing = false,
+  hasSubmissions = false,
+  projectId,
   onSubmit,
   onCancel,
 }) => {
@@ -495,7 +499,28 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 )}
 
                 {/* Essay Body - Text or File Upload */}
-                {selectedProjectType && (
+                {selectedProjectType && isEditing && hasSubmissions ? (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      📝 Submissions exist for this project
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      To submit a new version, go to the{" "}
+                      {projectId ? (
+                        <a
+                          href={`/project/${projectId}`}
+                          className="underline font-medium hover:text-blue-900"
+                        >
+                          project detail page
+                        </a>
+                      ) : (
+                        "project detail page"
+                      )}{" "}
+                      and click &quot;Submit New Version&quot;. Previous
+                      submissions are preserved.
+                    </p>
+                  </div>
+                ) : selectedProjectType ? (
                   <div>
                     <label className="caption text-[var(--color-grey-55)] mb-2 block">
                       Essay Body{" "}
@@ -583,7 +608,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                         </div>
                       )}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

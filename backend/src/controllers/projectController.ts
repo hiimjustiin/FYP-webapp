@@ -100,11 +100,13 @@ export const getProjects = async (
       `SELECT 
          p.*, 
          u.display_name as owner_name,
+         c.code as course_code,
          latest_sub.ai_processing_status,
          latest_sub.ai_processing_error,
          latest_sub.avg_ai_score as interq_score
        FROM projects p
        LEFT JOIN users u ON p.owner_id = u.id
+       LEFT JOIN courses c ON p.course_id = c.id
        LEFT JOIN LATERAL (
          SELECT 
            ps.ai_processing_status,

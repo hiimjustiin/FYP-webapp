@@ -165,6 +165,8 @@ const ProjectEdit = () => {
       selectedFiles={[]}
       isSubmitting={isSubmitting}
       isEditing={true}
+      hasSubmissions={!!projectData.latest_submission_id}
+      projectId={projectId}
       onSubmit={handleFormSubmit}
       onCancel={() => navigate("/project")}
     />
