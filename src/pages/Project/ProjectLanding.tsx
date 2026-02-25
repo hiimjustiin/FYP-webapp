@@ -103,6 +103,26 @@ const LoadingSpinner = () => (
   </div>
 );
 
+/** Project Type Badge Component */
+const ProjectTypeBadge = ({
+  projectType,
+}: {
+  projectType: "individual" | "group" | undefined;
+}) => {
+  if (projectType === "group") {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+        👥 Group
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+      👤 Individual
+    </span>
+  );
+};
+
 /** Status Badge Component */
 const StatusBadge = ({ status, error }: { status: string; error?: string }) => {
   if (status === "Processing") {
@@ -232,8 +252,9 @@ const ProjectLanding = () => {
     const header: TableData[number] = [
       "Course",
       "Project Name",
+      "Type",
       "Date",
-      "Member",
+      "Members",
       "InterQ Scores",
       "Status",
       "Action",
@@ -241,6 +262,7 @@ const ProjectLanding = () => {
 
     const rows: TableData[number][] = filteredProjects.map((p) => {
       // Convert project members to Member format
+      // For group projects, members now include the owner (from backend)
       const projectMembers: Member[] = p.members.map((m) => {
         const names = (m.display_name || m.email).split(" ");
         const initials =
@@ -252,23 +274,30 @@ const ProjectLanding = () => {
           id: m.user_id,
           name: m.display_name || m.email,
           initials: initials.toUpperCase(),
-          backgroundColor: "auto",
+          backgroundColor: m.role === "owner" ? "purple" : "auto", // Highlight owner with purple
         };
       });
 
       return [
         p.course_code || "—",
         p.title,
+        <ProjectTypeBadge key={`type-${p.id}`} projectType={p.project_type} />,
         p.submission_date
           ? formatDate(p.submission_date)
           : formatDate(p.created_at),
-        <MemberGroup
-          key={`mg-${p.id}`}
-          members={projectMembers}
-          size="small"
-          maxVisible={6}
-          layout="horizontal"
-        />,
+        projectMembers.length > 0 ? (
+          <MemberGroup
+            key={`mg-${p.id}`}
+            members={projectMembers}
+            size="small"
+            maxVisible={6}
+            layout="horizontal"
+          />
+        ) : (
+          <span key={`mg-${p.id}`} className="text-gray-400 text-sm">
+            Just you
+          </span>
+        ),
         // InterQ Scores - show stars for completed, spinner for processing
         p.status === "Processing" ? (
           <span key={`score-${p.id}`} className="text-gray-400 text-sm">
