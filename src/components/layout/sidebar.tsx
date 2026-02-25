@@ -103,6 +103,12 @@ const Sidebar: React.FC = () => {
       iconFilled: ReportIconFilled,
       path: "/admin/submissions",
     },
+    {
+      name: "Projects",
+      icon: StarIcon,
+      iconFilled: StarIconFilled,
+      path: "/admin/projects",
+    },
   ];
 
   // Determine which navigation items to show based on user role
@@ -110,8 +116,8 @@ const Sidebar: React.FC = () => {
     user?.role === "admin"
       ? adminNavItems
       : user?.role === "instructor"
-      ? instructorNavItems
-      : studentNavItems;
+        ? instructorNavItems
+        : studentNavItems;
 
   const isActive = (path: string) => {
     // exact match for home so it doesn't light up everywhere

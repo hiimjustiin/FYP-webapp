@@ -37,6 +37,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminCourses from "./pages/AdminCourses";
 import AdminSubmissions from "./pages/AdminSubmissions";
+import AdminProjects from "./pages/AdminProjects";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -61,10 +62,7 @@ const AppContent = () => {
           isAuthenticated ? <Navigate to="/" replace /> : <VerifyEmailPage />
         }
       />
-      <Route
-        path="/oauth/callback"
-        element={<OAuthCallbackPage />}
-      />
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
       {/* Instructor routes */}
       <Route
@@ -175,6 +173,16 @@ const AppContent = () => {
           <ProtectedRoute requiredRole="admin">
             <DashboardLayout key="admin-submissions">
               <AdminSubmissions />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/projects"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout key="admin-projects">
+              <AdminProjects />
             </DashboardLayout>
           </ProtectedRoute>
         }
