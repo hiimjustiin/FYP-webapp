@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { SquarePen, RefreshCw, Trash2, Loader2 } from "lucide-react";
 
 import Button from "../../components/ui/Button/Button";
 import SearchBar, {
@@ -8,6 +9,7 @@ import SearchBar, {
 import Table, { type TableData } from "../../components/ui/Table/Table";
 import MemberGroup from "../../components/ui/MemberIcon/MemberGroup";
 import { projectService, type Project } from "../../services/projectService";
+import { useAuth } from "../../contexts/AuthContext";
 
 /** ------------------------------- Helpers ------------------------------- */
 const formatDate = (iso: string) =>
@@ -161,6 +163,7 @@ const StatusBadge = ({ status, error }: { status: string; error?: string }) => {
 /** ------------------------------ Component ------------------------------ */
 const ProjectLanding = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // State
   const [query, setQuery] = useState("");
@@ -171,7 +174,7 @@ const ProjectLanding = () => {
   // Check if any projects are still processing
   const hasProcessingProjects = useMemo(
     () => projects.some((p) => p.status === "Processing"),
-    [projects]
+    [projects],
   );
 
   // Fetch projects function (reusable for polling)
@@ -317,31 +320,62 @@ const ProjectLanding = () => {
           error={p.ai_processing_error}
         />,
         // Actions
-        <div key={`act-${p.id}`} className="flex gap-2">
-          <Button
-            variant="blue"
-            onClick={() => navigate(`/projects/${p.id}`)}
-            disabled={p.status === "Processing"}
-          >
-            {p.status === "Processing" ? "Processing..." : "Open"}
-          </Button>
+        <div key={`act-${p.id}`} className="flex items-center gap-1">
+          {p.status === "Processing" ? (
+            <span className="p-2 text-gray-400" title="Processing...">
+              <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} />
+            </span>
+          ) : (
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-[#181C62] hover:bg-[#181C62]/10 transition-all duration-150"
+              onClick={() => navigate(`/projects/${p.id}`)}
+              title="Open project"
+            >
+              <SquarePen className="w-5 h-5" strokeWidth={2.5} />
+            </button>
+          )}
           {p.status === "Failed" && (
-            <Button
-              variant="grey"
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-all duration-150"
               onClick={() => {
                 // TODO: Implement retry functionality
                 alert("Retry functionality coming soon");
               }}
+              title="Retry evaluation"
             >
-              Retry
-            </Button>
+              <RefreshCw className="w-5 h-5" strokeWidth={2.5} />
+            </button>
+          )}
+          {p.project_type !== "group" && p.owner_id === user?.id && (
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
+              onClick={async () => {
+                const confirmed = confirm(
+                  `Delete "${p.title}"?\n\nThis will permanently remove this project and all its submissions, evaluations, and feedback. This cannot be undone.`,
+                );
+                if (!confirmed) return;
+                try {
+                  await projectService.deleteProject(p.id);
+                  loadProjects();
+                } catch (err) {
+                  alert(
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to delete project",
+                  );
+                }
+              }}
+              title="Delete project"
+            >
+              <Trash2 className="w-5 h-5" strokeWidth={2.5} />
+            </button>
           )}
         </div>,
       ];
     });
 
     return [header, ...rows];
-  }, [filteredProjects, navigate]);
+  }, [filteredProjects, navigate, loadProjects, user?.id]);
 
   // SearchBar handlers
   const handleSearch = (q: string) => setQuery(q);
