@@ -73,7 +73,7 @@ const ProjectEdit = () => {
     data: ProjectFormData,
     teamMembers: Member[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _files: File[]
+    _files: File[],
   ) => {
     try {
       setIsSubmitting(true);
@@ -109,7 +109,7 @@ const ProjectEdit = () => {
       alert(
         `Failed to update project: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     } finally {
       setIsSubmitting(false);
@@ -144,14 +144,14 @@ const ProjectEdit = () => {
     );
   }
 
-  // Determine project type based on whether there are members
-  // Note: project.project_type may not be in the response, so we infer from members
+  // Determine project type — use project_type from API, fall back to member count
   const projectType =
-    existingMembers.length > 0 ? "group" : "individual";
+    projectData.project_type ||
+    (existingMembers.length > 0 ? "group" : "individual");
 
   // Convert project data to form data
   const initialFormData: ProjectFormData = {
-    course: (projectData as unknown as { course_id?: string }).course_id || projectData.course_code || "",
+    course: projectData.course_id || projectData.course_code || "",
     projectName: projectData.title || "",
     projectType: projectType,
     description: projectData.description || "",
