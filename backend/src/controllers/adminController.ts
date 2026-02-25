@@ -12,7 +12,7 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
         query("SELECT COUNT(*) as total, role FROM users GROUP BY role"),
         query("SELECT COUNT(*) as total FROM courses"),
         query(
-          "SELECT COUNT(*) as total, status FROM project_submissions GROUP BY status"
+          "SELECT COUNT(*) as total, status FROM project_submissions GROUP BY status",
         ),
         query("SELECT COUNT(*) as total FROM projects"),
       ]);
@@ -21,24 +21,30 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
       users: {
         total: usersResult.rows.reduce(
           (sum, row) => sum + parseInt(row.total),
-          0
+          0,
         ),
-        byRole: usersResult.rows.reduce((acc, row) => {
-          acc[row.role] = parseInt(row.total);
-          return acc;
-        }, {} as Record<string, number>),
+        byRole: usersResult.rows.reduce(
+          (acc, row) => {
+            acc[row.role] = parseInt(row.total);
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       },
       courses: parseInt(coursesResult.rows[0]?.total || "0"),
       projects: parseInt(projectsResult.rows[0]?.total || "0"),
       submissions: {
         total: submissionsResult.rows.reduce(
           (sum, row) => sum + parseInt(row.total),
-          0
+          0,
         ),
-        byStatus: submissionsResult.rows.reduce((acc, row) => {
-          acc[row.status] = parseInt(row.total);
-          return acc;
-        }, {} as Record<string, number>),
+        byStatus: submissionsResult.rows.reduce(
+          (acc, row) => {
+            acc[row.status] = parseInt(row.total);
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
       },
     };
 
@@ -85,7 +91,7 @@ export const getAllUsers = async (req: AuthRequest, res: Response) => {
          ${whereClause}
          ORDER BY created_at DESC
          LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`,
-        [...params, limit, offset]
+        [...params, limit, offset],
       ),
       query(`SELECT COUNT(*) as total FROM users ${whereClause}`, params),
     ]);
@@ -160,7 +166,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
         student_id,
         department,
         phone,
-      ]
+      ],
     );
 
     return res.status(201).json({
@@ -237,7 +243,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     const result = await query(
       `UPDATE users SET ${updateFields.join(", ")} WHERE id = $${paramCount}
        RETURNING id, email, display_name, role, is_active, student_id, department, phone, created_at, updated_at`,
-      values
+      values,
     );
 
     if (result.rows.length === 0) {
@@ -318,7 +324,7 @@ export const getAllCourses = async (_req: AuthRequest, res: Response) => {
        LEFT JOIN course_enrollments ce ON c.id = ce.course_id AND ce.status = 'active'
        LEFT JOIN project_submissions ps ON ps.course_id = c.id
        GROUP BY c.id, u.display_name, u.email
-       ORDER BY c.created_at DESC`
+       ORDER BY c.created_at DESC`,
     );
 
     return res.json({
@@ -360,7 +366,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
       `INSERT INTO courses (code, title, description, instructor_id, term, passcode)
        VALUES ($1, $2, $3, $4, $5, COALESCE($6, $1))
        RETURNING *`,
-      [code, title, description, instructor_id, term, passcode]
+      [code, title, description, instructor_id, term, passcode],
     );
 
     const course = result.rows[0];
@@ -378,7 +384,7 @@ export const createCourse = async (req: AuthRequest, res: Response) => {
 
       await query(
         `INSERT INTO course_dimensions (course_id, dimension_id) VALUES ${dimensionValues}`,
-        [course.id, ...dimensionsToAdd]
+        [course.id, ...dimensionsToAdd],
       );
     }
 
@@ -461,7 +467,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
       result = await query(
         `UPDATE courses SET ${updateFields.join(", ")} WHERE id = $${paramCount}
          RETURNING *`,
-        values
+        values,
       );
 
       if (result.rows.length === 0) {
@@ -494,7 +500,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
 
         await query(
           `INSERT INTO course_dimensions (course_id, dimension_id) VALUES ${dimensionValues}`,
-          [id, ...dimension_ids]
+          [id, ...dimension_ids],
         );
       }
     }
@@ -504,7 +510,7 @@ export const updateCourse = async (req: AuthRequest, res: Response) => {
       `SELECT array_agg(dimension_id ORDER BY dimension_id) as dimension_ids
        FROM course_dimensions
        WHERE course_id = $1`,
-      [id]
+      [id],
     );
 
     const course = result.rows[0];
@@ -530,7 +536,7 @@ export const deleteCourse = async (req: AuthRequest, res: Response) => {
 
     const result = await query(
       "DELETE FROM courses WHERE id = $1 RETURNING id",
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
@@ -593,7 +599,7 @@ export const getAllSubmissions = async (req: AuthRequest, res: Response) => {
        ${whereClause}
        GROUP BY ps.id, u.display_name, u.email, p.title, c.title, c.code
        ORDER BY ps.submitted_at DESC`,
-      params
+      params,
     );
 
     return res.json({
@@ -625,13 +631,13 @@ export const deleteSubmission = async (req: AuthRequest, res: Response) => {
     // First, delete associated dimension scores
     await query(
       "DELETE FROM submission_dimension_scores WHERE submission_id = $1",
-      [id]
+      [id],
     );
 
     // Then delete the submission
     const result = await query(
       "DELETE FROM project_submissions WHERE id = $1 RETURNING id",
-      [id]
+      [id],
     );
 
     // Check if submission was actually deleted
@@ -663,7 +669,7 @@ export const getInstructors = async (_req: AuthRequest, res: Response) => {
       `SELECT id, email, display_name 
        FROM users 
        WHERE role IN ('instructor', 'admin')
-       ORDER BY display_name ASC`
+       ORDER BY display_name ASC`,
     );
 
     return res.json({
@@ -685,7 +691,7 @@ export const getAllDimensions = async (_req: AuthRequest, res: Response) => {
     const result = await query(
       `SELECT id, label, short_label, description, color_hex, rubric_level_1, rubric_level_2, rubric_level_3, is_active
        FROM dimensions
-       ORDER BY id ASC`
+       ORDER BY id ASC`,
     );
 
     return res.json({
@@ -697,6 +703,237 @@ export const getAllDimensions = async (_req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       error: { message: "Failed to fetch dimensions" },
+    });
+  }
+};
+
+// ============================================================
+// Project Management
+// ============================================================
+
+// GET /api/admin/projects - Get all projects with related info
+export const getAllProjects = async (req: AuthRequest, res: Response) => {
+  try {
+    const search = req.query.search as string;
+    const projectType = req.query.projectType as string;
+    const courseId = req.query.courseId as string;
+
+    let whereClause = "";
+    const params: string[] = [];
+    let paramCount = 0;
+
+    if (search) {
+      paramCount++;
+      whereClause += `WHERE (p.title ILIKE $${paramCount} OR owner.display_name ILIKE $${paramCount})`;
+      params.push(`%${search}%`);
+    }
+
+    if (projectType) {
+      paramCount++;
+      whereClause += whereClause ? " AND " : "WHERE ";
+      whereClause += `p.project_type = $${paramCount}`;
+      params.push(projectType);
+    }
+
+    if (courseId) {
+      paramCount++;
+      whereClause += whereClause ? " AND " : "WHERE ";
+      whereClause += `p.course_id = $${paramCount}`;
+      params.push(courseId);
+    }
+
+    const result = await query(
+      `SELECT
+        p.id,
+        p.title,
+        p.description,
+        p.status,
+        p.project_type,
+        p.owner_id,
+        p.course_id,
+        p.created_at,
+        p.updated_at,
+        owner.display_name as owner_name,
+        owner.email as owner_email,
+        c.code as course_code,
+        c.title as course_title,
+        COUNT(DISTINCT pm.user_id) as member_count,
+        COUNT(DISTINCT ps.id) as submission_count
+       FROM projects p
+       LEFT JOIN users owner ON p.owner_id = owner.id
+       LEFT JOIN courses c ON p.course_id = c.id
+       LEFT JOIN project_members pm ON p.id = pm.project_id
+       LEFT JOIN project_submissions ps ON p.id = ps.project_id
+       ${whereClause}
+       GROUP BY p.id, owner.display_name, owner.email, c.code, c.title
+       ORDER BY p.updated_at DESC`,
+      params,
+    );
+
+    return res.json({
+      success: true,
+      data: { projects: result.rows },
+    });
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to fetch projects" },
+    });
+  }
+};
+
+// DELETE /api/admin/projects/:id - Delete project with safety checks
+export const deleteProject = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Invalid project ID" },
+      });
+    }
+
+    // Check if project exists and count submissions
+    const projectCheck = await query(
+      `SELECT p.id, p.title,
+              COUNT(DISTINCT ps.id) as submission_count
+       FROM projects p
+       LEFT JOIN project_submissions ps ON p.id = ps.project_id
+       WHERE p.id = $1
+       GROUP BY p.id`,
+      [id],
+    );
+
+    if (projectCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Project not found" },
+      });
+    }
+
+    const project = projectCheck.rows[0];
+    const submissionCount = parseInt(project.submission_count);
+
+    // Check for force flag — if project has submissions, require explicit confirmation
+    const force = req.query.force === "true";
+    if (submissionCount > 0 && !force) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          message: `This project "${project.title}" has ${submissionCount} submission(s) with student work. Send ?force=true to confirm deletion.`,
+          submission_count: submissionCount,
+        },
+      });
+    }
+
+    // Delete in order: dimension scores → submissions → members → project
+    await query(
+      `DELETE FROM submission_dimension_scores
+       WHERE submission_id IN (
+         SELECT id FROM project_submissions WHERE project_id = $1
+       )`,
+      [id],
+    );
+
+    await query("DELETE FROM project_submissions WHERE project_id = $1", [id]);
+    await query("DELETE FROM project_members WHERE project_id = $1", [id]);
+
+    const result = await query(
+      "DELETE FROM projects WHERE id = $1 RETURNING id",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Project not found" },
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Project deleted successfully",
+      data: { projectId: result.rows[0].id },
+    });
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to delete project" },
+    });
+  }
+};
+
+// PUT /api/admin/projects/:id - Update project as admin
+export const updateProjectAdmin = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, description, status } = req.body;
+
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: { message: "Invalid project ID" },
+      });
+    }
+
+    const existing = await query("SELECT id FROM projects WHERE id = $1", [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Project not found" },
+      });
+    }
+
+    const updateFields: string[] = [];
+    const values: unknown[] = [];
+    let paramCount = 0;
+
+    if (title !== undefined) {
+      paramCount++;
+      updateFields.push(`title = $${paramCount}`);
+      values.push(title);
+    }
+
+    if (description !== undefined) {
+      paramCount++;
+      updateFields.push(`description = $${paramCount}`);
+      values.push(description);
+    }
+
+    if (status !== undefined) {
+      paramCount++;
+      updateFields.push(`status = $${paramCount}`);
+      values.push(status);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { message: "No valid fields to update" },
+      });
+    }
+
+    updateFields.push("updated_at = now()");
+    paramCount++;
+    values.push(id);
+
+    const result = await query(
+      `UPDATE projects SET ${updateFields.join(", ")} WHERE id = $${paramCount} RETURNING *`,
+      values,
+    );
+
+    return res.json({
+      success: true,
+      data: { project: result.rows[0] },
+    });
+  } catch (error) {
+    console.error("Error updating project:", error);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to update project" },
     });
   }
 };
