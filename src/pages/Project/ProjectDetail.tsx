@@ -430,14 +430,9 @@ const ProjectDetail = () => {
 
   // Handle edit mode toggle
   const handleEditClick = () => {
-    if (isFileBasedSubmission) {
-      // For file-based submissions, clear files and let user upload new ones
-      setEditedFiles([]);
-      setEditedEssayText("");
-    } else {
-      // For text-based submissions, load current text for editing
-      setEditedEssayText(submissionContent);
-    }
+    // Always start with blank content — users submit a new version, not edit existing
+    setEditedFiles([]);
+    setEditedEssayText("");
     setIsEditMode(true);
   };
 
@@ -903,11 +898,18 @@ const ProjectDetail = () => {
 
               {isEditMode ? (
                 <>
+                  <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="caption text-amber-800">
+                      You are creating a new submission (Submission{" "}
+                      {totalSubmissions + 1}). The previous submission will
+                      remain unchanged.
+                    </p>
+                  </div>
                   {isFileBasedSubmission ? (
                     // File-based submission: show FileDrop
                     <div className="mb-4">
                       <p className="body-2 text-gray-600 mb-3">
-                        Upload a new PDF file to resubmit:
+                        Upload a new PDF file to submit:
                       </p>
                       <FileDrop
                         onFilesSelected={handleEditFilesSelected}
@@ -925,11 +927,11 @@ const ProjectDetail = () => {
                       )}
                     </div>
                   ) : (
-                    // Text-based submission: show TextArea
+                    // Text-based submission: show TextArea for new version
                     <TextArea
                       value={editedEssayText}
                       onChange={setEditedEssayText}
-                      placeholder="Edit your essay text here..."
+                      placeholder="Write your new submission here..."
                       maxLength={50000}
                       showCharCount={true}
                     />
@@ -953,10 +955,8 @@ const ProjectDetail = () => {
                       }
                     >
                       {isSubmitting
-                        ? "Resubmitting..."
-                        : `Save & Resubmit (→ Submission ${
-                            totalSubmissions + 1
-                          })`}
+                        ? "Submitting..."
+                        : `Submit as Version ${totalSubmissions + 1}`}
                     </Button>
                   </div>
                 </>
@@ -969,7 +969,7 @@ const ProjectDetail = () => {
                       onClick={handleEditClick}
                       disabled={isSubmitting}
                     >
-                      ✏️ Edit & Resubmit
+                      📝 Submit New Version
                     </Button>
                   </div>
                 </>
@@ -1007,7 +1007,7 @@ const ProjectDetail = () => {
                         </span>
                         {sub.submitted_by_name && (
                           <span className="caption text-grey-55">
-                            by {sub.submitted_by_name}
+                            Submitted by {sub.submitted_by_name}
                           </span>
                         )}
                       </div>
