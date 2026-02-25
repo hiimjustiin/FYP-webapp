@@ -28,7 +28,7 @@ interface ProjectFormProps {
   onSubmit: (
     data: ProjectFormData,
     teamMembers: Member[],
-    files: File[]
+    files: File[],
   ) => void;
   onCancel: () => void;
 }
@@ -54,7 +54,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       projectType: "",
       description: "",
       text: "",
-    }
+    },
   );
 
   const [selectedTeamMembers, setSelectedTeamMembers] =
@@ -68,7 +68,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [courseOptions, setCourseOptions] = useState<DropdownOption[]>([]);
 
   const [selectedCourse, setSelectedCourse] = useState<DropdownOption | null>(
-    null
+    null,
   );
 
   const [selectedProjectType, setSelectedProjectType] =
@@ -76,7 +76,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       initialData && initialData.projectType
         ? projectTypeOptions.find((p) => p.id === initialData.projectType) ||
             null
-        : null
+        : null,
     );
 
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -106,7 +106,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         // Set initial selected course if editing
         if (initialData && initialData.course) {
           const initialCourse = options.find(
-            (c) => c.id === initialData.course
+            (c) => c.id === initialData.course,
           );
           if (initialCourse) {
             setSelectedCourse(initialCourse);
@@ -117,7 +117,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         setAlertType("error");
         setAlertTitle("Error");
         setAlertMsg(
-          "Failed to load your enrolled courses. Please refresh the page."
+          "Failed to load your enrolled courses. Please refresh the page.",
         );
         setIsAlertOpen(true);
       } finally {
@@ -141,7 +141,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         setIsLoadingMembers(true);
         setEnrolledStudentsFetchError(false);
         const students = await courseService.getEnrolledStudents(
-          selectedCourse.id
+          selectedCourse.id,
         );
 
         // Convert students to Member format
@@ -277,7 +277,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         projectType: selectedProjectType?.id || "",
       },
       selectedTeamMembers,
-      selectedFiles
+      selectedFiles,
     );
   };
 
@@ -311,6 +311,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                         course first.
                       </p>
                     </div>
+                  ) : isEditing && selectedCourse ? (
+                    <div className="p-3 border rounded bg-gray-100">
+                      <p className="text-sm text-gray-700">
+                        {selectedCourse.label}
+                      </p>
+                    </div>
                   ) : (
                     <Dropdown
                       options={courseOptions}
@@ -340,7 +346,13 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <label className="caption text-[var(--color-grey-55)] mb-2 block">
                     Project Type
                   </label>
-                  {!selectedCourse ? (
+                  {isEditing && selectedProjectType ? (
+                    <div className="p-3 border rounded bg-gray-100">
+                      <p className="text-sm text-gray-700">
+                        {selectedProjectType.label}
+                      </p>
+                    </div>
+                  ) : !selectedCourse ? (
                     <div className="p-3 border rounded bg-gray-50">
                       <p className="text-sm text-gray-500">
                         Please select a course first
@@ -433,7 +445,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     ) : (
                       <SearchBar
                         placeholder="Search and select team members"
-                        members={availableMembers}
+                        members={availableMembers.filter(
+                          (m) =>
+                            !selectedTeamMembers.find((s) => s.id === m.id),
+                        )}
                         onSelect={(member) => {
                           if (
                             !selectedTeamMembers.find((m) => m.id === member.id)
@@ -464,7 +479,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                                 type="button"
                                 onClick={() =>
                                   setSelectedTeamMembers((prev) =>
-                                    prev.filter((m) => m.id !== member.id)
+                                    prev.filter((m) => m.id !== member.id),
                                   )
                                 }
                                 className="text-red-600 hover:text-red-800 text-sm font-bold"
@@ -605,7 +620,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             setIsAlertOpen(false);
             setAlertType("info");
             setAlertTitle(
-              isEditing ? "Review your changes" : "Review your submission"
+              isEditing ? "Review your changes" : "Review your submission",
             );
             setPrimaryButtonText(isEditing ? "Update" : "Create");
           }

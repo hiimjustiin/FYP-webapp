@@ -698,6 +698,12 @@ const ProjectDetail = () => {
         </div>
 
         <div className="project-detail-actions">
+          <Button
+            variant="grey"
+            onClick={() => navigate(`/project/${projectId}/edit`)}
+          >
+            ⚙️ Edit Project
+          </Button>
           <Button variant="blue" onClick={() => navigate("/project/new")}>
             + Add New Project
           </Button>

@@ -15,6 +15,7 @@ export interface Project {
   owner_id: string;
   status: "Processing" | "Completed" | "Failed";
   project_type?: "individual" | "group";
+  course_id?: string;
   course_code?: string;
   submission_date?: string;
   interq_score?: number; // 1-3 scale average AI score
