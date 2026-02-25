@@ -167,6 +167,10 @@ jobs:
           # AI / OpenAI Configuration
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           EOF
+
+            # docker-compose.prod.yml references .env.production via env_file
+            cp .env .env.production
+            echo ".env.production created"
             
             echo ""
             echo "============================================"
