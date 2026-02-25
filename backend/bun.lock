@@ -24,6 +24,7 @@
         "@types/bcryptjs": "^2.4.6",
         "@types/cors": "^2.8.17",
         "@types/express": "^4.17.21",
+        "@types/express-serve-static-core": "^4.19.6",
         "@types/jsonwebtoken": "^9.0.5",
         "@types/morgan": "^1.9.9",
         "@types/multer": "^2.0.0",
@@ -36,6 +37,9 @@
         "typescript": "^5.3.3",
       },
     },
+  },
+  "overrides": {
+    "@types/express-serve-static-core": "^4.19.6",
   },
   "packages": {
     "@aws-crypto/sha256-browser": ["@aws-crypto/sha256-browser@5.2.0", "", { "dependencies": { "@aws-crypto/sha256-js": "^5.2.0", "@aws-crypto/supports-web-crypto": "^5.2.0", "@aws-crypto/util": "^5.2.0", "@aws-sdk/types": "^3.222.0", "@aws-sdk/util-locate-window": "^3.0.0", "@smithy/util-utf8": "^2.0.0", "tslib": "^2.6.2" } }, "sha512-AXfN/lGotSQwu6HNcEsIASo7kWXZ5HYWvfOmSNKDsEqC4OashTp8alTmaz+F7TC2L083SFv5RdB+qU3Vs1kZqw=="],
