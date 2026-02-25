@@ -14,6 +14,8 @@ export interface Project {
   description?: string;
   owner_id: string;
   status: "Processing" | "Completed" | "Failed";
+  project_type?: "individual" | "group";
+  course_id?: string;
   course_code?: string;
   submission_date?: string;
   interq_score?: number; // 1-3 scale average AI score
@@ -43,6 +45,7 @@ export interface UpdateProjectData {
   course_code?: string;
   submission_date?: string;
   settings?: Record<string, unknown>;
+  member_ids?: string[];
 }
 
 interface ProjectsResponse {
@@ -71,6 +74,8 @@ export interface SubmissionSummary {
   name: string;
   iteration_number: number;
   submitted_at: string;
+  submitted_by_id?: string;
+  submitted_by_name?: string;
   ai_processing_status: string;
   ai_overall_summary?: string;
   ai_estimated_level?: string;
@@ -141,7 +146,7 @@ export const projectService = {
 
   async updateProject(
     id: string,
-    projectData: UpdateProjectData
+    projectData: UpdateProjectData,
   ): Promise<Project> {
     const data = await api.put<ProjectResponse>(`/projects/${id}`, projectData);
     return data.project;
@@ -152,11 +157,11 @@ export const projectService = {
   },
 
   async submitProject(
-    id: string
+    id: string,
   ): Promise<{ project: Project; submission_id: string; message: string }> {
     const data = await api.post<SubmitProjectResponse>(
       `/projects/${id}/submit`,
-      {}
+      {},
     );
     return data;
   },
@@ -164,7 +169,7 @@ export const projectService = {
   async resubmitProject(
     id: string,
     essayText?: string,
-    files?: File[]
+    files?: File[],
   ): Promise<ResubmitProjectResponse> {
     // Use FormData to support file uploads
     const formData = new FormData();
@@ -182,13 +187,13 @@ export const projectService = {
     // Send FormData without custom Content-Type header (browser sets it with boundary)
     const data = await api.post<ResubmitProjectResponse>(
       `/projects/${id}/resubmit`,
-      formData
+      formData,
     );
     return data;
   },
 
   async getProjectSubmissions(
-    projectId: string
+    projectId: string,
   ): Promise<{ submissions: SubmissionSummary[]; total_count: number }> {
     const data = await api.get<{
       submissions: SubmissionSummary[];

@@ -18,6 +18,7 @@ import ProjectEdit from "./pages/Project/ProjectEdit.js";
 import ProjectDetail from "./pages/Project/ProjectDetail.js";
 import ProjectReport from "./pages/Report/ProjectReport";
 import Team from "./pages/Team.js";
+import TeamManage from "./pages/TeamManage.js";
 import Report from "./pages/Report.js";
 import Settings from "./pages/Settings.js";
 import Courses from "./pages/Courses.js";
@@ -36,6 +37,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminUsers from "./pages/AdminUsers";
 import AdminCourses from "./pages/AdminCourses";
 import AdminSubmissions from "./pages/AdminSubmissions";
+import AdminProjects from "./pages/AdminProjects";
 
 // Main app content with authentication logic
 const AppContent = () => {
@@ -60,10 +62,7 @@ const AppContent = () => {
           isAuthenticated ? <Navigate to="/" replace /> : <VerifyEmailPage />
         }
       />
-      <Route
-        path="/oauth/callback"
-        element={<OAuthCallbackPage />}
-      />
+      <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
       {/* Instructor routes */}
       <Route
@@ -178,6 +177,16 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/projects"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout key="admin-projects">
+              <AdminProjects />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
       {/* Protected dashboard routes */}
       <Route
         path="/"
@@ -235,6 +244,16 @@ const AppContent = () => {
           <ProtectedRoute>
             <DashboardLayout key="team">
               <Team />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/team/:projectId/manage"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout key="team-manage">
+              <TeamManage />
             </DashboardLayout>
           </ProtectedRoute>
         }

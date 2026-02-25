@@ -15,6 +15,9 @@ import {
   deleteSubmission,
   getInstructors,
   getAllDimensions,
+  getAllProjects,
+  deleteProject,
+  updateProjectAdmin,
 } from "../controllers/adminController.js";
 
 const router: Router = Router();
@@ -39,7 +42,7 @@ router.post(
     body("department").optional().trim(),
     body("phone").optional().trim(),
   ],
-  createUser
+  createUser,
 );
 router.put("/users/:id", updateUser);
 router.delete("/users/:id", deleteUser);
@@ -55,7 +58,7 @@ router.post(
     body("instructor_id").optional().isUUID(),
     body("term").optional().trim(),
   ],
-  createCourse
+  createCourse,
 );
 router.put("/courses/:id", updateCourse);
 router.delete("/courses/:id", deleteCourse);
@@ -63,6 +66,11 @@ router.delete("/courses/:id", deleteCourse);
 // Submission management
 router.get("/submissions", getAllSubmissions);
 router.delete("/submissions/:id", deleteSubmission);
+
+// Project management
+router.get("/projects", getAllProjects);
+router.put("/projects/:id", updateProjectAdmin);
+router.delete("/projects/:id", deleteProject);
 
 // Utility routes
 router.get("/instructors", getInstructors);

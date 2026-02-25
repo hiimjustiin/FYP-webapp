@@ -77,6 +77,7 @@ const ProjectDetail = () => {
   // Chat state
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Submission content
   const [submissionContent, setSubmissionContent] = useState<string>("");
@@ -89,7 +90,7 @@ const ProjectDetail = () => {
 
   // Selected dimension for feedback display
   const [selectedDimension, setSelectedDimension] = useState<string | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -103,9 +104,8 @@ const ProjectDetail = () => {
         setProject(data);
 
         // Load all submissions for this project
-        const submissionsData = await projectService.getProjectSubmissions(
-          projectId
-        );
+        const submissionsData =
+          await projectService.getProjectSubmissions(projectId);
         setSubmissions(submissionsData.submissions);
         setTotalSubmissions(submissionsData.total_count);
 
@@ -120,17 +120,29 @@ const ProjectDetail = () => {
         if (data.latest_submission_id) {
           console.log(
             "[ProjectDetail] Found submission:",
-            data.latest_submission_id
+            data.latest_submission_id,
           );
           setSubmissionId(data.latest_submission_id);
 
           // Find the iteration number
           const latestSub = submissionsData.submissions.find(
-            (s) => s.id === data.latest_submission_id
+            (s) => s.id === data.latest_submission_id,
           );
           if (latestSub) {
             setCurrentIteration(latestSub.iteration_number);
           }
+        } else if (submissionsData.submissions.length > 0) {
+          // Fallback: derive latest submission from the submissions list
+          // This ensures all group team members can see feedback even if
+          // latest_submission_id wasn't returned for them
+          const lastSub =
+            submissionsData.submissions[submissionsData.submissions.length - 1];
+          console.log(
+            "[ProjectDetail] Fallback: using last submission from list:",
+            lastSub.id,
+          );
+          setSubmissionId(lastSub.id);
+          setCurrentIteration(lastSub.iteration_number);
         }
       } catch (err) {
         console.error("Failed to load project:", err);
@@ -151,7 +163,7 @@ const ProjectDetail = () => {
       try {
         console.log(
           "[ProjectDetail] Loading feedback for submission:",
-          submissionId
+          submissionId,
         );
         const feedbackData = await feedbackService.getFeedback(submissionId);
         console.log("[ProjectDetail] Got feedback:", feedbackData);
@@ -177,23 +189,23 @@ const ProjectDetail = () => {
         if (sub.essay_text) {
           console.log(
             "[ProjectDetail] Setting essay_text as submission content, length:",
-            sub.essay_text.length
+            sub.essay_text.length,
           );
           setSubmissionContent(sub.essay_text);
           setIsFileBasedSubmission(false);
         } else if (sub.file_urls && sub.file_urls.length > 0) {
           console.log(
-            "[ProjectDetail] Setting file_urls as submission content"
+            "[ProjectDetail] Setting file_urls as submission content",
           );
           setSubmissionContent(
             `[File submission: ${
               sub.file_urls.length
-            } file(s)]\n${sub.file_urls.join("\n")}`
+            } file(s)]\n${sub.file_urls.join("\n")}`,
           );
           setIsFileBasedSubmission(true);
         } else {
           console.warn(
-            "[ProjectDetail] No essay_text or file_urls found in submission"
+            "[ProjectDetail] No essay_text or file_urls found in submission",
           );
           setIsFileBasedSubmission(false);
         }
@@ -223,7 +235,7 @@ const ProjectDetail = () => {
               Math.round(
                 (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
                   (dims.length || 1)) *
-                  10
+                  10,
               ) / 10,
             maxScore: 3,
             dimensions: dims.map((d) => ({
@@ -254,12 +266,12 @@ const ProjectDetail = () => {
           setProcessingStatus(
             sub.ai_processing_status === "processing"
               ? "AI is analyzing your submission..."
-              : "Queued for analysis..."
+              : "Queued for analysis...",
           );
           // Will be handled by polling effect below
         } else if (sub.ai_processing_status === "failed") {
           setError(
-            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`
+            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
           );
           setProcessingStatus("Analysis failed.");
         }
@@ -303,7 +315,7 @@ const ProjectDetail = () => {
           setSubmissionContent(
             `[File submission: ${
               sub.file_urls.length
-            } file(s)]\n${sub.file_urls.join("\n")}`
+            } file(s)]\n${sub.file_urls.join("\n")}`,
           );
         }
 
@@ -319,7 +331,7 @@ const ProjectDetail = () => {
               Math.round(
                 (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
                   (dims.length || 1)) *
-                  10
+                  10,
               ) / 10,
             maxScore: 3,
             dimensions: dims.map((d) => ({
@@ -340,7 +352,7 @@ const ProjectDetail = () => {
         } else if (sub.ai_processing_status === "failed") {
           setProcessingStatus("Analysis failed.");
           setError(
-            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`
+            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
           );
         } else if (sub.ai_processing_status === "processing") {
           setProcessingStatus("AI is analyzing your submission...");
@@ -375,7 +387,7 @@ const ProjectDetail = () => {
 
     // Confirm submission
     const confirmed = window.confirm(
-      "Are you sure you want to submit this project for AI evaluation? This will change the status from Draft to Submitted. You'll be redirected to the project list."
+      "Are you sure you want to submit this project for AI evaluation? This will change the status from Draft to Submitted. You'll be redirected to the project list.",
     );
 
     if (!confirmed) return;
@@ -390,7 +402,7 @@ const ProjectDetail = () => {
 
       // Show success message and redirect
       alert(
-        `${result.message}\n\nYou can check the feedback status from the project list.`
+        `${result.message}\n\nYou can check the feedback status from the project list.`,
       );
 
       // Redirect to project list
@@ -418,14 +430,9 @@ const ProjectDetail = () => {
 
   // Handle edit mode toggle
   const handleEditClick = () => {
-    if (isFileBasedSubmission) {
-      // For file-based submissions, clear files and let user upload new ones
-      setEditedFiles([]);
-      setEditedEssayText("");
-    } else {
-      // For text-based submissions, load current text for editing
-      setEditedEssayText(submissionContent);
-    }
+    // Always start with blank content — users submit a new version, not edit existing
+    setEditedFiles([]);
+    setEditedEssayText("");
     setIsEditMode(true);
   };
 
@@ -462,7 +469,7 @@ const ProjectDetail = () => {
     const confirmed = window.confirm(
       `Are you sure you want to resubmit? This will create Submission ${
         totalSubmissions + 1
-      } and trigger a new AI evaluation comparing to your previous submission.`
+      } and trigger a new AI evaluation comparing to your previous submission.`,
     );
 
     if (!confirmed) return;
@@ -476,7 +483,7 @@ const ProjectDetail = () => {
       const result = await projectService.resubmitProject(
         projectId,
         isFileBasedSubmission ? undefined : editedEssayText,
-        isFileBasedSubmission ? editedFiles : undefined
+        isFileBasedSubmission ? editedFiles : undefined,
       );
 
       console.log("Resubmission result:", result);
@@ -491,7 +498,7 @@ const ProjectDetail = () => {
         setSubmissionContent(
           `[File submission: ${editedFiles.length} file(s)]\n${editedFiles
             .map((f) => f.name)
-            .join("\n")}`
+            .join("\n")}`,
         );
       } else {
         setSubmissionContent(editedEssayText);
@@ -502,9 +509,8 @@ const ProjectDetail = () => {
       setEditedFiles([]);
 
       // Refresh submissions list
-      const submissionsData = await projectService.getProjectSubmissions(
-        projectId
-      );
+      const submissionsData =
+        await projectService.getProjectSubmissions(projectId);
       setSubmissions(submissionsData.submissions);
     } catch (err) {
       console.error("Failed to resubmit project:", err);
@@ -523,7 +529,9 @@ const ProjectDetail = () => {
   // Build submissions options for comparison dropdown
   const submissionOptions: DropdownOption[] = submissions.map((sub) => ({
     id: sub.id,
-    label: `Submission ${sub.iteration_number}`,
+    label: sub.submitted_by_name
+      ? `Submission ${sub.iteration_number} (by ${sub.submitted_by_name})`
+      : `Submission ${sub.iteration_number}`,
   }));
 
   // Prepare radar data from feedback (all dimensions)
@@ -535,7 +543,7 @@ const ProjectDetail = () => {
           "score:",
           dim.score,
           "color:",
-          dim.color
+          dim.color,
         );
         return {
           dimension: dim.name,
@@ -548,13 +556,13 @@ const ProjectDetail = () => {
   console.log("[ProjectDetail] aiFeedback exists:", !!aiFeedback);
   console.log(
     "[ProjectDetail] aiFeedback dimensions:",
-    aiFeedback?.dimensions.length
+    aiFeedback?.dimensions.length,
   );
 
   // Generate improvement suggestion based on score (1-3 scale)
   const getImprovementSuggestion = (
     dimensionName: string,
-    score: number
+    score: number,
   ): string => {
     const suggestions: Record<string, Record<number, string>> = {
       "Frame the problem with an integrative approach": {
@@ -613,7 +621,7 @@ const ProjectDetail = () => {
     console.log("[ProjectDetail] Dimension clicked:", dimension);
     console.log(
       "[ProjectDetail] Available dimensions:",
-      aiFeedback?.dimensions.map((d) => d.name)
+      aiFeedback?.dimensions.map((d) => d.name),
     );
     setSelectedDimension(dimension);
   };
@@ -685,6 +693,12 @@ const ProjectDetail = () => {
         </div>
 
         <div className="project-detail-actions">
+          <Button
+            variant="grey"
+            onClick={() => navigate(`/project/${projectId}/edit`)}
+          >
+            ⚙️ Edit Project
+          </Button>
           <Button variant="blue" onClick={() => navigate("/project/new")}>
             + Add New Project
           </Button>
@@ -778,7 +792,7 @@ const ProjectDetail = () => {
                   .map((dim, idx) => {
                     const improvementSuggestion = getImprovementSuggestion(
                       dim.name,
-                      dim.score
+                      dim.score,
                     );
 
                     return (
@@ -857,13 +871,45 @@ const ProjectDetail = () => {
                 </h4>
               </div>
 
+              {/* Show submitter attribution for the current submission */}
+              {(() => {
+                const currentSub = submissions.find(
+                  (s) => s.id === submissionId,
+                );
+                if (currentSub?.submitted_by_name) {
+                  return (
+                    <p className="caption text-grey-55 mb-3">
+                      Submitted by {currentSub.submitted_by_name} on{" "}
+                      {new Date(currentSub.submitted_at).toLocaleDateString(
+                        undefined,
+                        {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      )}
+                    </p>
+                  );
+                }
+                return null;
+              })()}
+
               {isEditMode ? (
                 <>
+                  <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="caption text-amber-800">
+                      You are creating a new submission (Submission{" "}
+                      {totalSubmissions + 1}). The previous submission will
+                      remain unchanged.
+                    </p>
+                  </div>
                   {isFileBasedSubmission ? (
                     // File-based submission: show FileDrop
                     <div className="mb-4">
                       <p className="body-2 text-gray-600 mb-3">
-                        Upload a new PDF file to resubmit:
+                        Upload a new PDF file to submit:
                       </p>
                       <FileDrop
                         onFilesSelected={handleEditFilesSelected}
@@ -881,11 +927,11 @@ const ProjectDetail = () => {
                       )}
                     </div>
                   ) : (
-                    // Text-based submission: show TextArea
+                    // Text-based submission: show TextArea for new version
                     <TextArea
                       value={editedEssayText}
                       onChange={setEditedEssayText}
-                      placeholder="Edit your essay text here..."
+                      placeholder="Write your new submission here..."
                       maxLength={50000}
                       showCharCount={true}
                     />
@@ -909,10 +955,8 @@ const ProjectDetail = () => {
                       }
                     >
                       {isSubmitting
-                        ? "Resubmitting..."
-                        : `Save & Resubmit (→ Submission ${
-                            totalSubmissions + 1
-                          })`}
+                        ? "Submitting..."
+                        : `Submit as Version ${totalSubmissions + 1}`}
                     </Button>
                   </div>
                 </>
@@ -925,7 +969,7 @@ const ProjectDetail = () => {
                       onClick={handleEditClick}
                       disabled={isSubmitting}
                     >
-                      ✏️ Edit & Resubmit
+                      📝 Submit New Version
                     </Button>
                   </div>
                 </>
@@ -938,6 +982,68 @@ const ProjectDetail = () => {
                 </div>
               )}
             </div>
+
+            {/* Submission History - shows all versions with submitter info for group projects */}
+            {project.project_type === "group" && submissions.length > 0 && (
+              <div className="detail-card mt-4">
+                <h4 className="subtitle-1 mb-3">Submission History</h4>
+                <div className="flex flex-col gap-2">
+                  {submissions.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                        sub.id === submissionId
+                          ? "bg-blue-50 border border-blue-200"
+                          : "hover:bg-gray-50 border border-transparent"
+                      }`}
+                      onClick={() => {
+                        setSubmissionId(sub.id);
+                        setCurrentIteration(sub.iteration_number);
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span className="body-2 font-medium">
+                          Submission {sub.iteration_number}
+                        </span>
+                        {sub.submitted_by_name && (
+                          <span className="caption text-grey-55">
+                            Submitted by {sub.submitted_by_name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="caption text-grey-55">
+                          {new Date(sub.submitted_at).toLocaleDateString(
+                            undefined,
+                            {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
+                        </span>
+                        <span
+                          className={`caption ${
+                            sub.ai_processing_status === "completed"
+                              ? "text-green-600"
+                              : sub.ai_processing_status === "failed"
+                                ? "text-red-500"
+                                : "text-yellow-600"
+                          }`}
+                        >
+                          {sub.ai_processing_status === "completed"
+                            ? "✓ Evaluated"
+                            : sub.ai_processing_status === "failed"
+                              ? "✗ Failed"
+                              : "⏳ Processing"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Instructor Suggestion Card */}
             {instructorSuggestion && (
@@ -954,23 +1060,13 @@ const ProjectDetail = () => {
                     <span className="caption text-grey-55">
                       Updated:{" "}
                       {new Date(
-                        instructorSuggestion.updated_at
+                        instructorSuggestion.updated_at,
                       ).toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Column 3: Chat Interface */}
-          <div className="project-detail-col-3">
-            <ChatInterface
-              messages={chatMessages}
-              onSendMessage={handleSendMessage}
-              isLoading={isChatLoading}
-              placeholder="Ask about your feedback..."
-            />
           </div>
         </div>
       ) : project.status === "Processing" ? (
@@ -1028,6 +1124,67 @@ const ProjectDetail = () => {
           </Button>
         </div>
       )}
+
+      {/* Floating Chat Bubble */}
+      <div className="chat-floating-container">
+        {isChatOpen ? (
+          <div className="chat-floating-panel">
+            <div className="chat-panel-header">
+              <h4>Ask about your feedback</h4>
+              <button
+                className="chat-close-btn"
+                onClick={() => setIsChatOpen(false)}
+                aria-label="Close chat"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 4L4 12M4 4L12 12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="chat-panel-body">
+              <ChatInterface
+                messages={chatMessages}
+                onSendMessage={handleSendMessage}
+                isLoading={isChatLoading}
+                placeholder="Ask about your feedback..."
+              />
+            </div>
+          </div>
+        ) : (
+          <button
+            className="chat-bubble-btn"
+            onClick={() => setIsChatOpen(true)}
+            aria-label="Open chat"
+          >
+            <svg
+              className="chat-bubble-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 };
