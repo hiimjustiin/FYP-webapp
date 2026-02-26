@@ -19,6 +19,9 @@ export interface Dimension {
   short_label?: string;
   description?: string;
   color_hex: string;
+  rubric_level_1?: string;
+  rubric_level_2?: string;
+  rubric_level_3?: string;
   is_active: boolean;
 }
 
@@ -101,6 +104,7 @@ export interface SubmissionDetails {
     project_description: string;
     course_code: string;
     course_title: string;
+    dimension_ids?: number[];
     ai_overall_summary?: string | null;
     ai_overall_strengths?: string[] | null;
     ai_priority_improvements?: string[] | null;
