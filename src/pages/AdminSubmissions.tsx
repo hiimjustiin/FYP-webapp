@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { BarChart3, Eye, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Eye, Trash2 } from "lucide-react";
 import {
   adminService,
   type AdminSubmission,
@@ -12,6 +13,7 @@ import SearchBar from "../components/ui/SearchBar/SearchBar";
 import { AlertDialog } from "../components/ui/AlertDialog/AlertDialog";
 
 export default function AdminSubmissions() {
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<AdminSubmission[]>([]);
   const [courses, setCourses] = useState<AdminCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,16 +136,6 @@ export default function AdminSubmissions() {
     page * ITEMS_PER_PAGE
   );
 
-  const getStatusBadge = (status: string) => {
-    const colors: Record<string, string> = {
-      submitted: "bg-blue-100 text-blue-800",
-      scoring: "bg-yellow-100 text-yellow-800",
-      scored: "bg-purple-100 text-purple-800",
-      reviewed: "bg-green-100 text-green-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
-  };
-
   const statusOptions = [
     { id: "all", label: "All Statuses" },
     { id: "submitted", label: "Submitted" },
@@ -201,40 +193,6 @@ export default function AdminSubmissions() {
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            {
-              label: "Total",
-              count: submissions.length,
-              color: "bg-[#181C62]",
-            },
-            {
-              label: "Submitted",
-              count: submissions.filter((s) => s.status === "submitted").length,
-              color: "bg-blue-500",
-            },
-            {
-              label: "Scored",
-              count: submissions.filter((s) => s.status === "scored").length,
-              color: "bg-purple-500",
-            },
-            {
-              label: "Reviewed",
-              count: submissions.filter((s) => s.status === "reviewed").length,
-              color: "bg-green-500",
-            },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className={`${stat.color} text-white rounded-lg p-4`}
-            >
-              <p className="text-sm opacity-90">{stat.label}</p>
-              <p className="text-2xl font-bold mt-1">{stat.count}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Error Display */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -264,8 +222,6 @@ export default function AdminSubmissions() {
                   "Student",
                   "Email",
                   "Project",
-                  "Status",
-                  "Scores",
                   "Submitted",
                   "Actions",
                 ],
@@ -273,28 +229,13 @@ export default function AdminSubmissions() {
                   sub.student_name,
                   sub.student_email,
                   `${sub.course_code} - ${sub.project_title}`,
-                  <span
-                    key={`status-${sub.id}`}
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
-                      sub.status
-                    )}`}
-                  >
-                    {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
-                  </span>,
-                  <span
-                    key={`score-${sub.id}`}
-                    className="inline-flex items-center gap-1 text-[var(--color-blue-ntu)] font-medium"
-                  >
-                    <BarChart3 className="w-4 h-4" strokeWidth={2.5} />
-                    {sub.scores_count}
-                  </span>,
                   new Date(sub.submitted_at).toLocaleDateString(),
                   <div className="flex gap-2" key={`actions-${sub.id}`}>
                     <Button
                       variant="blue"
-                      onClick={() => window.open(sub.file_url, "_blank")}
+                      onClick={() => navigate(`/admin/submissions/${sub.id}`)}
                       className="p-1.5"
-                      title="View file"
+                      title="View submission details"
                     >
                       <Eye className="w-4 h-4" strokeWidth={2.5} />
                     </Button>

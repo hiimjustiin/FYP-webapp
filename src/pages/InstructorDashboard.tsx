@@ -6,7 +6,15 @@ import {
   type RecentActivity,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
-import { Eye } from "lucide-react";
+import {
+  Eye,
+  BookOpen,
+  Users,
+  FileText,
+  ClipboardCheck,
+  Settings,
+  CheckCircle,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const InstructorDashboard = () => {
@@ -78,10 +86,10 @@ const InstructorDashboard = () => {
   // Status badge helper
   const getStatusBadge = (status: string) => {
     const badges = {
-      submitted: "bg-[#FFF3CD] text-[#856404]",
-      scoring: "bg-[#D1ECF1] text-[#0C5460]",
-      scored: "bg-[#D4EDDA] text-[#155724]",
-      reviewed: "bg-[#D1D1D1] text-[#383838]",
+      submitted: "bg-blue-100 text-blue-800",
+      scoring: "bg-yellow-100 text-yellow-800",
+      scored: "bg-purple-100 text-purple-800",
+      reviewed: "bg-green-100 text-green-800",
     };
     return badges[status as keyof typeof badges] || badges.submitted;
   };
@@ -122,7 +130,7 @@ const InstructorDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="heading-4 mb-2">Instructor Dashboard</h1>
+            <h1 className="heading-3 mb-2">Instructor Dashboard</h1>
             <p className="body text-[var(--color-grey-55)]">
               Welcome back, {user?.display_name || "Instructor"}
             </p>
@@ -131,19 +139,7 @@ const InstructorDashboard = () => {
             variant="blue"
             onClick={() => navigate("/instructor/courses")}
           >
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-              />
-            </svg>
+            <BookOpen className="w-5 h-5 mr-2" strokeWidth={2.5} />
             Manage Courses
           </Button>
         </div>
@@ -151,16 +147,22 @@ const InstructorDashboard = () => {
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="dashboard-card p-6">
-            <div className="caption text-[var(--color-grey-55)] mb-2">
-              Active Courses
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">
+                Active Courses
+              </div>
+              <BookOpen className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
               {courses.length}
             </div>
           </div>
           <div className="dashboard-card p-6">
-            <div className="caption text-[var(--color-grey-55)] mb-2">
-              Total Students
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">
+                Total Students
+              </div>
+              <Users className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
               {totalStudents}
@@ -170,8 +172,11 @@ const InstructorDashboard = () => {
             className="dashboard-card p-6 cursor-pointer hover:shadow-lg transition-shadow"
             onClick={() => navigate("/instructor/submissions")}
           >
-            <div className="caption text-[var(--color-grey-55)] mb-2">
-              Recent Submissions
+            <div className="flex items-center justify-between mb-4">
+              <div className="caption text-[var(--color-grey-55)]">
+                Recent Submissions
+              </div>
+              <ClipboardCheck className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
               {totalNewSubmissions}
@@ -203,19 +208,7 @@ const InstructorDashboard = () => {
             {coursesByPending.length === 0 &&
             coursesWithNoSubmissions.length === 0 ? (
               <div className="py-8 text-center">
-                <svg
-                  className="w-12 h-12 mx-auto mb-3 text-[var(--color-grey-30)]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <CheckCircle className="w-12 h-12 mx-auto mb-3 text-[var(--color-grey-30)]" strokeWidth={1.5} />
                 <p className="subtitle-2 text-[var(--color-grey-55)]">
                   All caught up!
                 </p>
@@ -296,19 +289,7 @@ const InstructorDashboard = () => {
 
             {recentActivity.length === 0 ? (
               <div className="py-8 text-center">
-                <svg
-                  className="w-12 h-12 mx-auto mb-3 text-[var(--color-grey-30)]"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+                <FileText className="w-12 h-12 mx-auto mb-3 text-[var(--color-grey-30)]" strokeWidth={1.5} />
                 <p className="subtitle-2 text-[var(--color-grey-55)] mb-1">
                   No submissions yet
                 </p>
@@ -383,85 +364,38 @@ const InstructorDashboard = () => {
 
         {/* Quick Actions */}
         <div className="mt-6 dashboard-card p-6">
-          <h2 className="subtitle-1 mb-4">Quick Actions</h2>
+          <h2 className="heading-4 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Button
               variant="blue"
               onClick={() => navigate("/instructor/submissions")}
+              className="w-full justify-center"
             >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
+              <ClipboardCheck className="w-5 h-5 mr-2" strokeWidth={2.5} />
               Review Submissions
             </Button>
             <Button
               variant="darkBlue"
               onClick={() => navigate("/instructor/students")}
+              className="w-full justify-center"
             >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
+              <Users className="w-5 h-5 mr-2" strokeWidth={2.5} />
               Manage Students
             </Button>
             <Button
               variant="purple"
               onClick={() => navigate("/instructor/courses")}
+              className="w-full justify-center"
             >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                />
-              </svg>
+              <BookOpen className="w-5 h-5 mr-2" strokeWidth={2.5} />
               Course Settings
             </Button>
-            <Button variant="grey" onClick={() => navigate("/settings")}>
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
+            <Button
+              variant="grey"
+              onClick={() => navigate("/settings")}
+              className="w-full justify-center"
+            >
+              <Settings className="w-5 h-5 mr-2" strokeWidth={2.5} />
               Profile Settings
             </Button>
           </div>

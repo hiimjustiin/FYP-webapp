@@ -85,9 +85,7 @@ export default function AdminDashboard() {
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="caption text-[var(--color-grey-55)]">Total Users</div>
-              <div className="bg-[var(--color-blue-ntu)] bg-opacity-10 rounded-full p-2">
-                <Users className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
-              </div>
+              <Users className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)] mb-3">{stats.users.total}</div>
             <div className="grid grid-cols-3 gap-2 text-xs">
@@ -110,9 +108,7 @@ export default function AdminDashboard() {
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="caption text-[var(--color-grey-55)]">Total Courses</div>
-              <div className="bg-[var(--color-red-ntu)] bg-opacity-10 rounded-full p-2">
-                <BookOpen className="w-5 h-5 text-[var(--color-red-ntu)]" strokeWidth={2.5} />
-              </div>
+              <BookOpen className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">{stats.courses}</div>
           </div>
@@ -121,9 +117,7 @@ export default function AdminDashboard() {
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="caption text-[var(--color-grey-55)]">Total Projects</div>
-              <div className="bg-green-100 rounded-full p-2">
-                <FileText className="w-5 h-5 text-green-600" strokeWidth={2.5} />
-              </div>
+              <FileText className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">{stats.projects}</div>
           </div>
@@ -132,9 +126,7 @@ export default function AdminDashboard() {
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="caption text-[var(--color-grey-55)]">Submissions</div>
-              <div className="bg-purple-100 rounded-full p-2">
-                <ClipboardCheck className="w-5 h-5 text-purple-600" strokeWidth={2.5} />
-              </div>
+              <ClipboardCheck className="w-5 h-5 text-[var(--color-blue-ntu)]" strokeWidth={2.5} />
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)] mb-3">{stats.submissions.total}</div>
             <div className="grid grid-cols-2 gap-2 text-xs">

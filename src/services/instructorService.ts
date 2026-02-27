@@ -67,6 +67,7 @@ export interface CourseSubmission {
   project_title: string;
   project_id: string;
   scores_count: number;
+  avg_score: number;
   has_instructor_feedback: boolean;
 }
 
@@ -97,6 +98,8 @@ export interface SubmissionDetails {
     status: string;
     file_url: string;
     file_type: string;
+    essay_text?: string | null;
+    file_urls?: string[] | null;
     student_name: string;
     student_email: string;
     student_id: string;
