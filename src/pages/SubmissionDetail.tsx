@@ -29,6 +29,7 @@ interface SubmissionDetail {
 
 interface DimensionScoreDetail {
   dimension_id: number;
+  score: number;
   ai_feedback_raw?: Record<string, unknown>;
 }
 
