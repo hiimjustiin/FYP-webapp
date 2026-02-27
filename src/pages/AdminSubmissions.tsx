@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { BarChart3, Eye, Trash2 } from "lucide-react";
 import {
   adminService,
   type AdminSubmission,
@@ -22,6 +23,8 @@ export default function AdminSubmissions() {
   const [selectedSubmission, setSelectedSubmission] =
     useState<AdminSubmission | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     loadData();
@@ -29,6 +32,7 @@ export default function AdminSubmissions() {
 
   useEffect(() => {
     loadSubmissions();
+    setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter, courseFilter]);
 
@@ -73,6 +77,7 @@ export default function AdminSubmissions() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setPage(1);
   };
 
   const handleDeleteClick = (submission: AdminSubmission) => {
@@ -121,6 +126,12 @@ export default function AdminSubmissions() {
       sub.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.project_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       sub.course_code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE));
+  const pagedSubmissions = filteredSubmissions.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
   );
 
   const getStatusBadge = (status: string) => {
@@ -245,6 +256,7 @@ export default function AdminSubmissions() {
                 : "No submissions found"}
             </div>
           ) : (
+            <>
             <Table
               noBorder
               data={[
@@ -257,7 +269,7 @@ export default function AdminSubmissions() {
                   "Submitted",
                   "Actions",
                 ],
-                ...filteredSubmissions.map((sub) => [
+                ...pagedSubmissions.map((sub) => [
                   sub.student_name,
                   sub.student_email,
                   `${sub.course_code} - ${sub.project_title}`,
@@ -269,27 +281,59 @@ export default function AdminSubmissions() {
                   >
                     {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
                   </span>,
-                  sub.scores_count,
+                  <span
+                    key={`score-${sub.id}`}
+                    className="inline-flex items-center gap-1 text-[var(--color-blue-ntu)] font-medium"
+                  >
+                    <BarChart3 className="w-4 h-4" strokeWidth={2.5} />
+                    {sub.scores_count}
+                  </span>,
                   new Date(sub.submitted_at).toLocaleDateString(),
                   <div className="flex gap-2" key={`actions-${sub.id}`}>
                     <Button
                       variant="blue"
                       onClick={() => window.open(sub.file_url, "_blank")}
-                      className="text-xs"
+                      className="p-1.5"
+                      title="View file"
                     >
-                      View File
+                      <Eye className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                     <Button
                       variant="red"
                       onClick={() => handleDeleteClick(sub)}
-                      className="text-xs"
+                      className="p-1.5"
+                      title="Delete submission"
                     >
-                      Delete
+                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                   </div>,
                 ]),
               ]}
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </Button>
+                <span className="px-4 py-2 text-gray-700">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </div>
 
