@@ -379,7 +379,12 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
         ps.ai_overall_summary, ps.ai_overall_strengths, ps.ai_priority_improvements,
         u.display_name as student_name, u.email as student_email, u.student_id,
         p.title as project_title, p.description as project_description,
-        c.code as course_code, c.title as course_title, c.instructor_id
+        c.code as course_code, c.title as course_title, c.instructor_id,
+        COALESCE(
+          (SELECT array_agg(dimension_id ORDER BY dimension_id)
+           FROM course_dimensions WHERE course_id = c.id),
+          ARRAY[]::smallint[]
+        ) as dimension_ids
       FROM project_submissions ps
       JOIN users u ON ps.user_id = u.id
       JOIN projects p ON ps.project_id = p.id
@@ -477,6 +482,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
           project_description: submission.project_description,
           course_code: submission.course_code,
           course_title: submission.course_title,
+          dimension_ids: submission.dimension_ids || [],
           ai_overall_summary: submission.ai_overall_summary,
           ai_overall_strengths: submission.ai_overall_strengths || null,
           ai_priority_improvements: submission.ai_priority_improvements || null,

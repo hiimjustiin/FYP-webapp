@@ -6,6 +6,7 @@ import {
   type RecentActivity,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
+import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const InstructorDashboard = () => {
@@ -13,6 +14,7 @@ const InstructorDashboard = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [recentPage, setRecentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +64,7 @@ const InstructorDashboard = () => {
     (sum, course) => sum + course.enrolled_count,
     0
   );
-  const totalPending = courses.reduce(
+  const totalNewSubmissions = courses.reduce(
     (sum, course) => sum + course.pending_count,
     0
   );
@@ -99,13 +101,28 @@ const InstructorDashboard = () => {
     return date.toLocaleDateString();
   };
 
+  const recentPageSize = 5;
+  const recentTotalPages = Math.max(
+    1,
+    Math.ceil(recentActivity.length / recentPageSize)
+  );
+  const recentStartIndex = (recentPage - 1) * recentPageSize;
+  const recentPageItems = recentActivity.slice(
+    recentStartIndex,
+    recentStartIndex + recentPageSize
+  );
+  const handleRecentPageChange = (nextPage: number) => {
+    const safePage = Math.min(Math.max(nextPage, 1), recentTotalPages);
+    setRecentPage(safePage);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--color-grey-05)]">
       <div className="max-w-[1600px] mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="heading-3 mb-2">Instructor Dashboard</h1>
+            <h1 className="heading-4 mb-2">Instructor Dashboard</h1>
             <p className="body text-[var(--color-grey-55)]">
               Welcome back, {user?.display_name || "Instructor"}
             </p>
@@ -157,9 +174,9 @@ const InstructorDashboard = () => {
               Recent Submissions
             </div>
             <div className="heading-3 text-[var(--color-blue-ntu)]">
-              {totalPending}
+              {totalNewSubmissions}
             </div>
-            {totalPending > 0 && (
+            {totalNewSubmissions > 0 && (
               <div className="caption text-[var(--color-blue-ntu)] mt-1">
                 View all →
               </div>
@@ -172,12 +189,14 @@ const InstructorDashboard = () => {
           {/* Courses Needing Attention */}
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="heading-4">Courses Pending Review</h2>
+              <h2 className="subtitle-1">Courses With New Submissions</h2>
               <Button
                 variant="grey"
                 onClick={() => navigate("/instructor/courses")}
+                className="p-2"
+                aria-label="View all courses"
               >
-                View All
+                <Eye className="w-4 h-4" strokeWidth={2.5} />
               </Button>
             </div>
 
@@ -224,7 +243,7 @@ const InstructorDashboard = () => {
                         </p>
                       </div>
                       <span className="px-3 py-1 bg-[var(--color-red-ntu)] text-white text-xs font-medium rounded-full">
-                        {course.pending_count} pending
+                        {course.pending_count} new
                       </span>
                     </div>
                     <div className="caption text-[var(--color-grey-55)]">
@@ -264,12 +283,14 @@ const InstructorDashboard = () => {
           {/* Recent Activity */}
           <div className="dashboard-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="heading-4">Recent Submissions</h2>
+              <h2 className="subtitle-1">Recent Submissions</h2>
               <Button
                 variant="grey"
                 onClick={() => navigate("/instructor/submissions")}
+                className="p-2"
+                aria-label="View all submissions"
               >
-                View All
+                <Eye className="w-4 h-4" strokeWidth={2.5} />
               </Button>
             </div>
 
@@ -297,7 +318,7 @@ const InstructorDashboard = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentActivity.map((activity) => (
+                {recentPageItems.map((activity) => (
                   <div
                     key={activity.id}
                     className="p-3 bg-[var(--color-grey-05)] rounded-lg border border-[var(--color-grey-10)] hover:border-[var(--color-blue-ntu)] transition-colors cursor-pointer"
@@ -332,6 +353,29 @@ const InstructorDashboard = () => {
                     </div>
                   </div>
                 ))}
+                {recentTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <Button
+                      variant="grey"
+                      onClick={() => handleRecentPageChange(recentPage - 1)}
+                      disabled={recentPage === 1}
+                      className="text-xs px-3 py-2"
+                    >
+                      &lt;
+                    </Button>
+                    <span className="caption text-[var(--color-grey-55)]">
+                      Page {recentPage} of {recentTotalPages}
+                    </span>
+                    <Button
+                      variant="grey"
+                      onClick={() => handleRecentPageChange(recentPage + 1)}
+                      disabled={recentPage === recentTotalPages}
+                      className="text-xs px-3 py-2"
+                    >
+                      &gt;
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -339,7 +383,7 @@ const InstructorDashboard = () => {
 
         {/* Quick Actions */}
         <div className="mt-6 dashboard-card p-6">
-          <h2 className="heading-4 mb-4">Quick Actions</h2>
+          <h2 className="subtitle-1 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Button
               variant="blue"

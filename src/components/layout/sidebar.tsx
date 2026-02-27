@@ -64,6 +64,12 @@ const Sidebar: React.FC = () => {
       path: "/instructor",
     },
     {
+      name: "Courses",
+      icon: StarIcon,
+      iconFilled: StarIconFilled,
+      path: "/instructor/courses",
+    },
+    {
       name: "Students",
       icon: TeamIcon,
       iconFilled: TeamIconFilled,
@@ -133,6 +139,14 @@ const Sidebar: React.FC = () => {
       return (
         location.pathname === "/instructor/students" ||
         location.pathname.startsWith("/instructor/students/")
+      );
+    }
+
+    // For instructor courses, match exact or child routes
+    if (path === "/instructor/courses") {
+      return (
+        location.pathname === "/instructor/courses" ||
+        location.pathname.startsWith("/instructor/courses/")
       );
     }
 
