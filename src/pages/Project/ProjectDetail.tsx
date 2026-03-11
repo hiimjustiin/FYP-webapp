@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button/Button";
 import TextArea from "../../components/ui/TextArea/TextArea";
 import FileDrop from "../../components/ui/FileDrop/FileDrop";
+import { AlertDialog } from "../../components/ui/AlertDialog/AlertDialog";
 import RadarChart, {
   type RadarDataPoint,
 } from "../../components/ui/Charts/RadarChart/RadarChart";
@@ -21,7 +22,9 @@ import {
 import {
   feedbackService,
   type ComparisonAnalysis,
+  type FeedbackResponse,
 } from "../../services/feedbackService";
+import { waitForSubmissionProcessing } from "../../services/submissionProcessingService";
 import "./ProjectDetail.css";
 
 /** ------------------------------- Mock AI Feedback ------------------------------- */
@@ -91,6 +94,145 @@ const ProjectDetail = () => {
   // Selected dimension for feedback display
   const [selectedDimension, setSelectedDimension] = useState<string | null>(
     null,
+  );
+  const [isSubmissionProcessingDialogOpen, setIsSubmissionProcessingDialogOpen] =
+    useState(false);
+  const activeWaitSessionRef = useRef(0);
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const handleCloseProcessingDialog = () => {
+    activeWaitSessionRef.current += 1;
+    setIsSubmissionProcessingDialogOpen(false);
+    navigate("/project");
+  };
+
+  const buildAIFeedback = useCallback(
+    (feedbackData: FeedbackResponse): AIFeedback => {
+      const sub = feedbackData.submission;
+      const dims = feedbackData.dimensions || [];
+
+      return {
+        overallScore:
+          Math.round(
+            (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
+              (dims.length || 1)) *
+              10,
+          ) / 10,
+        maxScore: 3,
+        dimensions: dims.map((d) => ({
+          name: d.dimension_label,
+          score: d.ai_score || 0,
+          maxScore: 3,
+          feedback: d.ai_reasoning || "Analysis in progress...",
+          color: d.dimension_color,
+        })),
+        summary: sub.ai_overall_summary || "Analysis complete",
+        strengths: sub.ai_overall_strengths || [],
+        improvements: sub.ai_priority_improvements || [],
+        generatedAt: sub.submitted_at,
+      };
+    },
+    [],
+  );
+
+  const applyFeedbackResponse = useCallback(
+    (feedbackData: FeedbackResponse): void => {
+      const sub = feedbackData.submission;
+      const dims = feedbackData.dimensions || [];
+
+      if (sub.essay_text) {
+        setSubmissionContent(sub.essay_text);
+        setIsFileBasedSubmission(false);
+      } else if (sub.file_urls && sub.file_urls.length > 0) {
+        setSubmissionContent(
+          `[File submission: ${sub.file_urls.length} file(s)]\n${sub.file_urls.join(
+            "\n",
+          )}`,
+        );
+        setIsFileBasedSubmission(true);
+      } else {
+        setIsFileBasedSubmission(false);
+      }
+
+      if (sub.instructor_suggestion) {
+        setInstructorSuggestion(sub.instructor_suggestion);
+      }
+
+      if (sub.iteration_number) {
+        setCurrentIteration(sub.iteration_number);
+      }
+      if (sub.total_submissions) {
+        setTotalSubmissions(sub.total_submissions);
+      }
+      if (sub.comparison_analysis) {
+        setComparisonAnalysis(sub.comparison_analysis);
+      }
+
+      if (sub.ai_processing_status === "completed" && dims.length > 0) {
+        setAIFeedback(buildAIFeedback(feedbackData));
+        setProcessingStatus("Analysis complete!");
+        setProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "Completed",
+              }
+            : prev,
+        );
+        setError(null);
+        return;
+      }
+
+      if (sub.ai_processing_status === "failed") {
+        setProcessingStatus("Analysis failed.");
+        setProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "Failed",
+                ai_processing_error: sub.ai_processing_error,
+              }
+            : prev,
+        );
+        setError(
+          `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
+        );
+        return;
+      }
+
+      if (sub.ai_processing_status === "processing") {
+        setProcessingStatus("AI is analyzing your submission...");
+        setProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "Processing",
+              }
+            : prev,
+        );
+        return;
+      }
+
+      if (sub.ai_processing_status === "pending") {
+        setProcessingStatus("Queued for analysis...");
+        setProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "Processing",
+              }
+            : prev,
+        );
+      }
+    },
+    [buildAIFeedback],
   );
 
   useEffect(() => {
@@ -167,121 +309,14 @@ const ProjectDetail = () => {
         );
         const feedbackData = await feedbackService.getFeedback(submissionId);
         console.log("[ProjectDetail] Got feedback:", feedbackData);
-
-        if (!feedbackData?.submission) {
-          console.error("[ProjectDetail] No submission data in response");
-          return;
-        }
-
-        const sub = feedbackData.submission;
-        const dims = feedbackData.dimensions || [];
-
-        console.log("[ProjectDetail] Submission data:", {
-          essay_text: sub.essay_text?.substring(0, 100),
-          file_urls: sub.file_urls,
-          dimensions_count: dims.length,
-          has_essay: !!sub.essay_text,
-          has_files: !!(sub.file_urls && sub.file_urls.length > 0),
-        });
-
-        // Load submission content (essay_text or file_urls)
-        // Track if this is a file-based submission for edit mode
-        if (sub.essay_text) {
-          console.log(
-            "[ProjectDetail] Setting essay_text as submission content, length:",
-            sub.essay_text.length,
-          );
-          setSubmissionContent(sub.essay_text);
-          setIsFileBasedSubmission(false);
-        } else if (sub.file_urls && sub.file_urls.length > 0) {
-          console.log(
-            "[ProjectDetail] Setting file_urls as submission content",
-          );
-          setSubmissionContent(
-            `[File submission: ${
-              sub.file_urls.length
-            } file(s)]\n${sub.file_urls.join("\n")}`,
-          );
-          setIsFileBasedSubmission(true);
-        } else {
-          console.warn(
-            "[ProjectDetail] No essay_text or file_urls found in submission",
-          );
-          setIsFileBasedSubmission(false);
-        }
-
-        // Set instructor suggestion if available
-        if (sub.instructor_suggestion) {
-          setInstructorSuggestion(sub.instructor_suggestion);
-        }
-
-        // Update iteration info
-        if (sub.iteration_number) {
-          setCurrentIteration(sub.iteration_number);
-        }
-        if (sub.total_submissions) {
-          setTotalSubmissions(sub.total_submissions);
-        }
-
-        // Load comparison analysis if available
-        if (sub.comparison_analysis) {
-          setComparisonAnalysis(sub.comparison_analysis);
-        }
-
-        if (sub.ai_processing_status === "completed" && dims.length > 0) {
-          // Convert real AI feedback to display format
-          const feedback: AIFeedback = {
-            overallScore:
-              Math.round(
-                (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
-                  (dims.length || 1)) *
-                  10,
-              ) / 10,
-            maxScore: 3,
-            dimensions: dims.map((d) => ({
-              name: d.dimension_label,
-              score: d.ai_score || 0,
-              maxScore: 3,
-              feedback: d.ai_reasoning || "Analysis in progress...",
-              color: d.dimension_color,
-            })),
-            summary: sub.ai_overall_summary || "Analysis complete",
-            strengths: sub.ai_overall_strengths || [],
-            improvements: sub.ai_priority_improvements || [],
-            generatedAt: sub.submitted_at,
-          };
-          console.log("[ProjectDetail] Setting AI feedback:", {
-            dimensions: feedback.dimensions.length,
-            first5: feedback.dimensions
-              .slice(0, 5)
-              .map((d) => ({ name: d.name, score: d.score })),
-          });
-          setAIFeedback(feedback);
-          setProcessingStatus("Analysis complete!");
-        } else if (
-          sub.ai_processing_status === "processing" ||
-          sub.ai_processing_status === "pending"
-        ) {
-          // Status is still processing/pending, start polling
-          setProcessingStatus(
-            sub.ai_processing_status === "processing"
-              ? "AI is analyzing your submission..."
-              : "Queued for analysis...",
-          );
-          // Will be handled by polling effect below
-        } else if (sub.ai_processing_status === "failed") {
-          setError(
-            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
-          );
-          setProcessingStatus("Analysis failed.");
-        }
+        applyFeedbackResponse(feedbackData);
       } catch (err) {
         console.error("[ProjectDetail] Error loading feedback:", err);
       }
     };
 
     loadFeedback();
-  }, [submissionId]);
+  }, [submissionId, applyFeedbackResponse]);
 
   // Poll for AI feedback when submission is processing/pending
   useEffect(() => {
@@ -289,6 +324,7 @@ const ProjectDetail = () => {
     if (
       !submissionId ||
       aiFeedback ||
+      isSubmissionProcessingDialogOpen ||
       processingStatus.includes("failed") ||
       processingStatus.includes("complete")
     )
@@ -306,55 +342,10 @@ const ProjectDetail = () => {
         if (!isActive) return;
 
         const sub = feedbackData.submission;
-        const dims = feedbackData.dimensions || [];
 
-        // Load submission content
-        if (sub.essay_text) {
-          setSubmissionContent(sub.essay_text);
-        } else if (sub.file_urls && sub.file_urls.length > 0) {
-          setSubmissionContent(
-            `[File submission: ${
-              sub.file_urls.length
-            } file(s)]\n${sub.file_urls.join("\n")}`,
-          );
-        }
+        applyFeedbackResponse(feedbackData);
 
-        // Set instructor suggestion if available
-        if (sub.instructor_suggestion) {
-          setInstructorSuggestion(sub.instructor_suggestion);
-        }
-
-        if (sub.ai_processing_status === "completed" && dims.length > 0) {
-          // Feedback is ready
-          const feedback: AIFeedback = {
-            overallScore:
-              Math.round(
-                (dims.reduce((sum, d) => sum + (d.ai_score || 0), 0) /
-                  (dims.length || 1)) *
-                  10,
-              ) / 10,
-            maxScore: 3,
-            dimensions: dims.map((d) => ({
-              name: d.dimension_label,
-              score: d.ai_score || 0,
-              maxScore: 3,
-              feedback: d.ai_reasoning || "Analysis in progress...",
-              color: d.dimension_color,
-            })),
-            summary: sub.ai_overall_summary || "Analysis complete",
-            strengths: sub.ai_overall_strengths || [],
-            improvements: sub.ai_priority_improvements || [],
-            generatedAt: sub.submitted_at,
-          };
-          setAIFeedback(feedback);
-          setProcessingStatus("Analysis complete!");
-          console.log("[ProjectDetail] AI feedback loaded successfully");
-        } else if (sub.ai_processing_status === "failed") {
-          setProcessingStatus("Analysis failed.");
-          setError(
-            `Analysis failed: ${sub.ai_processing_error || "Unknown error"}`,
-          );
-        } else if (sub.ai_processing_status === "processing") {
+        if (sub.ai_processing_status === "processing") {
           setProcessingStatus("AI is analyzing your submission...");
           // Continue polling
           pollInterval = setTimeout(checkFeedback, 3000);
@@ -379,7 +370,13 @@ const ProjectDetail = () => {
       isActive = false;
       if (pollInterval) clearTimeout(pollInterval);
     };
-  }, [submissionId, aiFeedback, processingStatus]);
+  }, [
+    submissionId,
+    aiFeedback,
+    processingStatus,
+    isSubmissionProcessingDialogOpen,
+    applyFeedbackResponse,
+  ]);
 
   // Handle project submission for AI evaluation
   const handleSubmitProject = async () => {
@@ -492,6 +489,15 @@ const ProjectDetail = () => {
       setSubmissionId(result.submission_id);
       setCurrentIteration(result.iteration_number);
       setTotalSubmissions(result.iteration_number);
+      setProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "Processing",
+              ai_processing_error: undefined,
+            }
+          : prev,
+      );
 
       // Update content display based on type
       if (isFileBasedSubmission) {
@@ -512,6 +518,29 @@ const ProjectDetail = () => {
       const submissionsData =
         await projectService.getProjectSubmissions(projectId);
       setSubmissions(submissionsData.submissions);
+
+      const waitSession = activeWaitSessionRef.current + 1;
+      activeWaitSessionRef.current = waitSession;
+      setIsSubmissionProcessingDialogOpen(true);
+      const waitResult = await waitForSubmissionProcessing(result.submission_id, {
+        timeoutMs: 60000,
+      });
+
+      if (
+        !isMountedRef.current ||
+        activeWaitSessionRef.current !== waitSession
+      ) {
+        return;
+      }
+
+      if (waitResult.status === "completed") {
+        const completedFeedback =
+          waitResult.feedback ||
+          (await feedbackService.getFeedback(result.submission_id));
+        applyFeedbackResponse(completedFeedback);
+      } else if (waitResult.status === "failed" && waitResult.feedback) {
+        applyFeedbackResponse(waitResult.feedback);
+      }
     } catch (err) {
       console.error("Failed to resubmit project:", err);
       let errorMessage = "Failed to resubmit project. Please try again.";
@@ -522,7 +551,10 @@ const ProjectDetail = () => {
 
       setError(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      if (isMountedRef.current) {
+        setIsSubmissionProcessingDialogOpen(false);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -1185,6 +1217,15 @@ const ProjectDetail = () => {
           </button>
         )}
       </div>
+
+      <AlertDialog
+        isOpen={isSubmissionProcessingDialogOpen}
+        type="loading"
+        title="AI is processing your submission..."
+        message="This usually takes 30-60 seconds. We'll take you to details once ready."
+        showCloseButton
+        onClose={handleCloseProcessingDialog}
+      />
     </div>
   );
 };
