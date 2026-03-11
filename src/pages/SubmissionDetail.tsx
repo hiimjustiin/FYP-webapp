@@ -1,9 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  instructorService,
-  type DimensionScore,
-} from "../services/instructorService";
+import { instructorService, type Dimension } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
 
 interface SubmissionDetail {
@@ -20,6 +17,7 @@ interface SubmissionDetail {
   project_description: string;
   course_code: string;
   course_title: string;
+  dimension_ids?: number[];
   ai_overall_summary?: string | null;
   ai_overall_strengths?: string[] | null;
   ai_priority_improvements?: string[] | null;
@@ -29,12 +27,10 @@ interface SubmissionDetail {
   } | null;
 }
 
-interface DimensionScoreDetail extends DimensionScore {
-  dimension_label: string;
-  ai_score_original?: number;
+interface DimensionScoreDetail {
+  dimension_id: number;
+  score: number;
   ai_feedback_raw?: Record<string, unknown>;
-  instructor_override?: boolean;
-  instructor_comments?: string;
 }
 
 const SubmissionDetail = () => {
@@ -42,12 +38,12 @@ const SubmissionDetail = () => {
   const navigate = useNavigate();
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [scores, setScores] = useState<DimensionScoreDetail[]>([]);
+  const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scoring, setScoring] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [suggestionText, setSuggestionText] = useState("");
   const [savingSuggestion, setSavingSuggestion] = useState(false);
+  const [showRubricDetails, setShowRubricDetails] = useState(false);
 
   const fetchSubmissionDetails = async () => {
     try {
@@ -73,79 +69,18 @@ const SubmissionDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId]);
 
-  const handleTriggerScoring = async () => {
-    try {
-      setScoring(true);
-      const result = await instructorService.triggerScoring(submissionId!);
+  useEffect(() => {
+    const fetchDimensions = async () => {
+      try {
+        const data = await instructorService.getDimensions();
+        setDimensions(data);
+      } catch (err) {
+        console.error("Error fetching dimensions:", err);
+      }
+    };
 
-      // Map AI results to score format
-      const newScores: DimensionScoreDetail[] = result.dimension_scores.map(
-        (ds) => ({
-          dimension_id: ds.dimension_id,
-          dimension_label: `Dimension ${ds.dimension_id}`,
-          score: ds.score,
-          reasoning: ds.reasoning,
-          ai_score_original: ds.score,
-          instructor_override: false,
-        })
-      );
-
-      setScores(newScores);
-
-      // Refresh to get updated data
-      await fetchSubmissionDetails();
-    } catch (err) {
-      console.error("Error triggering scoring:", err);
-      alert("Failed to score submission. Please try again.");
-    } finally {
-      setScoring(false);
-    }
-  };
-
-  const handleScoreChange = (dimensionId: number, newScore: string) => {
-    const scoreValue = parseFloat(newScore);
-    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 10) return;
-
-    setScores((prev) =>
-      prev.map((s) =>
-        s.dimension_id === dimensionId
-          ? { ...s, score: scoreValue, instructor_override: true }
-          : s
-      )
-    );
-  };
-
-  const handleCommentChange = (dimensionId: number, comment: string) => {
-    setScores((prev) =>
-      prev.map((s) =>
-        s.dimension_id === dimensionId
-          ? { ...s, comments: comment, instructor_override: true }
-          : s
-      )
-    );
-  };
-
-  const handleSaveReview = async () => {
-    try {
-      setSaving(true);
-
-      const dimensionScores = scores.map((s) => ({
-        dimension_id: s.dimension_id,
-        score: s.score,
-        comments: s.comments,
-      }));
-
-      await instructorService.reviewSubmission(submissionId!, dimensionScores);
-
-      alert("Review saved successfully!");
-      await fetchSubmissionDetails();
-    } catch (err) {
-      console.error("Error saving review:", err);
-      alert("Failed to save review. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
+    fetchDimensions();
+  }, []);
 
   const handleSaveSuggestion = async () => {
     if (!suggestionText.trim()) {
@@ -211,9 +146,30 @@ const SubmissionDetail = () => {
     );
   }
 
+  const aiFeedbackAvailable =
+    Boolean(submission.ai_overall_summary) ||
+    (submission.ai_overall_strengths?.length || 0) > 0 ||
+    (submission.ai_priority_improvements?.length || 0) > 0 ||
+    scores.some((score) => Boolean(score.ai_feedback_raw));
+  const selectedDimensionIds =
+    submission.dimension_ids && submission.dimension_ids.length > 0
+      ? submission.dimension_ids
+      : scores.map((s) => s.dimension_id);
+  const scoredScores = scores.filter((s) =>
+    selectedDimensionIds.includes(s.dimension_id)
+  );
+  const displayedDimensionIds =
+    selectedDimensionIds.length > 0
+      ? selectedDimensionIds
+      : scores.map((s) => s.dimension_id);
+  const dimensionById = new Map(dimensions.map((dim) => [dim.id, dim]));
+  const scoreById = new Map(scores.map((score) => [score.dimension_id, score]));
   const averageScore =
-    scores.length > 0
-      ? (scores.reduce((sum, s) => sum + s.score, 0) / scores.length).toFixed(1)
+    scoredScores.length > 0
+      ? (
+          scoredScores.reduce((sum, s) => sum + s.score, 0) /
+          scoredScores.length
+        ).toFixed(1)
       : "N/A";
 
   return (
@@ -301,6 +257,14 @@ const SubmissionDetail = () => {
                   <p className="caption text-[var(--color-grey-55)]">Status</p>
                   <p className="body-2">{submission.status}</p>
                 </div>
+                <div>
+                  <p className="caption text-[var(--color-grey-55)]">
+                    AI Feedback
+                  </p>
+                  <p className="body-2">
+                    {aiFeedbackAvailable ? "Generated" : "Not generated"}
+                  </p>
+                </div>
               </div>
 
               {submission.file_url && (
@@ -347,406 +311,284 @@ const SubmissionDetail = () => {
                     {averageScore}
                   </p>
                   <p className="caption text-[var(--color-grey-55)] mt-1">
-                    out of 10
+                    out of 3
                   </p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-[var(--color-grey-15)]">
-                  <p className="caption text-[var(--color-grey-55)] mb-2">
-                    Dimensions Scored
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="caption text-[var(--color-grey-55)]">
+                      Dimensions Scored
+                    </p>
+                    <Button
+                      variant="grey"
+                      onClick={() => setShowRubricDetails(true)}
+                      className="text-xs px-2 py-1"
+                    >
+                      View Rubric
+                    </Button>
+                  </div>
+                  <p className="body-2">
+                    {scoredScores.length} / {selectedDimensionIds.length}
                   </p>
-                  <p className="body-2">{scores.length} / 9</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Right Column - Scoring Interface */}
+          {/* Right Column - Guidance */}
           <div className="lg:col-span-2">
             <div className="dashboard-card p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="heading-4">Scoring & Review</h2>
-                {submission.status === "submitted" && (
-                  <Button
-                    variant="blue"
-                    onClick={handleTriggerScoring}
-                    disabled={scoring}
-                  >
-                    {scoring ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Scoring...
-                      </>
-                    ) : (
-                      "Trigger AI Scoring"
-                    )}
-                  </Button>
-                )}
+                <h2 className="heading-4">Guidance</h2>
               </div>
 
-              {scores.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg
-                    className="w-16 h-16 mx-auto text-[var(--color-grey-35)] mb-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <p className="subtitle-2 text-[var(--color-grey-55)] mb-2">
-                    No scores available
-                  </p>
-                  <p className="caption text-[var(--color-grey-55)]">
-                    {submission.status === "submitted"
-                      ? 'Click "Trigger AI Scoring" to generate AI scores for this submission'
-                      : "Scores will appear here once generated"}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {/* Overall AI Feedback Section */}
-                  {(submission.ai_overall_summary ||
-                    submission.ai_overall_strengths ||
-                    submission.ai_priority_improvements) && (
-                    <div className="mb-6 dashboard-card p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-                      <div className="flex items-center gap-2 mb-4">
-                        <svg
-                          className="w-5 h-5 text-blue-600"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        <h3 className="heading-4 text-blue-900">
-                          AI Feedback Summary
-                        </h3>
-                      </div>
+              {(submission.ai_overall_summary ||
+                submission.ai_overall_strengths ||
+                submission.ai_priority_improvements) && (
+                <div className="mb-6 dashboard-card p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg
+                      className="w-5 h-5 text-blue-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <h3 className="heading-4 text-blue-900">
+                      AI Feedback Summary
+                    </h3>
+                  </div>
 
-                      {/* Overall Summary */}
-                      {submission.ai_overall_summary && (
-                        <div className="mb-4 pb-4 border-b border-blue-200">
-                          <p className="body-2 text-gray-800 leading-relaxed">
-                            {submission.ai_overall_summary}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Strengths */}
-                      {submission.ai_overall_strengths &&
-                        submission.ai_overall_strengths.length > 0 && (
-                          <div className="mb-4 pb-4 border-b border-blue-200">
-                            <div className="flex items-center gap-2 mb-2">
-                              <svg
-                                className="w-4 h-4 text-green-600"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <h4 className="subtitle-2 text-green-800">
-                                Strengths
-                              </h4>
-                            </div>
-                            <ul className="space-y-1 ml-6">
-                              {submission.ai_overall_strengths.map(
-                                (strength, idx) => (
-                                  <li
-                                    key={idx}
-                                    className="body-2 text-gray-800 flex items-start gap-2"
-                                  >
-                                    <span className="text-green-600 font-bold mt-0.5">
-                                      ✓
-                                    </span>
-                                    <span>{strength}</span>
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        )}
-
-                      {/* Areas for Improvement */}
-                      {submission.ai_priority_improvements &&
-                        submission.ai_priority_improvements.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <svg
-                                className="w-4 h-4 text-orange-600"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <h4 className="subtitle-2 text-orange-800">
-                                Areas for Improvement
-                              </h4>
-                            </div>
-                            <ul className="space-y-1 ml-6">
-                              {submission.ai_priority_improvements.map(
-                                (improvement, idx) => (
-                                  <li
-                                    key={idx}
-                                    className="body-2 text-gray-800 flex items-start gap-2"
-                                  >
-                                    <span className="text-orange-600 font-bold mt-0.5">
-                                      ⚠
-                                    </span>
-                                    <span>{improvement}</span>
-                                  </li>
-                                )
-                              )}
-                            </ul>
-                          </div>
-                        )}
+                  {submission.ai_overall_summary && (
+                    <div className="mb-4 pb-4 border-b border-blue-200">
+                      <p className="body-2 text-gray-800 leading-relaxed">
+                        {submission.ai_overall_summary}
+                      </p>
                     </div>
                   )}
 
-                  {/* Instructor Suggestion Section */}
-                  <div className="mb-6 dashboard-card p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
-                    <div className="flex items-center gap-2 mb-4">
-                      <svg
-                        className="w-5 h-5 text-purple-600"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                      </svg>
-                      <h3 className="heading-4 text-purple-900">
-                        Instructor Suggestions
-                      </h3>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="caption text-purple-700 font-medium mb-2 block">
-                        Overall improvement suggestions for the student
-                      </label>
-                      <textarea
-                        className="w-full px-4 py-3 border border-purple-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-                        rows={6}
-                        placeholder="Provide constructive feedback and suggestions to help the student improve their work. This will be visible to the student alongside the AI feedback..."
-                        value={suggestionText}
-                        onChange={(e) => setSuggestionText(e.target.value)}
-                        maxLength={5000}
-                      />
-                      <div className="flex justify-between items-center mt-2">
-                        <p className="text-xs text-purple-600">
-                          {suggestionText.length} / 5000 characters
-                        </p>
-                        {submission.instructor_suggestion && (
-                          <p className="text-xs text-purple-600">
-                            Last updated:{" "}
-                            {new Date(
-                              submission.instructor_suggestion.updated_at
-                            ).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="purple"
-                      onClick={handleSaveSuggestion}
-                      disabled={savingSuggestion || !suggestionText.trim()}
-                      className="w-full"
-                    >
-                      {savingSuggestion
-                        ? "Saving..."
-                        : submission.instructor_suggestion
-                        ? "Update Suggestion"
-                        : "Save Suggestion"}
-                    </Button>
-                  </div>
-
-                  <div className="space-y-5 mb-6">
-                    {scores.map((score) => {
-                      const aiAnalysis = (score.ai_feedback_raw ||
-                        {}) as Record<string, string | undefined>;
-
-                      return (
-                        <div
-                          key={score.dimension_id}
-                          className="border border-[var(--color-grey-15)] rounded-lg overflow-hidden"
-                        >
-                          {/* Header with Score and Label */}
-                          <div className="bg-[var(--color-grey-05)] p-4 border-b border-[var(--color-grey-15)]">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="flex-1">
-                                <h3 className="subtitle-2 text-gray-900 mb-1">
-                                  {score.dimension_label}
-                                </h3>
-                              </div>
-                              <div className="flex items-center gap-3 ml-4">
-                                <div className="text-right">
-                                  <label className="caption text-[var(--color-grey-55)] block mb-1">
-                                    Score
-                                  </label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="10"
-                                    step="0.1"
-                                    className="w-20 px-2 py-1 border border-[var(--color-grey-15)] rounded text-sm font-semibold text-center"
-                                    value={score.score.toString()}
-                                    onChange={(e) =>
-                                      handleScoreChange(
-                                        score.dimension_id,
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div className="text-gray-400 pt-6">/10</div>
-                              </div>
-                            </div>
-
-                            {/* Score Change Indicator */}
-                            {score.ai_score_original &&
-                              score.ai_score_original !== score.score && (
-                                <div className="text-xs text-blue-600 flex items-center gap-1">
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fillRule="evenodd"
-                                      d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633z"
-                                      clipRule="evenodd"
-                                    />
-                                  </svg>
-                                  Modified from AI score:{" "}
-                                  {score.ai_score_original}
-                                </div>
-                              )}
-                          </div>
-
-                          {/* AI Feedback Section */}
-                          {(aiAnalysis?.reasoning ||
-                            aiAnalysis?.full_analysis) && (
-                            <div className="p-4 space-y-3 bg-blue-50 border-b border-[var(--color-grey-15)]">
-                              <div className="flex items-center gap-2 mb-2">
-                                <svg
-                                  className="w-4 h-4 text-blue-600"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                </svg>
-                                <p className="subtitle-2 text-blue-900">
-                                  AI Analysis
-                                </p>
-                              </div>
-
-                              {aiAnalysis?.reasoning && (
-                                <div>
-                                  <p className="caption text-blue-700 font-medium mb-1">
-                                    Reasoning:
-                                  </p>
-                                  <p className="body-2 text-blue-800">
-                                    {aiAnalysis.reasoning}
-                                  </p>
-                                </div>
-                              )}
-
-                              {aiAnalysis?.full_analysis && (
-                                <div>
-                                  <p className="caption text-blue-700 font-medium mb-1">
-                                    Detailed Analysis:
-                                  </p>
-                                  <div className="bg-white rounded p-2 border border-blue-200">
-                                    <p className="body-2 text-gray-700">
-                                      {aiAnalysis.full_analysis}
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Instructor Comments Section */}
-                          <div className="p-4">
-                            <label className="subtitle-2 text-gray-900 mb-2 block">
-                              Instructor Comments
-                            </label>
-                            <textarea
-                              className="w-full px-3 py-2 border border-[var(--color-grey-15)] rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--color-blue-ntu)] focus:border-transparent"
-                              rows={3}
-                              placeholder="Add your feedback and comments for this dimension..."
-                              value={score.comments || ""}
-                              onChange={(e) =>
-                                handleCommentChange(
-                                  score.dimension_id,
-                                  e.target.value
-                                )
-                              }
+                  {submission.ai_overall_strengths &&
+                    submission.ai_overall_strengths.length > 0 && (
+                      <div className="mb-4 pb-4 border-b border-blue-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg
+                            className="w-4 h-4 text-green-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
                             />
-                            {score.comments && (
-                              <p className="text-xs text-[var(--color-grey-55)] mt-1">
-                                {score.comments.length} characters
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Override Indicator */}
-                          {score.instructor_override && (
-                            <div className="bg-blue-50 border-t border-[var(--color-grey-15)] px-4 py-2 flex items-center gap-2">
-                              <svg
-                                className="w-4 h-4 text-blue-600"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <span className="text-xs text-blue-700 font-medium">
-                                Instructor modified
-                              </span>
-                            </div>
-                          )}
+                          </svg>
+                          <h4 className="subtitle-2 text-green-800">
+                            Strengths
+                          </h4>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <ul className="space-y-1 ml-6">
+                          {submission.ai_overall_strengths.map(
+                            (strength, idx) => (
+                              <li
+                                key={idx}
+                                className="body-2 text-gray-800 flex items-start gap-2"
+                              >
+                                <span className="text-green-600 font-bold mt-0.5">
+                                  ✓
+                                </span>
+                                <span>{strength}</span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
 
-                  <div className="flex gap-3 pt-4 border-t border-[var(--color-grey-15)]">
-                    <Button
-                      variant="blue"
-                      onClick={handleSaveReview}
-                      disabled={saving}
-                      className="flex-1"
-                    >
-                      {saving ? "Saving..." : "Save Review"}
-                    </Button>
-                    <Button
-                      variant="grey"
-                      onClick={() => navigate(-1)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </>
+                  {submission.ai_priority_improvements &&
+                    submission.ai_priority_improvements.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg
+                            className="w-4 h-4 text-orange-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <h4 className="subtitle-2 text-orange-800">
+                            Areas for Improvement
+                          </h4>
+                        </div>
+                        <ul className="space-y-1 ml-6">
+                          {submission.ai_priority_improvements.map(
+                            (improvement, idx) => (
+                              <li
+                                key={idx}
+                                className="body-2 text-gray-800 flex items-start gap-2"
+                              >
+                                <span className="text-orange-600 font-bold mt-0.5">
+                                  ⚠
+                                </span>
+                                <span>{improvement}</span>
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                </div>
               )}
+
+              <div className="dashboard-card p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
+                <div className="flex items-center gap-2 mb-4">
+                  <svg
+                    className="w-5 h-5 text-purple-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                  <h3 className="heading-4 text-purple-900">
+                    Instructor Suggestions
+                  </h3>
+                </div>
+
+                <div className="mb-3">
+                  <label className="caption text-purple-700 font-medium mb-2 block">
+                    Overall improvement suggestions for the student
+                  </label>
+                  <textarea
+                    className="w-full px-4 py-3 border border-purple-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                    rows={6}
+                    placeholder="Provide constructive feedback and suggestions to help the student improve their work. This will be visible to the student alongside the AI feedback..."
+                    value={suggestionText}
+                    onChange={(e) => setSuggestionText(e.target.value)}
+                    maxLength={5000}
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    <p className="text-xs text-purple-600">
+                      {suggestionText.length} / 5000 characters
+                    </p>
+                    {submission.instructor_suggestion && (
+                      <p className="text-xs text-purple-600">
+                        Last updated:{" "}
+                        {new Date(
+                          submission.instructor_suggestion.updated_at
+                        ).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  variant="purple"
+                  onClick={handleSaveSuggestion}
+                  disabled={savingSuggestion || !suggestionText.trim()}
+                  className="w-full"
+                >
+                  {savingSuggestion
+                    ? "Saving..."
+                    : submission.instructor_suggestion
+                    ? "Update Suggestion"
+                    : "Save Suggestion"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      {showRubricDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Rubric Details
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Scores shown only for selected dimensions
+                </p>
+              </div>
+              <Button
+                variant="grey"
+                onClick={() => setShowRubricDetails(false)}
+              >
+                Close
+              </Button>
+            </div>
+
+            {displayedDimensionIds.length === 0 ? (
+              <p className="text-sm text-gray-600">No dimensions available.</p>
+            ) : (
+              <div className="space-y-4">
+                {displayedDimensionIds.map((dimensionId) => {
+                  const dimension = dimensionById.get(dimensionId);
+                  const score = scoreById.get(dimensionId);
+
+                  return (
+                    <div
+                      key={dimensionId}
+                      className="border border-[var(--color-grey-15)] rounded-lg p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <div>
+                          <p className="subtitle-2 text-gray-900">
+                            {dimension
+                              ? dimension.label
+                              : `Dimension ${dimensionId}`}
+                          </p>
+                          {dimension?.description && (
+                            <p className="text-xs text-gray-600 mt-1">
+                              {dimension.description}
+                            </p>
+                          )}
+                        </div>
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-[var(--color-grey-05)] text-gray-700">
+                          {score ? `${score.score} / 3` : "Not scored"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700">
+                            Level 1
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {dimension?.rubric_level_1 ||
+                              "No rubric provided."}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700">
+                            Level 2
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {dimension?.rubric_level_2 ||
+                              "No rubric provided."}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-700">
+                            Level 3
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {dimension?.rubric_level_3 ||
+                              "No rubric provided."}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

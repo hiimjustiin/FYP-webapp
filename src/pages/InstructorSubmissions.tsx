@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { SquarePen } from "lucide-react";
 import {
   instructorService,
   type CourseSubmission,
@@ -82,41 +83,6 @@ const InstructorSubmissions = () => {
         }`}
       >
         {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
-  };
-
-  const getFeedbackBadge = (hasFeedback: boolean) => {
-    if (hasFeedback) {
-      return (
-        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-[#181C62]/10 text-[#181C62]">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Reviewed
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        Pending
       </span>
     );
   };
@@ -216,11 +182,8 @@ const InstructorSubmissions = () => {
                     <th className="px-6 py-4 text-left body-2 font-semibold text-[var(--color-grey-55)]">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left body-2 font-semibold text-[var(--color-grey-55)]">
-                      Instructor Feedback
-                    </th>
                     <th className="px-6 py-4 text-center body-2 font-semibold text-[var(--color-grey-55)]">
-                      Action
+                      View
                     </th>
                   </tr>
                 </thead>
@@ -256,18 +219,16 @@ const InstructorSubmissions = () => {
                       <td className="px-6 py-4">
                         {getStatusBadge(submission.status)}
                       </td>
-                      <td className="px-6 py-4">
-                        {getFeedbackBadge(submission.has_instructor_feedback)}
-                      </td>
                       <td className="px-6 py-4 text-center">
                         <Button
                           variant="blue"
                           onClick={() =>
                             navigate(`/instructor/submissions/${submission.id}`)
                           }
-                          className="text-sm"
+                          className="p-2"
+                          aria-label="View submission"
                         >
-                          View Details
+                          <SquarePen className="w-4 h-4" strokeWidth={2.5} />
                         </Button>
                       </td>
                     </tr>

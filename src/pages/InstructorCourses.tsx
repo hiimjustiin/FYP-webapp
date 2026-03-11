@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { SquarePen, Trash2 } from "lucide-react";
 import {
   instructorService,
   type InstructorCourse,
   type CreateCourseData,
   type UpdateCourseData,
+  type Dimension,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
 import InputField from "../components/ui/InputField/InputField";
@@ -17,6 +19,7 @@ export default function InstructorCourses() {
   const [error, setError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [dimensions, setDimensions] = useState<Dimension[]>([]);
   const [editingCourse, setEditingCourse] = useState<InstructorCourse | null>(
     null
   );
@@ -29,8 +32,12 @@ export default function InstructorCourses() {
     try {
       setLoading(true);
       setError("");
-      const coursesData = await instructorService.getCourses();
+      const [coursesData, dimensionsData] = await Promise.all([
+        instructorService.getCourses(),
+        instructorService.getDimensions(),
+      ]);
       setCourses(coursesData);
+      setDimensions(dimensionsData);
     } catch (err) {
       console.error("Failed to load data:", err);
       setError(err instanceof Error ? err.message : "Failed to load courses");
@@ -138,16 +145,18 @@ export default function InstructorCourses() {
                     <Button
                       variant="blue"
                       onClick={() => setEditingCourse(course)}
-                      className="text-xs"
+                      className="p-2"
+                      aria-label="Edit course"
                     >
-                      Edit
+                      <SquarePen className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                     <Button
                       variant="red"
                       onClick={() => handleDeleteCourse(course.id)}
-                      className="text-xs"
+                      className="p-2"
+                      aria-label="Delete course"
                     >
-                      Delete
+                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                   </div>,
                 ]),
@@ -160,6 +169,7 @@ export default function InstructorCourses() {
         {(showCreateModal || editingCourse) && (
           <CourseModal
             course={editingCourse}
+            dimensions={dimensions}
             onClose={() => {
               setShowCreateModal(false);
               setEditingCourse(null);
@@ -179,10 +189,12 @@ export default function InstructorCourses() {
 // Course Create/Edit Modal Component
 function CourseModal({
   course,
+  dimensions,
   onClose,
   onSave,
 }: {
   course: InstructorCourse | null;
+  dimensions: Dimension[];
   onClose: () => void;
   onSave: () => void;
 }) {
@@ -192,13 +204,57 @@ function CourseModal({
     description: course?.description || "",
     term: course?.term || "",
     passcode: course?.passcode || "",
+    dimension_ids: course?.dimension_ids || [],
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Initialize dimension_ids with all dimensions if creating new course
+  useEffect(() => {
+    if (
+      !course &&
+      dimensions.length > 0 &&
+      formData.dimension_ids.length === 0
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        dimension_ids: dimensions.map((d) => d.id),
+      }));
+    }
+  }, [course, dimensions, formData.dimension_ids.length]);
+
+  const handleDimensionToggle = (dimensionId: number) => {
+    setFormData((prev) => {
+      const newDimensionIds = prev.dimension_ids.includes(dimensionId)
+        ? prev.dimension_ids.filter((id) => id !== dimensionId)
+        : [...prev.dimension_ids, dimensionId].sort((a, b) => a - b);
+      return { ...prev, dimension_ids: newDimensionIds };
+    });
+  };
+
+  const handleSelectAll = () => {
+    setFormData((prev) => ({
+      ...prev,
+      dimension_ids: dimensions.map((d) => d.id),
+    }));
+  };
+
+  const handleDeselectAll = () => {
+    setFormData((prev) => ({
+      ...prev,
+      dimension_ids: [],
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    // Validate at least one dimension is selected
+    if (formData.dimension_ids.length === 0) {
+      setError("Please select at least one rubric dimension for this course");
+      return;
+    }
     setSaving(true);
 
     try {
@@ -210,6 +266,7 @@ function CourseModal({
           description: formData.description,
           term: formData.term,
           passcode: formData.passcode || undefined,
+          dimension_ids: formData.dimension_ids,
         };
         await instructorService.updateCourse(course.id, updateData);
       } else {
@@ -220,6 +277,7 @@ function CourseModal({
           description: formData.description,
           term: formData.term,
           passcode: formData.passcode || undefined,
+          dimension_ids: formData.dimension_ids,
         };
         await instructorService.createCourse(createData);
       }
@@ -300,6 +358,79 @@ function CourseModal({
           <p className="text-xs text-gray-500 -mt-2">
             Case-sensitive. Students must enter this passcode to enroll.
           </p>
+
+          {/* Rubric Selection */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Rubric Dimensions ({formData.dimension_ids.length} of{" "}
+                {dimensions.length} selected)
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  disabled={dimensions.length === 0}
+                >
+                  Select All
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={handleDeselectAll}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  disabled={dimensions.length === 0}
+                >
+                  Clear All
+                </button>
+              </div>
+            </div>
+            {dimensions.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                No rubric dimensions available.
+              </p>
+            ) : (
+              <div className="border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto bg-gray-50">
+                {dimensions.map((dim) => (
+                  <label
+                    key={dim.id}
+                    className="flex items-start gap-3 p-2 hover:bg-white rounded cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.dimension_ids.includes(dim.id)}
+                      onChange={() => handleDimensionToggle(dim.id)}
+                      className="mt-0.5 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-gray-900">
+                        {dim.id}. {dim.label}
+                      </span>
+                      {dim.short_label && (
+                        <span className="text-xs text-gray-500 ml-2">
+                          ({dim.short_label})
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                      style={{
+                        backgroundColor: `${dim.color_hex}20`,
+                        color: dim.color_hex,
+                      }}
+                    >
+                      ●
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Choose the rubric dimensions to be used for scoring in this
+              course.
+            </p>
+          </div>
 
           <div className="flex gap-3 pt-4">
             <Button

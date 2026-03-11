@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { SquarePen } from "lucide-react";
 import {
   instructorService,
   type CourseSubmission,
@@ -62,41 +63,6 @@ const CourseSubmissions = () => {
     );
   };
 
-  const getFeedbackBadge = (hasFeedback: boolean) => {
-    if (hasFeedback) {
-      return (
-        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-[#181C62]/10 text-[#181C62]">
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Reviewed
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        Pending
-      </span>
-    );
-  };
-
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -144,10 +110,14 @@ const CourseSubmissions = () => {
           </div>
           <div className="dashboard-card p-6">
             <div className="caption text-[var(--color-grey-55)] mb-2">
-              Pending Instructor Review
+              Scored
             </div>
-            <div className="heading-3 text-orange-600">
-              {submissions.filter((s) => !s.has_instructor_feedback).length}
+            <div className="heading-3 text-[var(--color-blue-ntu)]">
+              {
+                submissions.filter(
+                  (s) => s.status === "scored" || s.status === "reviewed"
+                ).length
+              }
             </div>
           </div>
         </div>
@@ -182,8 +152,7 @@ const CourseSubmissions = () => {
                   "File",
                   "Submitted",
                   "Status",
-                  "Instructor Feedback",
-                  "Actions",
+                  "View",
                 ],
                 ...filteredSubmissions.map((row: CourseSubmission) => [
                   <span className="subtitle-2">{row.student_name}</span>,
@@ -202,15 +171,16 @@ const CourseSubmissions = () => {
                     {new Date(row.submitted_at).toLocaleDateString()}
                   </span>,
                   getStatusBadge(),
-                  getFeedbackBadge(row.has_instructor_feedback),
-                  <div className="flex gap-2">
+                  <div className="flex justify-center">
                     <Button
                       variant="blue"
                       onClick={() =>
                         navigate(`/instructor/submissions/${row.id}`)
                       }
+                      className="p-2"
+                      aria-label="View submission"
                     >
-                      View Details
+                      <SquarePen className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                   </div>,
                 ]),

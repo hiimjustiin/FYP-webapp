@@ -56,6 +56,12 @@ interface ProjectResponse {
   project: Project;
 }
 
+export interface CreateProjectResponse {
+  project: Project;
+  submission_id: string;
+  message: string;
+}
+
 interface SubmitProjectResponse {
   project: Project;
   submission_id: string;
@@ -117,7 +123,9 @@ export const projectService = {
     return data.project;
   },
 
-  async createProject(projectData: CreateProjectData): Promise<Project> {
+  async createProject(
+    projectData: CreateProjectData,
+  ): Promise<CreateProjectResponse> {
     // Build FormData for multipart/form-data request with files
     const formData = new FormData();
     formData.append("title", projectData.title);
@@ -140,8 +148,8 @@ export const projectService = {
     }
 
     // Send FormData without custom headers (browser will set Content-Type correctly)
-    const data = await api.post<ProjectResponse>("/projects", formData);
-    return data.project;
+    const data = await api.post<CreateProjectResponse>("/projects", formData);
+    return data;
   },
 
   async updateProject(
