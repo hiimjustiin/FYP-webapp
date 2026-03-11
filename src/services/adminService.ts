@@ -64,6 +64,7 @@ export interface AdminSubmission {
   file_url: string;
   submitted_at: string;
   scores_count: number;
+  avg_score: number;
 }
 
 export interface Instructor {

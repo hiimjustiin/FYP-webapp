@@ -187,6 +187,16 @@ const AppContent = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/submissions/:submissionId"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <DashboardLayout key="admin-submission-detail">
+              <SubmissionDetail />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
       {/* Protected dashboard routes */}
       <Route
         path="/"

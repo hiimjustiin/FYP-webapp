@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import {
   adminService,
   type AdminProject,
@@ -10,6 +11,7 @@ import TextArea from "../components/ui/TextArea/TextArea";
 import Dropdown from "../components/ui/Dropdown/Dropdown";
 import Table from "../components/ui/Table/Table";
 import SearchBar from "../components/ui/SearchBar/SearchBar";
+import { AlertDialog } from "../components/ui/AlertDialog/AlertDialog";
 
 export default function AdminProjects() {
   const [projects, setProjects] = useState<AdminProject[]>([]);
@@ -19,9 +21,15 @@ export default function AdminProjects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [courseFilter, setCourseFilter] = useState<string>("all");
-  const [editingProject, setEditingProject] = useState<AdminProject | null>(
-    null,
-  );
+  const [editingProject, setEditingProject] = useState<AdminProject | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<AdminProject | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  // When a project has submissions we ask for a second confirmation step
+  const [confirmStep, setConfirmStep] = useState<1 | 2>(1);
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     loadData();
@@ -47,57 +55,53 @@ export default function AdminProjects() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setPage(1);
   };
 
-  const handleDeleteProject = async (project: AdminProject) => {
-    const submissionCount = Number(project.submission_count);
+  const handleDeleteClick = (project: AdminProject) => {
+    setSelectedProject(project);
+    setDeleteError("");
+    setConfirmStep(Number(project.submission_count) > 0 ? 1 : 1);
+    setDeleteDialogOpen(true);
+  };
 
-    if (submissionCount > 0) {
-      const confirmed = confirm(
-        `⚠️ Warning: "${project.title}" has ${submissionCount} submission(s) with student work.\n\nDeleting this project will permanently remove ALL submissions and their AI feedback.\n\nAre you sure you want to proceed?`,
-      );
-      if (!confirmed) return;
+  const handleConfirmDelete = async () => {
+    if (!selectedProject) return;
+    const submissionCount = Number(selectedProject.submission_count);
 
-      // Double confirmation for projects with submissions
-      const doubleConfirmed = confirm(
-        `This is irreversible. Type OK to confirm deletion of "${project.title}" and all ${submissionCount} submission(s).`,
-      );
-      if (!doubleConfirmed) return;
-
-      try {
-        await adminService.deleteProject(project.id, true);
-        loadData();
-      } catch (err) {
-        alert(err instanceof Error ? err.message : "Failed to delete project");
-      }
-    } else {
-      if (
-        !confirm(
-          `Delete project "${project.title}"? This action cannot be undone.`,
-        )
-      )
-        return;
-
-      try {
-        await adminService.deleteProject(project.id);
-      } catch (err: unknown) {
-        // Backend may still return 409 if race condition; handle force deletion
-        const apiError = err as { response?: { status?: number } };
-        if (apiError.response?.status === 409) {
-          const forceConfirm = confirm(
-            "This project has submissions. Delete anyway?",
-          );
-          if (!forceConfirm) return;
-          await adminService.deleteProject(project.id, true);
-        } else {
-          alert(
-            err instanceof Error ? err.message : "Failed to delete project",
-          );
-          return;
-        }
-      }
-      loadData();
+    // First step: if project has submissions, show a second confirmation
+    if (submissionCount > 0 && confirmStep === 1) {
+      setConfirmStep(2);
+      return;
     }
+
+    try {
+      setDeleting(true);
+      setDeleteError("");
+      await adminService.deleteProject(selectedProject.id, submissionCount > 0);
+      setDeleteDialogOpen(false);
+      setSelectedProject(null);
+      setConfirmStep(1);
+      loadData();
+    } catch (err: unknown) {
+      const apiError = err as { response?: { status?: number } };
+      if (apiError.response?.status === 409) {
+        // Race condition — step up to force delete
+        setConfirmStep(2);
+        setDeleteError("This project has submissions. Confirm again to force delete.");
+      } else {
+        setDeleteError(err instanceof Error ? err.message : "Failed to delete project");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedProject(null);
+    setDeleteError("");
+    setConfirmStep(1);
   };
 
   // Filter projects client-side
@@ -116,6 +120,12 @@ export default function AdminProjects() {
 
     return matchesSearch && matchesType && matchesCourse;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / ITEMS_PER_PAGE));
+  const pagedProjects = filteredProjects.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
 
   const typeOptions = [
     { id: "all", label: "All Types" },
@@ -193,6 +203,7 @@ export default function AdminProjects() {
               No projects found
             </div>
           ) : (
+            <>
             <Table
               noBorder
               data={[
@@ -207,7 +218,7 @@ export default function AdminProjects() {
                   "Created",
                   "Actions",
                 ],
-                ...filteredProjects.map((project) => [
+                ...pagedProjects.map((project) => [
                   project.title,
                   <div key={`owner-${project.id}`}>
                     <div className="font-medium text-sm">
@@ -260,21 +271,47 @@ export default function AdminProjects() {
                     <Button
                       variant="blue"
                       onClick={() => setEditingProject(project)}
-                      className="text-xs"
+                      className="p-1.5"
+                      title="Edit project"
                     >
-                      Edit
+                      <Pencil className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                     <Button
                       variant="red"
-                      onClick={() => handleDeleteProject(project)}
-                      className="text-xs"
+                      onClick={() => handleDeleteClick(project)}
+                      className="p-1.5"
+                      title="Delete project"
                     >
-                      Delete
+                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                   </div>,
                 ]),
               ]}
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </Button>
+                <span className="px-4 py-2 text-gray-700">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </div>
 
@@ -287,6 +324,41 @@ export default function AdminProjects() {
               loadData();
               setEditingProject(null);
             }}
+          />
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {deleteDialogOpen && selectedProject && (
+          <AlertDialog
+            isOpen={deleteDialogOpen}
+            type={deleteError ? "error" : "warning"}
+            title={
+              deleteError
+                ? "Deletion Failed"
+                : confirmStep === 2
+                  ? "Confirm Force Delete"
+                  : "Delete Project"
+            }
+            message={
+              deleteError
+                ? `${deleteError}\n\nPlease try again.`
+                : confirmStep === 2
+                  ? `This is irreversible. "${selectedProject.title}" has ${selectedProject.submission_count} submission(s) with student work. All submissions and AI feedback will be permanently removed.`
+                  : `Are you sure you want to delete "${selectedProject.title}"? This action cannot be undone.`
+            }
+            primaryButtonText={
+              deleteError
+                ? "Try Again"
+                : deleting
+                  ? "Deleting..."
+                  : confirmStep === 2
+                    ? "Yes, Delete Everything"
+                    : "Delete"
+            }
+            secondaryButtonText="Cancel"
+            onPrimaryAction={handleConfirmDelete}
+            onSecondaryAction={handleCancelDelete}
+            closeOnOverlayClick={false}
           />
         )}
       </div>

@@ -1,4 +1,11 @@
 import { useState, useEffect } from "react";
+import {
+  Pencil,
+  Plus,
+  ShieldCheck,
+  ShieldOff,
+  Trash2,
+} from "lucide-react";
 import { adminService, type AdminUser } from "../services/adminService";
 import Button from "../components/ui/Button/Button";
 import InputField from "../components/ui/InputField/InputField";
@@ -28,7 +35,7 @@ export default function AdminUsers() {
       setError("");
       const result = await adminService.getUsers({
         page,
-        limit: 20,
+        limit: 10,
         ...(roleFilter !== "all" && { role: roleFilter }),
         ...(searchTerm && { search: searchTerm }),
       });
@@ -88,19 +95,7 @@ export default function AdminUsers() {
             </p>
           </div>
           <Button variant="blue" onClick={() => setShowCreateModal(true)}>
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
+            <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} />
             Create User
           </Button>
         </div>
@@ -172,23 +167,30 @@ export default function AdminUsers() {
                       <Button
                         variant="blue"
                         onClick={() => setEditingUser(user)}
-                        className="text-xs"
+                        className="p-1.5"
+                        title="Edit user"
                       >
-                        Edit
+                        <Pencil className="w-4 h-4" strokeWidth={2.5} />
                       </Button>
                       <Button
                         variant={user.is_active ? "grey" : "green"}
                         onClick={() => handleToggleActive(user)}
-                        className="text-xs"
+                        className="p-1.5"
+                        title={user.is_active ? "Deactivate user" : "Activate user"}
                       >
-                        {user.is_active ? "Deactivate" : "Activate"}
+                        {user.is_active ? (
+                          <ShieldOff className="w-4 h-4" strokeWidth={2.5} />
+                        ) : (
+                          <ShieldCheck className="w-4 h-4" strokeWidth={2.5} />
+                        )}
                       </Button>
                       <Button
                         variant="red"
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-xs"
+                        className="p-1.5"
+                        title="Delete user"
                       >
-                        Delete
+                        <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                       </Button>
                     </div>,
                   ]),

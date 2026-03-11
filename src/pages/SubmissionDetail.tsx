@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Eye, ArrowLeft, Download, Sparkles, CheckCircle, AlertTriangle, Pencil, FileText } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 import { instructorService, type Dimension } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
 
@@ -10,6 +12,8 @@ interface SubmissionDetail {
   status: string;
   file_url: string;
   file_type: string;
+  essay_text?: string | null;
+  file_urls?: string[] | null;
   student_name: string;
   student_email: string;
   student_id: string;
@@ -36,6 +40,8 @@ interface DimensionScoreDetail {
 const SubmissionDetail = () => {
   const { submissionId } = useParams<{ submissionId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [scores, setScores] = useState<DimensionScoreDetail[]>([]);
   const [dimensions, setDimensions] = useState<Dimension[]>([]);
@@ -108,8 +114,8 @@ const SubmissionDetail = () => {
     const statusColors: Record<string, string> = {
       submitted: "bg-blue-100 text-blue-800",
       scoring: "bg-yellow-100 text-yellow-800",
-      scored: "bg-green-100 text-green-800",
-      reviewed: "bg-purple-100 text-purple-800",
+      scored: "bg-purple-100 text-purple-800",
+      reviewed: "bg-green-100 text-green-800",
     };
 
     return (
@@ -178,7 +184,8 @@ const SubmissionDetail = () => {
         {/* Header */}
         <div className="mb-6">
           <Button variant="grey" onClick={() => navigate(-1)} className="mb-4">
-            ← Back
+            <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2.5} />
+            Back
           </Button>
           <div className="flex justify-between items-start">
             <div>
@@ -274,25 +281,7 @@ const SubmissionDetail = () => {
                     onClick={() => window.open(submission.file_url, "_blank")}
                     className="w-full"
                   >
-                    <svg
-                      className="w-4 h-4 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
+                    <Eye className="w-4 h-4 mr-2" strokeWidth={2.5} />
                     View Submission File
                   </Button>
                 </div>
@@ -347,13 +336,7 @@ const SubmissionDetail = () => {
                 submission.ai_priority_improvements) && (
                 <div className="mb-6 dashboard-card p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
                   <div className="flex items-center gap-2 mb-4">
-                    <svg
-                      className="w-5 h-5 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
+                    <Sparkles className="w-5 h-5 text-blue-600" />
                     <h3 className="heading-4 text-blue-900">
                       AI Feedback Summary
                     </h3>
@@ -371,17 +354,7 @@ const SubmissionDetail = () => {
                     submission.ai_overall_strengths.length > 0 && (
                       <div className="mb-4 pb-4 border-b border-blue-200">
                         <div className="flex items-center gap-2 mb-2">
-                          <svg
-                            className="w-4 h-4 text-green-600"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
+                          <CheckCircle className="w-4 h-4 text-green-600" />
                           <h4 className="subtitle-2 text-green-800">
                             Strengths
                           </h4>
@@ -408,17 +381,7 @@ const SubmissionDetail = () => {
                     submission.ai_priority_improvements.length > 0 && (
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <svg
-                            className="w-4 h-4 text-orange-600"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
+                          <AlertTriangle className="w-4 h-4 text-orange-600" />
                           <h4 className="subtitle-2 text-orange-800">
                             Areas for Improvement
                           </h4>
@@ -445,59 +408,141 @@ const SubmissionDetail = () => {
 
               <div className="dashboard-card p-6 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200">
                 <div className="flex items-center gap-2 mb-4">
-                  <svg
-                    className="w-5 h-5 text-purple-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
+                  <Pencil className="w-5 h-5 text-purple-600" />
                   <h3 className="heading-4 text-purple-900">
                     Instructor Suggestions
                   </h3>
                 </div>
 
-                <div className="mb-3">
-                  <label className="caption text-purple-700 font-medium mb-2 block">
-                    Overall improvement suggestions for the student
-                  </label>
-                  <textarea
-                    className="w-full px-4 py-3 border border-purple-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-                    rows={6}
-                    placeholder="Provide constructive feedback and suggestions to help the student improve their work. This will be visible to the student alongside the AI feedback..."
-                    value={suggestionText}
-                    onChange={(e) => setSuggestionText(e.target.value)}
-                    maxLength={5000}
-                  />
-                  <div className="flex justify-between items-center mt-2">
-                    <p className="text-xs text-purple-600">
-                      {suggestionText.length} / 5000 characters
-                    </p>
-                    {submission.instructor_suggestion && (
-                      <p className="text-xs text-purple-600">
-                        Last updated:{" "}
-                        {new Date(
-                          submission.instructor_suggestion.updated_at
-                        ).toLocaleDateString()}
+                {isAdmin ? (
+                  /* Read-only view for admins */
+                  <div>
+                    {submission.instructor_suggestion?.suggestion_text ? (
+                      <div>
+                        <p className="body-2 text-gray-800 leading-relaxed whitespace-pre-wrap">
+                          {submission.instructor_suggestion.suggestion_text}
+                        </p>
+                        <p className="text-xs text-purple-600 mt-3">
+                          Last updated:{" "}
+                          {new Date(
+                            submission.instructor_suggestion.updated_at
+                          ).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="body-2 text-purple-400 italic">
+                        No instructor suggestions have been provided yet.
                       </p>
                     )}
                   </div>
-                </div>
+                ) : (
+                  /* Editable view for instructors */
+                  <div>
+                    <div className="mb-3">
+                      <label className="caption text-purple-700 font-medium mb-2 block">
+                        Overall improvement suggestions for the student
+                      </label>
+                      <textarea
+                        className="w-full px-4 py-3 border border-purple-200 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
+                        rows={6}
+                        placeholder="Provide constructive feedback and suggestions to help the student improve their work. This will be visible to the student alongside the AI feedback..."
+                        value={suggestionText}
+                        onChange={(e) => setSuggestionText(e.target.value)}
+                        maxLength={5000}
+                      />
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-xs text-purple-600">
+                          {suggestionText.length} / 5000 characters
+                        </p>
+                        {submission.instructor_suggestion && (
+                          <p className="text-xs text-purple-600">
+                            Last updated:{" "}
+                            {new Date(
+                              submission.instructor_suggestion.updated_at
+                            ).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
 
-                <Button
-                  variant="purple"
-                  onClick={handleSaveSuggestion}
-                  disabled={savingSuggestion || !suggestionText.trim()}
-                  className="w-full"
-                >
-                  {savingSuggestion
-                    ? "Saving..."
-                    : submission.instructor_suggestion
-                    ? "Update Suggestion"
-                    : "Save Suggestion"}
-                </Button>
+                    <Button
+                      variant="purple"
+                      onClick={handleSaveSuggestion}
+                      disabled={savingSuggestion || !suggestionText.trim()}
+                      className="w-full"
+                    >
+                      {savingSuggestion
+                        ? "Saving..."
+                        : submission.instructor_suggestion
+                        ? "Update Suggestion"
+                        : "Save Suggestion"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Student Submission Content */}
+            {(() => {
+              const fileList =
+                submission.file_urls && submission.file_urls.length > 0
+                  ? submission.file_urls
+                  : submission.file_url
+                  ? [submission.file_url]
+                  : [];
+              const hasEssay = Boolean(submission.essay_text?.trim());
+              const hasFiles = fileList.length > 0;
+
+              return (
+                <div className="dashboard-card p-6 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-5 h-5 text-[var(--color-blue-ntu)]" />
+                    <h2 className="heading-4">Student Submission</h2>
+                  </div>
+
+                  {!hasEssay && !hasFiles && (
+                    <p className="body-2 text-[var(--color-grey-55)] italic">
+                      No submission content available.
+                    </p>
+                  )}
+
+                  {hasEssay && (
+                    <div className={hasFiles ? 'mb-4 pb-4 border-b border-[var(--color-grey-15)]' : ''}>
+                      <p className="caption text-[var(--color-grey-55)] mb-2">Essay / Text</p>
+                      <div className="bg-[var(--color-grey-05)] rounded-md p-4 max-h-80 overflow-y-auto">
+                        <p className="body-2 text-gray-800 whitespace-pre-wrap leading-relaxed">
+                          {submission.essay_text}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {hasFiles && (
+                    <div>
+                      <p className="caption text-[var(--color-grey-55)] mb-2">
+                        {fileList.length === 1 ? 'File' : 'Files'}
+                      </p>
+                      <div className="space-y-2">
+                        {fileList.map((url, idx) => {
+                          const fileName = url.split('/').pop() || `file-${idx + 1}`;
+                          return (
+                            <Button
+                              key={idx}
+                              variant="grey"
+                              onClick={() => window.open(url, '_blank')}
+                              className="w-full justify-start gap-2"
+                            >
+                              <Download className="w-4 h-4" strokeWidth={2.5} />
+                              <span className="truncate">{fileName}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

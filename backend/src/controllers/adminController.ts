@@ -590,7 +590,8 @@ export const getAllSubmissions = async (req: AuthRequest, res: Response) => {
         p.title as project_title,
         c.title as course_title,
         c.code as course_code,
-        COUNT(sds.id) as scores_count
+        COUNT(sds.id) as scores_count,
+        COALESCE(AVG(sds.ai_score), 0) as avg_score
        FROM project_submissions ps
        JOIN users u ON ps.user_id = u.id
        JOIN projects p ON ps.project_id = p.id

@@ -345,6 +345,7 @@ export const getCourseSubmissions = async (req: AuthRequest, res: Response) => {
         u.display_name as student_name, u.student_id, u.email as student_email,
         p.title as project_title, p.id as project_id,
         COUNT(sds.id) as scores_count,
+        COALESCE(AVG(sds.ai_score), 0) as avg_score,
         CASE WHEN sis.suggestion_text IS NOT NULL THEN true ELSE false END as has_instructor_feedback
       FROM project_submissions ps
       JOIN users u ON ps.user_id = u.id
@@ -375,7 +376,7 @@ export const getSubmissionDetails = async (req: AuthRequest, res: Response) => {
     // Get submission details including overall AI feedback
     const submissionResult = await query(
       `SELECT 
-        ps.id, ps.name, ps.submitted_at, ps.status, ps.file_url, ps.file_type,
+        ps.id, ps.name, ps.submitted_at, ps.status, ps.file_url, ps.file_type, ps.essay_text, ps.file_urls,
         ps.ai_overall_summary, ps.ai_overall_strengths, ps.ai_priority_improvements,
         u.display_name as student_name, u.email as student_email, u.student_id,
         p.title as project_title, p.description as project_description,

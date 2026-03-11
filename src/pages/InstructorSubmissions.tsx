@@ -1,12 +1,54 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { SquarePen } from "lucide-react";
+import { SquarePen, FileText } from "lucide-react";
 import {
   instructorService,
   type CourseSubmission,
 } from "../services/instructorService";
 import Button from "../components/ui/Button/Button";
 import SearchBar from "../components/ui/SearchBar/SearchBar";
+
+/** Star Rating for submission avg_score (1-3 scale) */
+const SubmissionStarRating = ({ score }: { score: number | undefined }) => {
+  if (score === undefined || score === null || score === 0) {
+    return <span className="text-gray-400">--</span>;
+  }
+
+  const roundedScore = Math.round(score * 2) / 2;
+  const fullStars = Math.floor(roundedScore);
+  const hasHalfStar = roundedScore % 1 !== 0;
+  const emptyStars = 3 - fullStars - (hasHalfStar ? 1 : 0);
+
+  return (
+    <div
+      className="flex items-center gap-0.5"
+      title={`${Number(score).toFixed(1)}/3.0`}
+    >
+      {Array.from({ length: fullStars }).map((_, i) => (
+        <svg key={`full-${i}`} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+      {hasHalfStar && (
+        <svg className="w-4 h-4 text-yellow-400" viewBox="0 0 20 20">
+          <defs>
+            <linearGradient id="instructor-half-star">
+              <stop offset="50%" stopColor="currentColor" />
+              <stop offset="50%" stopColor="#D1D5DB" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#instructor-half-star)" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      )}
+      {Array.from({ length: emptyStars }).map((_, i) => (
+        <svg key={`empty-${i}`} className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+      <span className="ml-1 text-xs text-gray-500">({Number(score).toFixed(1)})</span>
+    </div>
+  );
+};
 
 const InstructorSubmissions = () => {
   const navigate = useNavigate();
@@ -18,6 +60,8 @@ const InstructorSubmissions = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchAllSubmissions();
@@ -66,14 +110,15 @@ const InstructorSubmissions = () => {
     }
 
     setFilteredSubmissions(filtered);
+    setPage(1);
   }, [searchTerm, filterStatus, submissions]);
 
   const getStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
       submitted: "bg-blue-100 text-blue-800",
       scoring: "bg-yellow-100 text-yellow-800",
-      scored: "bg-green-100 text-green-800",
-      reviewed: "bg-purple-100 text-purple-800",
+      scored: "bg-purple-100 text-purple-800",
+      reviewed: "bg-green-100 text-green-800",
     };
 
     return (
@@ -144,19 +189,7 @@ const InstructorSubmissions = () => {
         {/* Submissions List */}
         {filteredSubmissions.length === 0 ? (
           <div className="dashboard-card p-12 text-center">
-            <svg
-              className="w-16 h-16 mx-auto text-[var(--color-grey-35)] mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
+            <FileText className="w-16 h-16 mx-auto text-[var(--color-grey-35)] mb-4" strokeWidth={1.5} />
             <p className="subtitle-2 text-[var(--color-grey-55)]">
               No submissions found
             </p>
@@ -182,13 +215,18 @@ const InstructorSubmissions = () => {
                     <th className="px-6 py-4 text-left body-2 font-semibold text-[var(--color-grey-55)]">
                       Status
                     </th>
+                    <th className="px-6 py-4 text-left body-2 font-semibold text-[var(--color-grey-55)]">
+                      Score
+                    </th>
                     <th className="px-6 py-4 text-center body-2 font-semibold text-[var(--color-grey-55)]">
                       View
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSubmissions.map((submission) => (
+                  {filteredSubmissions
+                    .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
+                    .map((submission) => (
                     <tr
                       key={submission.id}
                       className="border-b border-[var(--color-grey-15)] hover:bg-[var(--color-grey-05)]"
@@ -219,6 +257,9 @@ const InstructorSubmissions = () => {
                       <td className="px-6 py-4">
                         {getStatusBadge(submission.status)}
                       </td>
+                      <td className="px-6 py-4">
+                        <SubmissionStarRating score={parseFloat(String(submission.avg_score))} />
+                      </td>
                       <td className="px-6 py-4 text-center">
                         <Button
                           variant="blue"
@@ -227,6 +268,7 @@ const InstructorSubmissions = () => {
                           }
                           className="p-2"
                           aria-label="View submission"
+                          title="Review submission"
                         >
                           <SquarePen className="w-4 h-4" strokeWidth={2.5} />
                         </Button>
@@ -236,6 +278,29 @@ const InstructorSubmissions = () => {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination */}
+            {Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE) > 1 && (
+              <div className="flex justify-center gap-2 mt-6 pb-4">
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </Button>
+                <span className="px-4 py-2 text-gray-700">
+                  Page {page} of {Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE)}
+                </span>
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.min(Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE), p + 1))}
+                  disabled={page === Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
