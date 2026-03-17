@@ -72,7 +72,7 @@ const getOAuthRedirectUri = (): string => {
 
 const buildFrontendCallbackUrl = (
   origin: string,
-  params: Record<string, string>
+  params: Record<string, string>,
 ) => {
   const url = new URL("/oauth/callback", origin);
   Object.entries(params).forEach(([key, value]) => {
@@ -141,7 +141,7 @@ const verifyOAuthState = (state: string): { origin: string } | null => {
 
   try {
     const payload = JSON.parse(
-      Buffer.from(data, "base64url").toString("utf8")
+      Buffer.from(data, "base64url").toString("utf8"),
     ) as { origin?: string; issuedAt?: number };
 
     if (!payload.origin || !payload.issuedAt) {
@@ -225,7 +225,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       `INSERT INTO users (email, password_hash, display_name, role, is_active) 
        VALUES ($1, $2, $3, $4, false) 
        RETURNING id, email, display_name, role, created_at`,
-      [email, hashedPassword, display_name, role]
+      [email, hashedPassword, display_name, role],
     );
 
     const newUser = result.rows[0] as User;
@@ -237,7 +237,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await query(
       `INSERT INTO email_verification_otps (email, otp_code, expires_at) 
        VALUES ($1, $2, $3)`,
-      [email, otpCode, expiresAt]
+      [email, otpCode, expiresAt],
     );
 
     // Send OTP email
@@ -283,7 +283,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     // Find user
     const result = await query(
       "SELECT id, email, password_hash, display_name, role, is_active FROM users WHERE email = $1",
-      [email]
+      [email],
     );
 
     if (result.rows.length === 0) {
@@ -344,7 +344,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 // Refresh access token using refresh token
 export const refreshToken = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { refreshToken } = req.body;
@@ -377,7 +377,7 @@ export const refreshToken = async (
     // Get user from database
     const result = await query(
       "SELECT id, email, display_name, role, is_active FROM users WHERE id = $1 AND is_active = true",
-      [decoded.userId]
+      [decoded.userId],
     );
 
     if (result.rows.length === 0) {
@@ -470,7 +470,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
        WHERE email = $1 AND otp_code = $2 
        ORDER BY created_at DESC 
        LIMIT 1`,
-      [email, otp]
+      [email, otp],
     );
 
     if (otpResult.rows.length === 0) {
@@ -515,7 +515,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
       `UPDATE email_verification_otps 
        SET verified_at = now(), attempts = attempts + 1 
        WHERE id = $1`,
-      [otpRecord.id]
+      [otpRecord.id],
     );
 
     // Activate user account and set email_verified
@@ -524,7 +524,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
        SET is_active = true, email_verified = now() 
        WHERE email = $1 
        RETURNING id, email, display_name, role`,
-      [email]
+      [email],
     );
 
     if (userResult.rows.length === 0) {
@@ -583,7 +583,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
     // Check if user exists
     const userResult = await query(
       "SELECT id, email, is_active FROM users WHERE email = $1",
-      [email]
+      [email],
     );
 
     if (userResult.rows.length === 0) {
@@ -612,7 +612,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
        WHERE email = $1 
        ORDER BY created_at DESC 
        LIMIT 1`,
-      [email]
+      [email],
     );
 
     if (recentOTP.rows.length > 0) {
@@ -639,7 +639,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
     await query(
       `INSERT INTO email_verification_otps (email, otp_code, expires_at) 
        VALUES ($1, $2, $3)`,
-      [email, otpCode, expiresAt]
+      [email, otpCode, expiresAt],
     );
 
     // Send OTP email
@@ -671,18 +671,18 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
 // Google OAuth: Start OAuth flow
 export const googleOAuthStart = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     console.log("🔵 Google OAuth Start - Request received");
     console.log("Query params:", req.query);
-    
+
     const { clientId } = getGoogleClientConfig();
     console.log("✅ Client ID loaded:", clientId?.substring(0, 20) + "...");
-    
+
     const rawRedirect = req.query.redirect as string | undefined;
     console.log("Redirect param:", rawRedirect);
-    
+
     const redirectOrigin = getRedirectOrigin(rawRedirect);
     console.log("Validated redirect origin:", redirectOrigin);
 
@@ -697,7 +697,7 @@ export const googleOAuthStart = async (
 
     const state = createOAuthState(redirectOrigin);
     console.log("✅ State token created");
-    
+
     const redirectUri = getOAuthRedirectUri();
     console.log("Redirect URI:", redirectUri);
 
@@ -710,11 +710,17 @@ export const googleOAuthStart = async (
     authUrl.searchParams.set("access_type", "offline");
     authUrl.searchParams.set("prompt", "consent");
 
-    console.log("🔗 Redirecting to Google:", authUrl.toString().substring(0, 100) + "...");
+    console.log(
+      "🔗 Redirecting to Google:",
+      authUrl.toString().substring(0, 100) + "...",
+    );
     res.redirect(authUrl.toString());
   } catch (error) {
     console.error("❌ Google OAuth start error:", error);
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace",
+    );
     res.status(500).json({
       success: false,
       error: { message: "Failed to initiate Google OAuth" },
@@ -725,14 +731,16 @@ export const googleOAuthStart = async (
 // Google OAuth: Handle callback
 export const googleOAuthCallback = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { code, state, error: oauthError } = req.query;
 
     if (oauthError) {
       console.error("Google OAuth error:", oauthError);
-      const fallbackOrigin = getAllowedRedirectOrigins().values().next().value || "http://localhost:5173";
+      const fallbackOrigin =
+        getAllowedRedirectOrigins().values().next().value ||
+        "http://localhost:5173";
       const errorUrl = buildFrontendCallbackUrl(fallbackOrigin, {
         error: "oauth_failed",
       });
@@ -761,25 +769,25 @@ export const googleOAuthCallback = async (
     const redirectUri = getOAuthRedirectUri();
 
     // Exchange code for tokens
-    const tokenResponse = await fetch(
-      "https://oauth2.googleapis.com/token",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          code: code as string,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: "authorization_code",
-        }),
-      }
-    );
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
 
     const tokenData: GoogleTokenResponse = await tokenResponse.json();
 
     if (tokenData.error || !tokenData.access_token) {
-      console.error("Google token exchange error:", tokenData.error_description);
+      console.error(
+        "Google token exchange error:",
+        tokenData.error_description,
+      );
       const errorUrl = buildFrontendCallbackUrl(stateData.origin, {
         error: "token_exchange_failed",
       });
@@ -792,7 +800,7 @@ export const googleOAuthCallback = async (
       "https://www.googleapis.com/oauth2/v2/userinfo",
       {
         headers: { Authorization: `Bearer ${tokenData.access_token}` },
-      }
+      },
     );
 
     const userInfo: GoogleUserInfo = await userInfoResponse.json();
@@ -829,7 +837,7 @@ export const googleOAuthCallback = async (
     // Find or create user
     const userResult = await query(
       "SELECT id, email, display_name, role, is_active FROM users WHERE email = $1",
-      [userInfo.email]
+      [userInfo.email],
     );
 
     let user: User;
@@ -845,12 +853,14 @@ export const googleOAuthCallback = async (
           userInfo.name || userInfo.email.split("@")[0],
           "student",
           userInfo.picture || null,
-        ]
+        ],
       );
       user = newUserResult.rows[0] as User;
 
-      // Send welcome email
-      await sendWelcomeEmail(userInfo.email, user.display_name || "User");
+      // Send welcome email (fire-and-forget — must not block the auth flow)
+      sendWelcomeEmail(userInfo.email, user.display_name || "User").catch(
+        (err) => console.error("Welcome email failed (non-blocking):", err),
+      );
     } else {
       user = userResult.rows[0] as User;
     }
@@ -878,7 +888,7 @@ export const googleOAuthCallback = async (
         tokenData.access_token,
         tokenData.refresh_token || null,
         expiresAt,
-      ]
+      ],
     );
 
     console.log("✅ OAuth account stored successfully");
@@ -896,7 +906,9 @@ export const googleOAuthCallback = async (
     res.redirect(successUrl);
   } catch (error) {
     console.error("Google OAuth callback error:", error);
-    const fallbackOrigin = getAllowedRedirectOrigins().values().next().value || "http://localhost:5173";
+    const fallbackOrigin =
+      getAllowedRedirectOrigins().values().next().value ||
+      "http://localhost:5173";
     const errorUrl = buildFrontendCallbackUrl(fallbackOrigin, {
       error: "server_error",
     });
