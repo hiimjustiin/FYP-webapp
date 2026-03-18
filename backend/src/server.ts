@@ -4,6 +4,8 @@ import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Import routes
 import authRoutes from "./routes/auth.js";
@@ -17,6 +19,7 @@ import notificationRoutes from "./routes/notifications.js";
 import adminRoutes from "./routes/admin.js";
 import feedbackRoutes from "./routes/feedback.js";
 import reportsRoutes from "./routes/reports.js";
+import teamRoutes from "./routes/teams.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -118,6 +121,15 @@ app.get("/health", (_req, res) => {
     service: "ILA Backend API",
   });
 });
+
+// Static file serving for uploads (POC - use S3 in production)
+// This allows the AI service to download uploaded files via HTTP
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadsPath = path.join(__dirname, "..", "uploads");
+console.log("📁 Serving static uploads from:", uploadsPath);
+app.use("/uploads", express.static(uploadsPath));
+
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -130,6 +142,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/teams", teamRoutes);
 
 // Error handling middleware
 app.use(notFound);

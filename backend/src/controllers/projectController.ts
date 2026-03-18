@@ -3,6 +3,17 @@ import { body, validationResult } from "express-validator";
 import { query } from "../models/database.js";
 import type { Project } from "../models/Project.js";
 import { AuthRequest } from "../middleware/auth.js";
+
+/**
+ * Generate full URL for uploaded files that AI service can access
+ * In Docker: uses INTERNAL_BACKEND_URL (http://backend:3001)
+ * In dev: uses localhost
+ */
+const getFileUrl = (filename: string): string => {
+  const baseUrl = process.env.INTERNAL_BACKEND_URL || "http://localhost:3001";
+  return `${baseUrl}/uploads/${filename}`;
+};
+
 export const createProjectValidation = [
   body("title")
     .trim()
@@ -73,7 +84,7 @@ export const updateProjectValidation = [
 // Get all projects for current user
 export const getProjects = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -89,11 +100,13 @@ export const getProjects = async (
       `SELECT 
          p.*, 
          u.display_name as owner_name,
+         c.code as course_code,
          latest_sub.ai_processing_status,
          latest_sub.ai_processing_error,
          latest_sub.avg_ai_score as interq_score
        FROM projects p
        LEFT JOIN users u ON p.owner_id = u.id
+       LEFT JOIN courses c ON p.course_id = c.id
        LEFT JOIN LATERAL (
          SELECT 
            ps.ai_processing_status,
@@ -112,7 +125,7 @@ export const getProjects = async (
          SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $1
        )
        ORDER BY p.updated_at DESC`,
-      [req.user.id]
+      [req.user.id],
     );
 
     // Get all members for these projects
@@ -131,29 +144,51 @@ export const getProjects = async (
          FROM project_members pm
          LEFT JOIN users u ON pm.user_id = u.id
          WHERE pm.project_id = ANY($1)`,
-        [projectIds]
+        [projectIds],
       );
       membersData = membersResult.rows;
     }
 
     // Group members by project
-    const membersByProject = membersData.reduce((acc, member) => {
-      if (!acc[member.project_id]) {
-        acc[member.project_id] = [];
-      }
-      acc[member.project_id]!.push(member);
-      return acc;
-    }, {} as Record<string, typeof membersData>);
+    const membersByProject = membersData.reduce(
+      (acc, member) => {
+        if (!acc[member.project_id]) {
+          acc[member.project_id] = [];
+        }
+        acc[member.project_id]!.push(member);
+        return acc;
+      },
+      {} as Record<string, typeof membersData>,
+    );
 
     // Attach members to projects and normalize interq_score
-    const projects = projectsResult.rows.map((project) => ({
-      ...project,
-      members: membersByProject[project.id] || [],
-      // Ensure interq_score is a number or null
-      interq_score: project.interq_score
-        ? parseFloat(project.interq_score)
-        : null,
-    }));
+    // For group projects, include the owner in the members list
+    const projects = projectsResult.rows.map((project) => {
+      const projectMembers = membersByProject[project.id] || [];
+
+      // For group projects, include owner as part of the members display
+      // Owner is included with role 'owner' so frontend can identify them
+      if (project.project_type === "group") {
+        const ownerAsMember = {
+          project_id: project.id,
+          user_id: project.owner_id,
+          role: "owner",
+          email: "", // Owner email not fetched in main query, but display_name is
+          display_name: project.owner_name || "Owner",
+        };
+        // Add owner at the beginning of members list
+        projectMembers.unshift(ownerAsMember);
+      }
+
+      return {
+        ...project,
+        members: projectMembers,
+        // Ensure interq_score is a number or null
+        interq_score: project.interq_score
+          ? parseFloat(project.interq_score)
+          : null,
+      };
+    });
 
     res.json({
       success: true,
@@ -171,7 +206,7 @@ export const getProjects = async (
 // Get project by ID
 export const getProject = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -194,7 +229,7 @@ export const getProject = async (
            SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
          )
        )`,
-      [id, req.user.id]
+      [id, req.user.id],
     );
 
     if (result.rows.length === 0) {
@@ -211,21 +246,23 @@ export const getProject = async (
        FROM project_members pm
        LEFT JOIN users u ON pm.user_id = u.id
        WHERE pm.project_id = $1`,
-      [id]
+      [id],
     );
 
     const project = result.rows[0];
     project.members = membersResult.rows;
 
     // Include latest submission id for feedback lookups
+    // No user_id filter — project-level access was already verified above,
+    // and all team members should see the latest submission for group projects.
     let latestSubmissionId: string | null = null;
     if (project.status === "Submitted" || project.status === "Completed") {
       const submissionResult = await query(
         `SELECT id FROM project_submissions
-         WHERE project_id = $1 AND user_id = $2
+         WHERE project_id = $1
          ORDER BY submitted_at DESC
          LIMIT 1`,
-        [id, req.user.id]
+        [id],
       );
       if (submissionResult.rows.length > 0) {
         latestSubmissionId = submissionResult.rows[0].id;
@@ -253,7 +290,7 @@ export const getProject = async (
 // Create new project
 export const createProject = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -340,7 +377,7 @@ export const createProject = async (
       const enrollmentCheck = await query(
         `SELECT user_id FROM course_enrollments 
          WHERE course_id = $1 AND user_id = ANY($2) AND status = 'active'`,
-        [course_id, allUserIds]
+        [course_id, allUserIds],
       );
 
       if (enrollmentCheck.rows.length !== allUserIds.length) {
@@ -357,7 +394,7 @@ export const createProject = async (
       const enrollmentCheck = await query(
         `SELECT user_id FROM course_enrollments 
          WHERE course_id = $1 AND user_id = $2 AND status = 'active'`,
-        [course_id, req.user.id]
+        [course_id, req.user.id],
       );
 
       if (enrollmentCheck.rows.length === 0) {
@@ -389,7 +426,7 @@ export const createProject = async (
           course_id,
           project_type,
           essay_text || null,
-        ]
+        ],
       );
 
       const project = projectResult.rows[0] as Project;
@@ -400,7 +437,7 @@ export const createProject = async (
           await query(
             `INSERT INTO project_members (project_id, user_id, role)
              VALUES ($1, $2, $3)`,
-            [project.id, memberId, "member"]
+            [project.id, memberId, "member"],
           );
         }
       }
@@ -422,7 +459,7 @@ export const createProject = async (
               file.mimetype,
               file.size,
               req.user.id,
-            ]
+            ],
           );
           fileUrls.push(file.filename);
         }
@@ -456,9 +493,10 @@ export const createProject = async (
       const submissionResult = await query(
         `INSERT INTO project_submissions (
           project_id, course_id, user_id, name, submitted_at,
-          essay_text, file_urls, content_hash, ai_processing_status
+          essay_text, file_urls, content_hash, ai_processing_status,
+          iteration_number
         )
-        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending')
+        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending', 1)
         RETURNING id`,
         [
           project.id,
@@ -468,7 +506,7 @@ export const createProject = async (
           essay_text || null,
           JSON.stringify(fileUrls),
           contentHash,
-        ]
+        ],
       );
 
       const submissionId = submissionResult.rows[0].id;
@@ -482,6 +520,10 @@ export const createProject = async (
         ? essay_text
         : "[No essay text provided. Analysis based on uploaded files.]";
 
+      // Convert filenames to full URLs for AI service
+      const fileUrlsForAI = fileUrls.map((filename) => getFileUrl(filename));
+      console.log("📤 Sending files to AI service:", fileUrlsForAI);
+
       fetch(`${AI_SERVICE_URL}/api/evaluate`, {
         method: "POST",
         headers: {
@@ -493,7 +535,7 @@ export const createProject = async (
           course_id: course_id,
           user_id: req.user.id,
           essay_text: essayTextForAI,
-          file_urls: fileUrls,
+          file_urls: fileUrlsForAI,
           reanalyze: false,
         }),
       }).catch((error) => {
@@ -504,15 +546,15 @@ export const createProject = async (
            SET ai_processing_status = 'failed', 
                ai_processing_error = $1 
            WHERE id = $2`,
-          ["Failed to connect to AI service", submissionId]
+          ["Failed to connect to AI service", submissionId],
         ).catch((err) =>
-          console.error("Failed to update submission status:", err)
+          console.error("Failed to update submission status:", err),
         );
 
         query(`UPDATE projects SET status = 'Failed' WHERE id = $1`, [
           project.id,
         ]).catch((err) =>
-          console.error("Failed to update project status:", err)
+          console.error("Failed to update project status:", err),
         );
       });
 
@@ -522,7 +564,7 @@ export const createProject = async (
          FROM project_members pm
          LEFT JOIN users u ON pm.user_id = u.id
          WHERE pm.project_id = $1`,
-        [project.id]
+        [project.id],
       );
 
       const completeProject = {
@@ -569,7 +611,7 @@ export const createProject = async (
 // Update project
 export const updateProject = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const errors = validationResult(req);
@@ -594,8 +636,8 @@ export const updateProject = async (
 
     // Check if user owns the project
     const existingProject = await query(
-      "SELECT owner_id FROM projects WHERE id = $1",
-      [id]
+      "SELECT owner_id, course_id, project_type FROM projects WHERE id = $1",
+      [id],
     );
 
     if (existingProject.rows.length === 0) {
@@ -606,7 +648,9 @@ export const updateProject = async (
       return;
     }
 
-    if (existingProject.rows[0].owner_id !== req.user.id) {
+    const project = existingProject.rows[0];
+
+    if (project.owner_id !== req.user.id) {
       res.status(403).json({
         success: false,
         error: { message: "Permission denied" },
@@ -614,7 +658,82 @@ export const updateProject = async (
       return;
     }
 
-    // Build update query dynamically
+    // Handle member_ids separately if provided (for group projects)
+    const memberIds = updates.member_ids as string[] | undefined;
+    delete updates.member_ids; // Remove from updates to avoid putting in project table
+
+    if (memberIds !== undefined) {
+      if (project.project_type !== "group") {
+        res.status(400).json({
+          success: false,
+          error: { message: "Cannot add members to individual projects" },
+        });
+        return;
+      }
+
+      // Validate all members are enrolled in the course
+      if (memberIds.length > 0) {
+        const enrollmentCheck = await query(
+          `SELECT user_id FROM course_enrollments 
+           WHERE course_id = $1 AND user_id = ANY($2) AND status = 'active'`,
+          [project.course_id, memberIds],
+        );
+
+        if (enrollmentCheck.rows.length !== memberIds.length) {
+          res.status(400).json({
+            success: false,
+            error: {
+              message: "All team members must be enrolled in the course",
+            },
+          });
+          return;
+        }
+      }
+
+      // Sync project_members: remove those not in list, add those in list
+      // First, get current members (excluding owner)
+      const currentMembers = await query(
+        `SELECT user_id FROM project_members WHERE project_id = $1`,
+        [id],
+      );
+      const currentMemberIds = currentMembers.rows.map(
+        (r: { user_id: string }) => r.user_id,
+      );
+
+      // Members to remove
+      const membersToRemove = currentMemberIds.filter(
+        (mId: string) => !memberIds.includes(mId),
+      );
+      // Members to add
+      const membersToAdd = memberIds.filter(
+        (mId) => !currentMemberIds.includes(mId) && mId !== project.owner_id,
+      );
+
+      // Remove members
+      if (membersToRemove.length > 0) {
+        await query(
+          `DELETE FROM project_members 
+           WHERE project_id = $1 AND user_id = ANY($2)`,
+          [id, membersToRemove],
+        );
+      }
+
+      // Add new members
+      for (const memberId of membersToAdd) {
+        await query(
+          `INSERT INTO project_members (project_id, user_id, role)
+           VALUES ($1, $2, 'member')
+           ON CONFLICT (project_id, user_id) DO NOTHING`,
+          [id, memberId],
+        );
+      }
+
+      console.log(
+        `✅ Team members updated for project ${id}: removed ${membersToRemove.length}, added ${membersToAdd.length}`,
+      );
+    }
+
+    // Build update query dynamically for other fields
     const updateFields = [];
     const values = [];
     let paramCount = 1;
@@ -661,6 +780,34 @@ export const updateProject = async (
       paramCount++;
     }
 
+    // If only member_ids were updated and no other fields
+    if (updateFields.length === 0 && memberIds !== undefined) {
+      // Just fetch and return the project with updated members
+      const projectResult = await query(
+        `SELECT p.* FROM projects p WHERE p.id = $1`,
+        [id],
+      );
+
+      const membersResult = await query(
+        `SELECT pm.*, u.email, u.display_name
+         FROM project_members pm
+         LEFT JOIN users u ON pm.user_id = u.id
+         WHERE pm.project_id = $1`,
+        [id],
+      );
+
+      res.json({
+        success: true,
+        data: {
+          project: {
+            ...projectResult.rows[0],
+            members: membersResult.rows,
+          },
+        },
+      });
+      return;
+    }
+
     if (updateFields.length === 0) {
       res.status(400).json({
         success: false,
@@ -674,14 +821,32 @@ export const updateProject = async (
 
     const result = await query(
       `UPDATE projects SET ${updateFields.join(
-        ", "
+        ", ",
       )} WHERE id = $${paramCount} RETURNING *`,
-      values
+      values,
     );
+
+    // Also fetch members if it's a group project
+    let members: unknown[] = [];
+    if (project.project_type === "group") {
+      const membersResult = await query(
+        `SELECT pm.*, u.email, u.display_name
+         FROM project_members pm
+         LEFT JOIN users u ON pm.user_id = u.id
+         WHERE pm.project_id = $1`,
+        [id],
+      );
+      members = membersResult.rows;
+    }
 
     res.json({
       success: true,
-      data: { project: result.rows[0] },
+      data: {
+        project: {
+          ...result.rows[0],
+          members,
+        },
+      },
     });
   } catch (error) {
     console.error("Update project error:", error);
@@ -695,7 +860,7 @@ export const updateProject = async (
 // Delete project
 export const deleteProject = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -711,7 +876,7 @@ export const deleteProject = async (
     // Check if user owns the project
     const result = await query(
       "DELETE FROM projects WHERE id = $1 AND owner_id = $2 RETURNING id",
-      [id, req.user.id]
+      [id, req.user.id],
     );
 
     if (result.rows.length === 0) {
@@ -738,7 +903,7 @@ export const deleteProject = async (
 // Submit project for AI evaluation
 export const submitProject = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -761,7 +926,7 @@ export const submitProject = async (
            SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
          )
        )`,
-      [id, req.user.id]
+      [id, req.user.id],
     );
 
     if (projectResult.rows.length === 0) {
@@ -788,7 +953,7 @@ export const submitProject = async (
     // Check if project has content (essay_text or files)
     const filesResult = await query(
       `SELECT COUNT(*) as file_count FROM project_files WHERE project_id = $1`,
-      [id]
+      [id],
     );
 
     const fileCount = parseInt(filesResult.rows[0].file_count);
@@ -817,17 +982,17 @@ export const submitProject = async (
       // Update project status to Submitted
       await query(
         `UPDATE projects SET status = 'Submitted', updated_at = NOW() WHERE id = $1`,
-        [id]
+        [id],
       );
       console.log(`[Submit] Project status updated to Submitted`);
 
       // Get project files for AI analysis
       const filesData = await query(
         `SELECT file_name, file_url, file_type FROM project_files WHERE project_id = $1`,
-        [id]
+        [id],
       );
       const fileUrls = filesData.rows.map(
-        (fileRow: { file_url: string }) => fileRow.file_url
+        (fileRow: { file_url: string }) => fileRow.file_url,
       );
       console.log(`[Submit] Found ${fileUrls.length} files`);
 
@@ -835,11 +1000,11 @@ export const submitProject = async (
       console.log(`[Submit] Creating submission record...`);
       const submissionResult = await query(
         `INSERT INTO project_submissions (
-          project_id, course_id, user_id, name, submitted_at
+          project_id, course_id, user_id, name, submitted_at, iteration_number
         )
-        VALUES ($1, $2, $3, $4, NOW())
+        VALUES ($1, $2, $3, $4, NOW(), 1)
         RETURNING id`,
-        [id, project.course_id, req.user.id, "Draft 1"]
+        [id, project.course_id, req.user.id, "Submission 1"],
       );
 
       submissionId = submissionResult.rows[0].id;
@@ -869,7 +1034,7 @@ export const submitProject = async (
           JSON.stringify(fileUrls),
           contentHash,
           submissionId,
-        ]
+        ],
       );
       console.log(`[Submit] AI fields updated successfully`);
 
@@ -886,6 +1051,12 @@ export const submitProject = async (
           ? project.essay_text
           : "[No essay text provided. Analysis based on uploaded files.]";
 
+      // Convert filenames to full URLs for AI service
+      const fileUrlsForAI = fileUrls.map((filename: string) =>
+        getFileUrl(filename),
+      );
+      console.log("📤 Sending files to AI service:", fileUrlsForAI);
+
       fetch(`${AI_SERVICE_URL}/api/evaluate`, {
         method: "POST",
         headers: {
@@ -897,7 +1068,7 @@ export const submitProject = async (
           course_id: project.course_id,
           user_id: req.user.id,
           essay_text: essayText,
-          file_urls: fileUrls,
+          file_urls: fileUrlsForAI,
           reanalyze: false,
         }),
       }).catch((error) => {
@@ -908,9 +1079,9 @@ export const submitProject = async (
            SET ai_processing_status = 'failed', 
                ai_processing_error = $1 
            WHERE id = $2`,
-          ["Failed to connect to AI service", submissionId]
+          ["Failed to connect to AI service", submissionId],
         ).catch((err) =>
-          console.error("Failed to update submission status:", err)
+          console.error("Failed to update submission status:", err),
         );
       });
 
@@ -941,11 +1112,313 @@ export const submitProject = async (
 };
 
 /**
+ * Get all submissions for a project
+ */
+export const getProjectSubmissions = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { id } = req.params;
+
+    // Check if user has access to project
+    const projectCheck = await query(
+      `SELECT p.id FROM projects p
+       WHERE p.id = $1 AND (
+         p.owner_id = $2 OR p.id IN (
+           SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
+         )
+       )`,
+      [id, req.user.id],
+    );
+
+    if (projectCheck.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Project not found or access denied" },
+      });
+      return;
+    }
+
+    // Get all submissions for this project ordered by iteration
+    // Include submitter display name so team members can see who submitted each version
+    const submissionsResult = await query(
+      `SELECT 
+        ps.id,
+        ps.name,
+        ps.iteration_number,
+        ps.submitted_at,
+        ps.user_id as submitted_by_id,
+        u.display_name as submitted_by_name,
+        ps.ai_processing_status,
+        ps.ai_overall_summary,
+        ps.ai_estimated_level,
+        ps.previous_submission_id,
+        ps.comparison_analysis,
+        (
+          SELECT AVG(sds.ai_score)::numeric(3,2)
+          FROM submission_dimension_scores sds 
+          WHERE sds.submission_id = ps.id AND sds.ai_score IS NOT NULL
+        ) as avg_score
+       FROM project_submissions ps
+       LEFT JOIN users u ON ps.user_id = u.id
+       WHERE ps.project_id = $1
+       ORDER BY ps.iteration_number ASC`,
+      [id],
+    );
+
+    res.json({
+      success: true,
+      data: {
+        submissions: submissionsResult.rows,
+        total_count: submissionsResult.rows.length,
+      },
+    });
+  } catch (error) {
+    console.error("Get project submissions error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+/**
+ * Resubmit a project with updated content for AI re-evaluation
+ */
+export const resubmitProject = async (
+  req: AuthRequest,
+  res: Response,
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: { message: "Authentication required" },
+      });
+      return;
+    }
+
+    const { id } = req.params;
+    const { essay_text } = req.body;
+
+    // Handle uploaded files from multer
+    const uploadedFiles = Array.isArray(req.files)
+      ? (req.files as Express.Multer.File[])
+      : [];
+
+    // Check if user has access to project
+    const projectResult = await query(
+      `SELECT p.*, u.display_name as owner_name
+       FROM projects p
+       LEFT JOIN users u ON p.owner_id = u.id
+       WHERE p.id = $1 AND (
+         p.owner_id = $2 OR p.id IN (
+           SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
+         )
+       )`,
+      [id, req.user.id],
+    );
+
+    if (projectResult.rows.length === 0) {
+      res.status(404).json({
+        success: false,
+        error: { message: "Project not found or access denied" },
+      });
+      return;
+    }
+
+    const project = projectResult.rows[0];
+
+    // Validate project has content
+    const hasEssayText = essay_text && essay_text.trim().length > 0;
+    const hasFiles = uploadedFiles.length > 0;
+
+    if (!hasEssayText && !hasFiles) {
+      res.status(400).json({
+        success: false,
+        error: {
+          message: "Resubmission must have essay text or files",
+        },
+      });
+      return;
+    }
+
+    // Get the latest submission to determine next iteration number
+    const latestSubmissionResult = await query(
+      `SELECT id, iteration_number FROM project_submissions
+       WHERE project_id = $1
+       ORDER BY iteration_number DESC
+       LIMIT 1`,
+      [id],
+    );
+
+    const previousSubmission = latestSubmissionResult.rows[0];
+    const nextIterationNumber = previousSubmission
+      ? previousSubmission.iteration_number + 1
+      : 1;
+
+    // Start transaction
+    await query("BEGIN");
+
+    try {
+      // Update project essay_text if provided
+      if (hasEssayText) {
+        await query(
+          `UPDATE projects SET essay_text = $1, updated_at = NOW() WHERE id = $2`,
+          [essay_text, id],
+        );
+      }
+
+      // Handle file uploads - store in project_files and collect filenames
+      const fileUrls: string[] = [];
+      if (hasFiles) {
+        for (const file of uploadedFiles) {
+          await query(
+            `INSERT INTO project_files (
+              project_id, file_name, file_url, file_type, 
+              file_size, uploaded_by
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              id,
+              file.originalname,
+              file.filename, // Stored filename on disk
+              file.mimetype,
+              file.size,
+              req.user.id,
+            ],
+          );
+          fileUrls.push(file.filename);
+        }
+        console.log(
+          `📁 Resubmit: Stored ${fileUrls.length} files for project ${id}`,
+        );
+      }
+
+      // Create new submission record
+      const crypto = await import("crypto");
+      const contentForHash = JSON.stringify({
+        essay: essay_text || "",
+        files: [...fileUrls].sort(),
+      });
+      const contentHash = crypto
+        .createHash("sha256")
+        .update(contentForHash)
+        .digest("hex");
+
+      const submissionResult = await query(
+        `INSERT INTO project_submissions (
+          project_id, course_id, user_id, name, submitted_at,
+          essay_text, file_urls, content_hash, ai_processing_status,
+          iteration_number, previous_submission_id
+        )
+        VALUES ($1, $2, $3, $4, NOW(), $5, $6, $7, 'pending', $8, $9)
+        RETURNING id, iteration_number`,
+        [
+          id,
+          project.course_id,
+          req.user.id,
+          `Submission ${nextIterationNumber}`,
+          essay_text || null,
+          JSON.stringify(fileUrls),
+          contentHash,
+          nextIterationNumber,
+          previousSubmission?.id || null,
+        ],
+      );
+
+      const newSubmission = submissionResult.rows[0];
+
+      // Update project status to Processing
+      await query(
+        `UPDATE projects SET status = 'Processing', updated_at = NOW() WHERE id = $1`,
+        [id],
+      );
+
+      await query("COMMIT");
+
+      // Trigger AI evaluation with previous submission for comparison
+      const AI_SERVICE_URL =
+        process.env.AI_SERVICE_URL || "http://backend-ai:8000";
+      const essayTextForAI = hasEssayText
+        ? essay_text
+        : "[No essay text provided. Analysis based on uploaded files.]";
+
+      // Convert filenames to full URLs for AI service
+      const fileUrlsForAI = fileUrls.map((filename) => getFileUrl(filename));
+      console.log("📤 Resubmit: Sending files to AI service:", fileUrlsForAI);
+
+      fetch(`${AI_SERVICE_URL}/api/evaluate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submission_id: newSubmission.id,
+          project_id: id,
+          course_id: project.course_id,
+          user_id: req.user.id,
+          essay_text: essayTextForAI,
+          file_urls: fileUrlsForAI,
+          previous_submission_id: previousSubmission?.id || null,
+          reanalyze: false,
+        }),
+      }).catch((error) => {
+        console.error("Failed to trigger AI evaluation:", error);
+        query(
+          `UPDATE project_submissions 
+           SET ai_processing_status = 'failed', 
+               ai_processing_error = $1 
+           WHERE id = $2`,
+          ["Failed to connect to AI service", newSubmission.id],
+        ).catch((err) =>
+          console.error("Failed to update submission status:", err),
+        );
+
+        query(`UPDATE projects SET status = 'Failed' WHERE id = $1`, [
+          id,
+        ]).catch((err) =>
+          console.error("Failed to update project status:", err),
+        );
+      });
+
+      res.json({
+        success: true,
+        data: {
+          submission_id: newSubmission.id,
+          iteration_number: newSubmission.iteration_number,
+          previous_submission_id: previousSubmission?.id || null,
+          message: `Submission ${nextIterationNumber} created. AI evaluation is in progress.`,
+        },
+      });
+    } catch (error) {
+      await query("ROLLBACK");
+      throw error;
+    }
+  } catch (error) {
+    console.error("Resubmit project error:", error);
+    res.status(500).json({
+      success: false,
+      error: { message: "Internal server error" },
+    });
+  }
+};
+
+/**
  * Get AI feedback for a submission
  */
 export const getSubmissionFeedback = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.user) {
@@ -959,16 +1432,19 @@ export const getSubmissionFeedback = async (
     const { submissionId } = req.params;
 
     // Verify user has access to this submission
+    // Also fetch submitter display name for group project attribution
     const submissionCheck = await query(
-      `SELECT ps.*, p.owner_id, p.course_id
+      `SELECT ps.*, p.owner_id, p.course_id, p.project_type,
+              sub_user.display_name as submitted_by_name
        FROM project_submissions ps
        JOIN projects p ON ps.project_id = p.id
+       LEFT JOIN users sub_user ON ps.user_id = sub_user.id
        WHERE ps.id = $1 AND (
          p.owner_id = $2 OR p.id IN (
            SELECT pm.project_id FROM project_members pm WHERE pm.user_id = $2
          )
        )`,
-      [submissionId, req.user.id]
+      [submissionId, req.user.id],
     );
 
     if (submissionCheck.rows.length === 0) {
@@ -991,13 +1467,19 @@ export const getSubmissionFeedback = async (
        JOIN dimensions d ON sds.dimension_id = d.id
        WHERE sds.submission_id = $1
        ORDER BY d.id`,
-      [submissionId]
+      [submissionId],
     );
 
     // Get project info for submission
     const projectResult = await query(
       `SELECT title FROM projects WHERE id = $1`,
-      [submission.project_id]
+      [submission.project_id],
+    );
+
+    // Get total submission count for this project
+    const countResult = await query(
+      `SELECT COUNT(*) as total_count FROM project_submissions WHERE project_id = $1`,
+      [submission.project_id],
     );
 
     // Format response to match frontend expectations
@@ -1009,7 +1491,12 @@ export const getSubmissionFeedback = async (
           project_id: submission.project_id,
           project_title: projectResult.rows[0]?.title || "",
           name: submission.name,
+          iteration_number: submission.iteration_number || 1,
+          total_submissions: parseInt(countResult.rows[0].total_count) || 1,
+          previous_submission_id: submission.previous_submission_id,
+          comparison_analysis: submission.comparison_analysis,
           submitted_at: submission.submitted_at,
+          submitted_by_name: submission.submitted_by_name || null,
           ai_processing_status: submission.ai_processing_status,
           ai_processing_error: submission.ai_processing_error,
           ai_overall_summary: submission.ai_overall_summary,

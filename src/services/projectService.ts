@@ -14,6 +14,8 @@ export interface Project {
   description?: string;
   owner_id: string;
   status: "Processing" | "Completed" | "Failed";
+  project_type?: "individual" | "group";
+  course_id?: string;
   course_code?: string;
   submission_date?: string;
   interq_score?: number; // 1-3 scale average AI score
@@ -43,6 +45,7 @@ export interface UpdateProjectData {
   course_code?: string;
   submission_date?: string;
   settings?: Record<string, unknown>;
+  member_ids?: string[];
 }
 
 interface ProjectsResponse {
@@ -53,10 +56,60 @@ interface ProjectResponse {
   project: Project;
 }
 
+export interface CreateProjectResponse {
+  project: Project;
+  submission_id: string;
+  message: string;
+}
+
 interface SubmitProjectResponse {
   project: Project;
   submission_id: string;
   message: string;
+}
+
+interface ResubmitProjectResponse {
+  submission_id: string;
+  iteration_number: number;
+  previous_submission_id: string | null;
+  message: string;
+}
+
+export interface SubmissionSummary {
+  id: string;
+  name: string;
+  iteration_number: number;
+  submitted_at: string;
+  submitted_by_id?: string;
+  submitted_by_name?: string;
+  ai_processing_status: string;
+  ai_overall_summary?: string;
+  ai_estimated_level?: string;
+  previous_submission_id?: string;
+  comparison_analysis?: ComparisonAnalysis;
+  avg_score?: number;
+}
+
+export interface DimensionComparison {
+  dimension_id: number;
+  dimension_name: string;
+  previous_score: number;
+  current_score: number;
+  score_change: number;
+  improvement_summary: string;
+}
+
+export interface ComparisonAnalysis {
+  previous_submission_id: string;
+  current_submission_id: string;
+  overall_improvement: "improved" | "regressed" | "unchanged";
+  previous_avg_score: number;
+  current_avg_score: number;
+  score_delta: number;
+  dimension_comparisons: DimensionComparison[];
+  summary: string;
+  key_improvements: string[];
+  key_regressions: string[];
 }
 
 export const projectService = {
@@ -70,7 +123,9 @@ export const projectService = {
     return data.project;
   },
 
-  async createProject(projectData: CreateProjectData): Promise<Project> {
+  async createProject(
+    projectData: CreateProjectData,
+  ): Promise<CreateProjectResponse> {
     // Build FormData for multipart/form-data request with files
     const formData = new FormData();
     formData.append("title", projectData.title);
@@ -93,13 +148,13 @@ export const projectService = {
     }
 
     // Send FormData without custom headers (browser will set Content-Type correctly)
-    const data = await api.post<ProjectResponse>("/projects", formData);
-    return data.project;
+    const data = await api.post<CreateProjectResponse>("/projects", formData);
+    return data;
   },
 
   async updateProject(
     id: string,
-    projectData: UpdateProjectData
+    projectData: UpdateProjectData,
   ): Promise<Project> {
     const data = await api.put<ProjectResponse>(`/projects/${id}`, projectData);
     return data.project;
@@ -110,12 +165,48 @@ export const projectService = {
   },
 
   async submitProject(
-    id: string
+    id: string,
   ): Promise<{ project: Project; submission_id: string; message: string }> {
     const data = await api.post<SubmitProjectResponse>(
       `/projects/${id}/submit`,
-      {}
+      {},
     );
+    return data;
+  },
+
+  async resubmitProject(
+    id: string,
+    essayText?: string,
+    files?: File[],
+  ): Promise<ResubmitProjectResponse> {
+    // Use FormData to support file uploads
+    const formData = new FormData();
+
+    if (essayText) {
+      formData.append("essay_text", essayText);
+    }
+
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append("files", file);
+      });
+    }
+
+    // Send FormData without custom Content-Type header (browser sets it with boundary)
+    const data = await api.post<ResubmitProjectResponse>(
+      `/projects/${id}/resubmit`,
+      formData,
+    );
+    return data;
+  },
+
+  async getProjectSubmissions(
+    projectId: string,
+  ): Promise<{ submissions: SubmissionSummary[]; total_count: number }> {
+    const data = await api.get<{
+      submissions: SubmissionSummary[];
+      total_count: number;
+    }>(`/projects/${projectId}/submissions`);
     return data;
   },
 

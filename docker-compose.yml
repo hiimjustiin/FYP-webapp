@@ -97,8 +97,15 @@ services:
       PORT: 3001
       # AI Service URL (connect to backend-ai container)
       AI_SERVICE_URL: http://backend-ai:8000
+      # Internal backend URL for file downloads (used by AI service)
+      INTERNAL_BACKEND_URL: http://backend:3001
       # Support multiple origins for development and production
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5173}
+      # Google OAuth Configuration
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-http://localhost:3001}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:5173}
       # SMTP Configuration for Email
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}

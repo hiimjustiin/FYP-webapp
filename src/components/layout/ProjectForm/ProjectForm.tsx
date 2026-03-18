@@ -25,10 +25,12 @@ interface ProjectFormProps {
   selectedFiles?: File[];
   isSubmitting?: boolean;
   isEditing?: boolean;
+  hasSubmissions?: boolean;
+  projectId?: string;
   onSubmit: (
     data: ProjectFormData,
     teamMembers: Member[],
-    files: File[]
+    files: File[],
   ) => void;
   onCancel: () => void;
 }
@@ -44,6 +46,8 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   selectedFiles: initialFiles = [],
   isSubmitting = false,
   isEditing = false,
+  hasSubmissions = false,
+  projectId,
   onSubmit,
   onCancel,
 }) => {
@@ -54,7 +58,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       projectType: "",
       description: "",
       text: "",
-    }
+    },
   );
 
   const [selectedTeamMembers, setSelectedTeamMembers] =
@@ -68,7 +72,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [courseOptions, setCourseOptions] = useState<DropdownOption[]>([]);
 
   const [selectedCourse, setSelectedCourse] = useState<DropdownOption | null>(
-    null
+    null,
   );
 
   const [selectedProjectType, setSelectedProjectType] =
@@ -76,7 +80,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       initialData && initialData.projectType
         ? projectTypeOptions.find((p) => p.id === initialData.projectType) ||
             null
-        : null
+        : null,
     );
 
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -106,7 +110,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         // Set initial selected course if editing
         if (initialData && initialData.course) {
           const initialCourse = options.find(
-            (c) => c.id === initialData.course
+            (c) => c.id === initialData.course,
           );
           if (initialCourse) {
             setSelectedCourse(initialCourse);
@@ -117,7 +121,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         setAlertType("error");
         setAlertTitle("Error");
         setAlertMsg(
-          "Failed to load your enrolled courses. Please refresh the page."
+          "Failed to load your enrolled courses. Please refresh the page.",
         );
         setIsAlertOpen(true);
       } finally {
@@ -141,7 +145,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         setIsLoadingMembers(true);
         setEnrolledStudentsFetchError(false);
         const students = await courseService.getEnrolledStudents(
-          selectedCourse.id
+          selectedCourse.id,
         );
 
         // Convert students to Member format
@@ -277,7 +281,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         projectType: selectedProjectType?.id || "",
       },
       selectedTeamMembers,
-      selectedFiles
+      selectedFiles,
     );
   };
 
@@ -311,6 +315,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                         course first.
                       </p>
                     </div>
+                  ) : isEditing && selectedCourse ? (
+                    <div className="p-3 border rounded bg-gray-100">
+                      <p className="text-sm text-gray-700">
+                        {selectedCourse.label}
+                      </p>
+                    </div>
                   ) : (
                     <Dropdown
                       options={courseOptions}
@@ -340,7 +350,13 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                   <label className="caption text-[var(--color-grey-55)] mb-2 block">
                     Project Type
                   </label>
-                  {!selectedCourse ? (
+                  {isEditing && selectedProjectType ? (
+                    <div className="p-3 border rounded bg-gray-100">
+                      <p className="text-sm text-gray-700">
+                        {selectedProjectType.label}
+                      </p>
+                    </div>
+                  ) : !selectedCourse ? (
                     <div className="p-3 border rounded bg-gray-50">
                       <p className="text-sm text-gray-500">
                         Please select a course first
@@ -433,7 +449,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     ) : (
                       <SearchBar
                         placeholder="Search and select team members"
-                        members={availableMembers}
+                        members={availableMembers.filter(
+                          (m) =>
+                            !selectedTeamMembers.find((s) => s.id === m.id),
+                        )}
                         onSelect={(member) => {
                           if (
                             !selectedTeamMembers.find((m) => m.id === member.id)
@@ -464,7 +483,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                                 type="button"
                                 onClick={() =>
                                   setSelectedTeamMembers((prev) =>
-                                    prev.filter((m) => m.id !== member.id)
+                                    prev.filter((m) => m.id !== member.id),
                                   )
                                 }
                                 className="text-red-600 hover:text-red-800 text-sm font-bold"
@@ -480,7 +499,28 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                 )}
 
                 {/* Essay Body - Text or File Upload */}
-                {selectedProjectType && (
+                {selectedProjectType && isEditing && hasSubmissions ? (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      📝 Submissions exist for this project
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      To submit a new version, go to the{" "}
+                      {projectId ? (
+                        <a
+                          href={`/project/${projectId}`}
+                          className="underline font-medium hover:text-blue-900"
+                        >
+                          project detail page
+                        </a>
+                      ) : (
+                        "project detail page"
+                      )}{" "}
+                      and click &quot;Submit New Version&quot;. Previous
+                      submissions are preserved.
+                    </p>
+                  </div>
+                ) : selectedProjectType ? (
                   <div>
                     <label className="caption text-[var(--color-grey-55)] mb-2 block">
                       Essay Body{" "}
@@ -510,17 +550,17 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     {/* File Upload Section */}
                     <div className="mb-4 p-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
                       <label className="text-sm text-gray-700 mb-2 block font-medium">
-                        OR Upload Essay Files
+                        OR Upload PDF File
                       </label>
                       <p className="text-xs text-gray-600 mb-3">
-                        Upload PDF, Word documents, or other supported files.
-                        You can select multiple files.
+                        Upload a PDF file for AI evaluation. Only PDF format is
+                        currently supported.
                       </p>
                       <FileDrop
                         onFilesSelected={handleFilesSelected}
-                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.pptx,.xlsx"
+                        accept=".pdf"
                         multiple={true}
-                        maxSize={10 * 1024 * 1024}
+                        maxSize={50 * 1024 * 1024}
                       />
                     </div>
 
@@ -568,7 +608,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                         </div>
                       )}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -605,7 +645,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             setIsAlertOpen(false);
             setAlertType("info");
             setAlertTitle(
-              isEditing ? "Review your changes" : "Review your submission"
+              isEditing ? "Review your changes" : "Review your submission",
             );
             setPrimaryButtonText(isEditing ? "Update" : "Create");
           }

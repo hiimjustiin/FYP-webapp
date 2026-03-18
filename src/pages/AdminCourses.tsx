@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
   adminService,
   type AdminCourse,
@@ -11,6 +12,7 @@ import TextArea from "../components/ui/TextArea/TextArea";
 import Dropdown from "../components/ui/Dropdown/Dropdown";
 import Table from "../components/ui/Table/Table";
 import SearchBar from "../components/ui/SearchBar/SearchBar";
+import { AlertDialog } from "../components/ui/AlertDialog/AlertDialog";
 
 export default function AdminCourses() {
   const [courses, setCourses] = useState<AdminCourse[]>([]);
@@ -21,6 +23,12 @@ export default function AdminCourses() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState<AdminCourse | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<AdminCourse | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     loadData();
@@ -48,22 +56,35 @@ export default function AdminCourses() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
+    setPage(1);
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this course? This action cannot be undone."
-      )
-    )
-      return;
+  const handleDeleteClick = (course: AdminCourse) => {
+    setSelectedCourse(course);
+    setDeleteError("");
+    setDeleteDialogOpen(true);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!selectedCourse) return;
     try {
-      await adminService.deleteCourse(courseId);
+      setDeleting(true);
+      setDeleteError("");
+      await adminService.deleteCourse(selectedCourse.id);
+      setDeleteDialogOpen(false);
+      setSelectedCourse(null);
       loadData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete course");
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete course");
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedCourse(null);
+    setDeleteError("");
   };
 
   const filteredCourses = courses.filter(
@@ -72,6 +93,12 @@ export default function AdminCourses() {
       course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.instructor_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / ITEMS_PER_PAGE));
+  const pagedCourses = filteredCourses.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
   );
 
   return (
@@ -86,19 +113,7 @@ export default function AdminCourses() {
             </p>
           </div>
           <Button variant="blue" onClick={() => setShowCreateModal(true)}>
-            <svg
-              className="w-5 h-5 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
+            <Plus className="w-5 h-5 mr-2" strokeWidth={2.5} />
             Create Course
           </Button>
         </div>
@@ -130,6 +145,7 @@ export default function AdminCourses() {
               {searchTerm ? "No courses match your search" : "No courses found"}
             </div>
           ) : (
+            <>
             <Table
               noBorder
               data={[
@@ -143,7 +159,7 @@ export default function AdminCourses() {
                   "Submissions",
                   "Actions",
                 ],
-                ...filteredCourses.map((course) => [
+                ...pagedCourses.map((course) => [
                   course.code,
                   course.title,
                   course.instructor_name || "Unassigned",
@@ -160,21 +176,47 @@ export default function AdminCourses() {
                     <Button
                       variant="blue"
                       onClick={() => setEditingCourse(course)}
-                      className="text-xs"
+                      className="p-1.5"
+                      title="Edit course"
                     >
-                      Edit
+                      <Pencil className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                     <Button
                       variant="red"
-                      onClick={() => handleDeleteCourse(course.id)}
-                      className="text-xs"
+                      onClick={() => handleDeleteClick(course)}
+                      className="p-1.5"
+                      title="Delete course"
                     >
-                      Delete
+                      <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                     </Button>
                   </div>,
                 ]),
               ]}
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-6">
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </Button>
+                <span className="px-4 py-2 text-gray-700">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="grey"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </div>
 
@@ -193,6 +235,27 @@ export default function AdminCourses() {
               setShowCreateModal(false);
               setEditingCourse(null);
             }}
+          />
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {deleteDialogOpen && selectedCourse && (
+          <AlertDialog
+            isOpen={deleteDialogOpen}
+            type={deleteError ? "error" : "warning"}
+            title={deleteError ? "Deletion Failed" : "Delete Course"}
+            message={
+              deleteError
+                ? `${deleteError}\n\nPlease try again.`
+                : `Are you sure you want to delete "${selectedCourse.title}"? This action cannot be undone.`
+            }
+            primaryButtonText={
+              deleteError ? "Try Again" : deleting ? "Deleting..." : "Delete"
+            }
+            secondaryButtonText="Cancel"
+            onPrimaryAction={handleConfirmDelete}
+            onSecondaryAction={handleCancelDelete}
+            closeOnOverlayClick={false}
           />
         )}
       </div>

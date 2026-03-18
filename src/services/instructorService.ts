@@ -19,6 +19,9 @@ export interface Dimension {
   short_label?: string;
   description?: string;
   color_hex: string;
+  rubric_level_1?: string;
+  rubric_level_2?: string;
+  rubric_level_3?: string;
   is_active: boolean;
 }
 
@@ -64,6 +67,8 @@ export interface CourseSubmission {
   project_title: string;
   project_id: string;
   scores_count: number;
+  avg_score: number;
+  has_instructor_feedback: boolean;
 }
 
 export interface DimensionScore {
@@ -93,6 +98,8 @@ export interface SubmissionDetails {
     status: string;
     file_url: string;
     file_type: string;
+    essay_text?: string | null;
+    file_urls?: string[] | null;
     student_name: string;
     student_email: string;
     student_id: string;
@@ -100,6 +107,7 @@ export interface SubmissionDetails {
     project_description: string;
     course_code: string;
     course_title: string;
+    dimension_ids?: number[];
     ai_overall_summary?: string | null;
     ai_overall_strengths?: string[] | null;
     ai_priority_improvements?: string[] | null;

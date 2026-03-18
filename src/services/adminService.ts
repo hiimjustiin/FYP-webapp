@@ -64,12 +64,31 @@ export interface AdminSubmission {
   file_url: string;
   submitted_at: string;
   scores_count: number;
+  avg_score: number;
 }
 
 export interface Instructor {
   id: string;
   email: string;
   display_name: string;
+}
+
+export interface AdminProject {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  project_type: "individual" | "group";
+  owner_id: string;
+  owner_name: string;
+  owner_email: string;
+  course_id?: string;
+  course_code?: string;
+  course_title?: string;
+  member_count: number;
+  submission_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Dimension {
@@ -112,8 +131,8 @@ export const adminService = {
       Object.fromEntries(
         Object.entries(params || {})
           .filter(([, v]) => v !== undefined && v !== null && v !== "")
-          .map(([k, v]) => [k, String(v)])
-      )
+          .map(([k, v]) => [k, String(v)]),
+      ),
     ).toString();
     const data = await api.get<{
       users: AdminUser[];
@@ -142,11 +161,11 @@ export const adminService = {
 
   async updateUser(
     userId: string,
-    updates: Partial<Omit<AdminUser, "id" | "email" | "created_at">>
+    updates: Partial<Omit<AdminUser, "id" | "email" | "created_at">>,
   ): Promise<AdminUser> {
     const data = await api.put<{ user: AdminUser }>(
       `/admin/users/${userId}`,
-      updates
+      updates,
     );
     return data.user;
   },
@@ -172,7 +191,7 @@ export const adminService = {
   }): Promise<AdminCourse> {
     const data = await api.post<{ course: AdminCourse }>(
       "/admin/courses",
-      courseData
+      courseData,
     );
     return data.course;
   },
@@ -181,11 +200,11 @@ export const adminService = {
     courseId: string,
     updates: Partial<Omit<AdminCourse, "id" | "created_at">> & {
       dimension_ids?: number[];
-    }
+    },
   ): Promise<AdminCourse> {
     const data = await api.put<{ course: AdminCourse }>(
       `/admin/courses/${courseId}`,
-      updates
+      updates,
     );
     return data.course;
   },
@@ -203,11 +222,11 @@ export const adminService = {
       Object.fromEntries(
         Object.entries(params || {})
           .filter(([, v]) => v !== undefined && v !== null && v !== "")
-          .map(([k, v]) => [k, String(v)])
-      )
+          .map(([k, v]) => [k, String(v)]),
+      ),
     ).toString();
     const data = await api.get<{ submissions: AdminSubmission[] }>(
-      `/admin/submissions${queryString ? `?${queryString}` : ""}`
+      `/admin/submissions${queryString ? `?${queryString}` : ""}`,
     );
     return data.submissions;
   },
@@ -219,15 +238,51 @@ export const adminService = {
   // Utility
   async getInstructors(): Promise<Instructor[]> {
     const data = await api.get<{ instructors: Instructor[] }>(
-      "/admin/instructors"
+      "/admin/instructors",
     );
     return data.instructors;
   },
 
   async getDimensions(): Promise<Dimension[]> {
     const data = await api.get<{ dimensions: Dimension[] }>(
-      "/admin/dimensions"
+      "/admin/dimensions",
     );
     return data.dimensions;
+  },
+
+  // Project management
+  async getProjects(params?: {
+    search?: string;
+    projectType?: string;
+    courseId?: string;
+  }): Promise<AdminProject[]> {
+    const queryString = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(params || {})
+          .filter(([, v]) => v !== undefined && v !== null && v !== "")
+          .map(([k, v]) => [k, String(v)]),
+      ),
+    ).toString();
+    const data = await api.get<{ projects: AdminProject[] }>(
+      `/admin/projects${queryString ? `?${queryString}` : ""}`,
+    );
+    return data.projects;
+  },
+
+  async updateProject(
+    projectId: string,
+    updates: { title?: string; description?: string; status?: string },
+  ): Promise<AdminProject> {
+    const data = await api.put<{ project: AdminProject }>(
+      `/admin/projects/${projectId}`,
+      updates,
+    );
+    return data.project;
+  },
+
+  async deleteProject(projectId: string, force?: boolean): Promise<void> {
+    await api.delete(
+      `/admin/projects/${projectId}${force ? "?force=true" : ""}`,
+    );
   },
 };

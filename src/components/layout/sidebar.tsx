@@ -64,6 +64,12 @@ const Sidebar: React.FC = () => {
       path: "/instructor",
     },
     {
+      name: "Courses",
+      icon: StarIcon,
+      iconFilled: StarIconFilled,
+      path: "/instructor/courses",
+    },
+    {
       name: "Students",
       icon: TeamIcon,
       iconFilled: TeamIconFilled,
@@ -103,6 +109,12 @@ const Sidebar: React.FC = () => {
       iconFilled: ReportIconFilled,
       path: "/admin/submissions",
     },
+    {
+      name: "Projects",
+      icon: StarIcon,
+      iconFilled: StarIconFilled,
+      path: "/admin/projects",
+    },
   ];
 
   // Determine which navigation items to show based on user role
@@ -110,8 +122,8 @@ const Sidebar: React.FC = () => {
     user?.role === "admin"
       ? adminNavItems
       : user?.role === "instructor"
-      ? instructorNavItems
-      : studentNavItems;
+        ? instructorNavItems
+        : studentNavItems;
 
   const isActive = (path: string) => {
     // exact match for home so it doesn't light up everywhere
@@ -127,6 +139,14 @@ const Sidebar: React.FC = () => {
       return (
         location.pathname === "/instructor/students" ||
         location.pathname.startsWith("/instructor/students/")
+      );
+    }
+
+    // For instructor courses, match exact or child routes
+    if (path === "/instructor/courses") {
+      return (
+        location.pathname === "/instructor/courses" ||
+        location.pathname.startsWith("/instructor/courses/")
       );
     }
 

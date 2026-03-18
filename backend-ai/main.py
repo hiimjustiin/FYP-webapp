@@ -17,7 +17,9 @@ from models.evaluation import (
     AnalyzeSubmissionResponse,
     GetFeedbackResponse,
     HealthCheckResponse,
-    InstructorOverrideRequest
+    InstructorOverrideRequest,
+    ComparisonAnalysis,
+    DimensionComparison
 )
 from agents.project_evaluator import get_evaluator_agent
 from services.document_parser import DocumentParser
@@ -78,7 +80,8 @@ async def process_submission_async(
     submission_id: str,
     essay_text: str,
     file_urls: list[str],
-    content_hash: str
+    content_hash: str,
+    previous_submission_id: str | None = None
 ):
     """
     Background task to process submission evaluation.
@@ -88,11 +91,12 @@ async def process_submission_async(
         essay_text: Essay text content
         file_urls: List of file URLs
         content_hash: Content hash for caching
+        previous_submission_id: Previous submission ID for comparison (optional)
     """
     db_service = get_db_service()
     
     try:
-        logger.info("Starting submission processing", submission_id=submission_id)
+        logger.info("Starting submission processing", submission_id=submission_id, has_previous=bool(previous_submission_id))
         
         # Update status to processing
         await db_service.update_submission_status(submission_id, 'processing')
@@ -122,12 +126,31 @@ async def process_submission_async(
         # Save results to database
         await db_service.save_evaluation_result(result, content_hash)
         
+        # Generate comparison analysis if previous submission exists
+        comparison_analysis = None
+        if previous_submission_id:
+            try:
+                comparison_analysis = await generate_comparison_analysis(
+                    db_service, 
+                    submission_id, 
+                    previous_submission_id,
+                    result
+                )
+                
+                if comparison_analysis:
+                    await db_service.save_comparison_analysis(submission_id, comparison_analysis)
+                    logger.info("Comparison analysis saved", submission_id=submission_id)
+            except Exception as e:
+                logger.error("Failed to generate comparison", error=str(e))
+                # Don't fail the whole evaluation if comparison fails
+        
         logger.info(
             "Submission processing completed",
             submission_id=submission_id,
             tokens_used=result.tokens_used,
             estimated_cost=result.estimated_cost,
-            processing_time=result.processing_time
+            processing_time=result.processing_time,
+            has_comparison=bool(comparison_analysis)
         )
         
     except Exception as e:
@@ -140,6 +163,105 @@ async def process_submission_async(
         
         # Update status to failed
         await db_service.update_submission_status(submission_id, 'failed', str(e))
+
+
+async def generate_comparison_analysis(
+    db_service,
+    current_submission_id: str,
+    previous_submission_id: str,
+    current_result
+) -> ComparisonAnalysis | None:
+    """
+    Generate comparison analysis between current and previous submissions.
+    
+    Args:
+        db_service: Database service instance
+        current_submission_id: Current submission ID
+        previous_submission_id: Previous submission ID
+        current_result: Current evaluation result
+        
+    Returns:
+        ComparisonAnalysis or None if comparison not possible
+    """
+    from config import RUBRIC_CRITERIA
+    
+    # Get previous submission scores
+    previous_feedback = await db_service.get_submission_feedback(previous_submission_id)
+    
+    if not previous_feedback or previous_feedback['processing_status'] != 'completed':
+        logger.warning("Previous submission not completed, skipping comparison", previous_id=previous_submission_id)
+        return None
+    
+    previous_dimensions = previous_feedback.get('dimensions', [])
+    if not previous_dimensions:
+        return None
+    
+    # Create dimension score lookup from previous submission
+    previous_scores = {d['dimension_id']: d.get('ai_score', 0) for d in previous_dimensions}
+    
+    # Build dimension comparisons
+    dimension_comparisons = []
+    improvements = []
+    regressions = []
+    
+    for dim_score in current_result.dimension_scores:
+        prev_score = previous_scores.get(dim_score.dimension_id, 0)
+        curr_score = dim_score.score
+        score_change = curr_score - prev_score
+        
+        dim_name = RUBRIC_CRITERIA.get(dim_score.dimension_id, {}).get('label', f'Dimension {dim_score.dimension_id}')
+        
+        comparison = DimensionComparison(
+            dimension_id=dim_score.dimension_id,
+            dimension_name=dim_name,
+            previous_score=prev_score,
+            current_score=curr_score,
+            score_change=score_change,
+            improvement_summary=f"{'Improved' if score_change > 0 else 'Regressed' if score_change < 0 else 'Unchanged'} from {prev_score} to {curr_score}"
+        )
+        dimension_comparisons.append(comparison)
+        
+        if score_change > 0:
+            improvements.append(f"{dim_name}: +{score_change}")
+        elif score_change < 0:
+            regressions.append(f"{dim_name}: {score_change}")
+    
+    # Calculate averages
+    previous_avg = sum(previous_scores.values()) / len(previous_scores) if previous_scores else 0
+    current_avg = sum(d.score for d in current_result.dimension_scores) / len(current_result.dimension_scores)
+    score_delta = current_avg - previous_avg
+    
+    # Determine overall improvement status
+    if score_delta > 0.1:
+        overall_improvement = "improved"
+    elif score_delta < -0.1:
+        overall_improvement = "regressed"
+    else:
+        overall_improvement = "unchanged"
+    
+    # Generate summary
+    summary_parts = []
+    if improvements:
+        summary_parts.append(f"Improved in {len(improvements)} dimension(s)")
+    if regressions:
+        summary_parts.append(f"Regressed in {len(regressions)} dimension(s)")
+    if not improvements and not regressions:
+        summary_parts.append("Scores remained consistent across all dimensions")
+    
+    summary = f"Average score changed from {previous_avg:.2f} to {current_avg:.2f} ({'+' if score_delta >= 0 else ''}{score_delta:.2f}). {'. '.join(summary_parts)}."
+    
+    return ComparisonAnalysis(
+        previous_submission_id=previous_submission_id,
+        current_submission_id=current_submission_id,
+        overall_improvement=overall_improvement,
+        previous_avg_score=round(previous_avg, 2),
+        current_avg_score=round(current_avg, 2),
+        score_delta=round(score_delta, 2),
+        dimension_comparisons=dimension_comparisons,
+        summary=summary,
+        key_improvements=improvements[:3],
+        key_regressions=regressions[:3]
+    )
 
 
 @app.get("/health", response_model=HealthCheckResponse)
@@ -219,10 +341,15 @@ async def analyze_submission(
             submission_id=request.submission_id,
             essay_text=request.essay_text,
             file_urls=request.file_urls or [],
-            content_hash=content_hash
+            content_hash=content_hash,
+            previous_submission_id=request.previous_submission_id
         )
         
-        logger.info("Submission queued for processing", submission_id=request.submission_id)
+        logger.info(
+            "Submission queued for processing", 
+            submission_id=request.submission_id,
+            has_previous=bool(request.previous_submission_id)
+        )
         
         return AnalyzeSubmissionResponse(
             success=True,

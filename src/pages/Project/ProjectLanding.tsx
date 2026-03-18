@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { SquarePen, RefreshCw, Trash2, Loader2 } from "lucide-react";
 
 import Button from "../../components/ui/Button/Button";
 import SearchBar, {
@@ -8,6 +9,7 @@ import SearchBar, {
 import Table, { type TableData } from "../../components/ui/Table/Table";
 import MemberGroup from "../../components/ui/MemberIcon/MemberGroup";
 import { projectService, type Project } from "../../services/projectService";
+import { useAuth } from "../../contexts/AuthContext";
 
 /** ------------------------------- Helpers ------------------------------- */
 const formatDate = (iso: string) =>
@@ -103,6 +105,26 @@ const LoadingSpinner = () => (
   </div>
 );
 
+/** Project Type Badge Component */
+const ProjectTypeBadge = ({
+  projectType,
+}: {
+  projectType: "individual" | "group" | undefined;
+}) => {
+  if (projectType === "group") {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+        👥 Group
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+      👤 Individual
+    </span>
+  );
+};
+
 /** Status Badge Component */
 const StatusBadge = ({ status, error }: { status: string; error?: string }) => {
   if (status === "Processing") {
@@ -141,6 +163,7 @@ const StatusBadge = ({ status, error }: { status: string; error?: string }) => {
 /** ------------------------------ Component ------------------------------ */
 const ProjectLanding = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // State
   const [query, setQuery] = useState("");
@@ -151,7 +174,7 @@ const ProjectLanding = () => {
   // Check if any projects are still processing
   const hasProcessingProjects = useMemo(
     () => projects.some((p) => p.status === "Processing"),
-    [projects]
+    [projects],
   );
 
   // Fetch projects function (reusable for polling)
@@ -232,8 +255,9 @@ const ProjectLanding = () => {
     const header: TableData[number] = [
       "Course",
       "Project Name",
+      "Type",
       "Date",
-      "Member",
+      "Members",
       "InterQ Scores",
       "Status",
       "Action",
@@ -241,6 +265,7 @@ const ProjectLanding = () => {
 
     const rows: TableData[number][] = filteredProjects.map((p) => {
       // Convert project members to Member format
+      // For group projects, members now include the owner (from backend)
       const projectMembers: Member[] = p.members.map((m) => {
         const names = (m.display_name || m.email).split(" ");
         const initials =
@@ -252,23 +277,30 @@ const ProjectLanding = () => {
           id: m.user_id,
           name: m.display_name || m.email,
           initials: initials.toUpperCase(),
-          backgroundColor: "auto",
+          backgroundColor: m.role === "owner" ? "purple" : "auto", // Highlight owner with purple
         };
       });
 
       return [
         p.course_code || "—",
         p.title,
+        <ProjectTypeBadge key={`type-${p.id}`} projectType={p.project_type} />,
         p.submission_date
           ? formatDate(p.submission_date)
           : formatDate(p.created_at),
-        <MemberGroup
-          key={`mg-${p.id}`}
-          members={projectMembers}
-          size="small"
-          maxVisible={6}
-          layout="horizontal"
-        />,
+        projectMembers.length > 0 ? (
+          <MemberGroup
+            key={`mg-${p.id}`}
+            members={projectMembers}
+            size="small"
+            maxVisible={6}
+            layout="horizontal"
+          />
+        ) : (
+          <span key={`mg-${p.id}`} className="text-gray-400 text-sm">
+            Just you
+          </span>
+        ),
         // InterQ Scores - show stars for completed, spinner for processing
         p.status === "Processing" ? (
           <span key={`score-${p.id}`} className="text-gray-400 text-sm">
@@ -288,31 +320,62 @@ const ProjectLanding = () => {
           error={p.ai_processing_error}
         />,
         // Actions
-        <div key={`act-${p.id}`} className="flex gap-2">
-          <Button
-            variant="blue"
-            onClick={() => navigate(`/projects/${p.id}`)}
-            disabled={p.status === "Processing"}
-          >
-            {p.status === "Processing" ? "Processing..." : "Open"}
-          </Button>
+        <div key={`act-${p.id}`} className="flex items-center gap-1">
+          {p.status === "Processing" ? (
+            <span className="p-2 text-gray-400" title="Processing...">
+              <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} />
+            </span>
+          ) : (
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-[#181C62] hover:bg-[#181C62]/10 transition-all duration-150"
+              onClick={() => navigate(`/projects/${p.id}`)}
+              title="Open project"
+            >
+              <SquarePen className="w-5 h-5" strokeWidth={2.5} />
+            </button>
+          )}
           {p.status === "Failed" && (
-            <Button
-              variant="grey"
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-amber-600 hover:bg-amber-50 transition-all duration-150"
               onClick={() => {
                 // TODO: Implement retry functionality
                 alert("Retry functionality coming soon");
               }}
+              title="Retry evaluation"
             >
-              Retry
-            </Button>
+              <RefreshCw className="w-5 h-5" strokeWidth={2.5} />
+            </button>
+          )}
+          {p.project_type !== "group" && p.owner_id === user?.id && (
+            <button
+              className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
+              onClick={async () => {
+                const confirmed = confirm(
+                  `Delete "${p.title}"?\n\nThis will permanently remove this project and all its submissions, evaluations, and feedback. This cannot be undone.`,
+                );
+                if (!confirmed) return;
+                try {
+                  await projectService.deleteProject(p.id);
+                  loadProjects();
+                } catch (err) {
+                  alert(
+                    err instanceof Error
+                      ? err.message
+                      : "Failed to delete project",
+                  );
+                }
+              }}
+              title="Delete project"
+            >
+              <Trash2 className="w-5 h-5" strokeWidth={2.5} />
+            </button>
           )}
         </div>,
       ];
     });
 
     return [header, ...rows];
-  }, [filteredProjects, navigate]);
+  }, [filteredProjects, navigate, loadProjects, user?.id]);
 
   // SearchBar handlers
   const handleSearch = (q: string) => setQuery(q);
