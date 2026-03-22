@@ -32,7 +32,7 @@ df = pd.read_excel(file_path)
 df.columns = df.columns.str.strip()
 
 # Testing all 100 rows
-df_subset = df.head(150).copy()
+df_subset = df.head(50).copy()
 # To specifically target the missing ones:
 #df_subset = df.iloc[[87, 91]] # Index 87 is Row 89, Index 91 is Row 93
 
