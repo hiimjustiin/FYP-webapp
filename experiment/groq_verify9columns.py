@@ -40,7 +40,7 @@ df.columns = df.columns.str.strip()
 # Testing all 100 rows
 #df_subset = df.head(50).copy()
 # To specifically target the missing ones:
-df_subset = df.iloc[50: 100] # Running rows 50 to 100 on using another API key
+df_subset = df.iloc[100: 150] # Running rows 50 to 100 on using another API key
 
 # 4. Reference Standards (Keeping your consistency)
 ref_score_1 = "Critique: Missing depth in problem framing."
