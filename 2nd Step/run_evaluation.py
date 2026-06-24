@@ -4,12 +4,20 @@ import json
 import time
 import re
 from tqdm import tqdm
-from groq import Groq
+# from groq import Groq
+from openai import OpenAI
 from dotenv import load_dotenv
 
 # 1. Initialize local environment and Groq Client
 load_dotenv() # Automatically picks up your local .env file
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+api_key = os.getenv("OPENAI_API_KEY")
+print(f"DEBUG: My API key starts with: {str(api_key)[:5]}... and is {len(str(api_key))} characters long.")
+
+# Create the client so Python can connect to the server
+client = OpenAI(
+    api_key=api_key
+)
 
 DIMENSIONS = [
     "Frame the problem", "Stakeholder consideration",
@@ -49,7 +57,7 @@ def extract_atomic_statements(feedback_text):
     try:
         completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
+            model="gpt-5.4",
             response_format={"type": "json_object"},
             temperature=0.1,
         )
@@ -85,7 +93,7 @@ def align_statements(human_statements, ai_statements):
     try:
         completion = client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
-            model="llama-3.1-8b-instant",
+            model="gpt-5.4",
             response_format={"type": "json_object"},
             temperature=0.1,
         )
@@ -122,8 +130,8 @@ def main():
 
     # --- CHUNK SETTINGS (MANUALLY ADJUST THIS FOR BATCHES) ---
     # Example: To run essays 6 through 25, use index 5 to 25
-    start_idx = 28
-    end_idx = 50
+    start_idx = 283
+    end_idx = 286
     
     output_report_path = f'Evaluation_Report_Essays_{start_idx}_to_{end_idx}.csv'
     print(f"Starting analysis for essays index {start_idx} to {end_idx}...")
