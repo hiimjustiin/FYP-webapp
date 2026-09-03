@@ -6,9 +6,15 @@ import time
 import datetime
 
 # 1. Setup
-load_dotenv("../.env") 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-#MODEL_ID = "llama-3.3-70b-versatile"
+# This will try the current folder first, then the parent folder
+if not load_dotenv():
+    load_dotenv("../.env")
+
+api_key = os.getenv("GROQ_API_KEY")
+if not api_key:
+    raise ValueError("GROQ_API_KEY not found! Check if your .env file exists and contains the key.")
+
+client = Groq(api_key=api_key)
 MODEL_ID = "llama-3.1-8b-instant"
 
 # 2. Define the exact column pairs from C to T
@@ -32,9 +38,9 @@ df = pd.read_excel(file_path)
 df.columns = df.columns.str.strip()
 
 # Testing all 100 rows
-df_subset = df.head(50).copy()
+#df_subset = df.head(50).copy()
 # To specifically target the missing ones:
-#df_subset = df.iloc[[87, 91]] # Index 87 is Row 89, Index 91 is Row 93
+df_subset = df.iloc[100: 150] # Running rows 50 to 100 on using another API key
 
 # 4. Reference Standards (Keeping your consistency)
 ref_score_1 = "Critique: Missing depth in problem framing."
@@ -42,7 +48,7 @@ ref_score_3 = "Excellent: Well-defined interdisciplinary problem framing."
 
 results = []
 
-print(f"🚀 Starting Full Validation: 100 rows x 9 categories...")
+print(f"Starting Full Validation: 100 rows x 9 categories...")
 
 # 5. Nested Loop: Iterate through Rows, then through each Category Pair
 for index, row in df_subset.iterrows():
@@ -123,5 +129,5 @@ timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 output_filename = f"full_validation_C_to_T_{timestamp}.csv"
 final_df.to_csv(output_filename, index=False)
 
-print(f"\n✅ SUCCESS! All categories from C to T validated.")
+print(f"\nSUCCESS! All categories from C to T validated.")
 print(f"Results saved to: {output_filename}")
